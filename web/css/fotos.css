@@ -1,0 +1,112 @@
+/* Pantalla de fotos. Pensada para 1280x800 pero se adapta a cualquier tamaño. */
+:root {
+  --negro: #0d0d0d;
+  --blanco: #ffffff;
+  --dorado: #f2c879;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --rotulo: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --separacion: 8px;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--negro);
+  color: var(--blanco);
+  overflow: hidden;
+  cursor: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.fotos {
+  position: fixed;
+  inset: 0;
+  background: var(--negro);
+}
+
+.diapo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: var(--separacion);
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.diapo--visible { opacity: 1; }
+
+.diapo__foto {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  object-fit: cover;
+}
+
+.diapo--par, .diapo--triptico { padding: var(--separacion); }
+.diapo--par .diapo__foto, .diapo--triptico .diapo__foto { border-radius: 4px; }
+
+.diapo--centrada .diapo__foto {
+  position: relative;
+  object-fit: contain;
+}
+.diapo__fondo {
+  position: absolute;
+  inset: -40px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(36px) brightness(.55);
+}
+
+.diapo__pie {
+  position: absolute;
+  left: 32px;
+  bottom: 26px;
+  right: 32px;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, .55);
+  pointer-events: none;
+}
+.diapo__recuerdo {
+  display: block;
+  font: 800 14px var(--rotulo);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--dorado);
+}
+.diapo__fecha {
+  display: block;
+  font: 400 58px/1.05 var(--serif);
+}
+.diapo__fecha-chica {
+  font: italic 400 20px var(--serif);
+  opacity: .85;
+}
+
+.diapo__debug {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, .92);
+  color: #141414;
+  border-radius: 99px;
+  padding: 7px 14px;
+  font: 800 13px var(--rotulo);
+  letter-spacing: .05em;
+}
+
+.fotos[data-estado="vacio"]::after,
+.fotos[data-estado="error"]::after {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 40px;
+  text-align: center;
+  font: 400 26px/1.4 var(--serif);
+}
+.fotos[data-estado="vacio"]::after { content: "Todavía no hay fotos en la carpeta de Drive."; }
+.fotos[data-estado="error"]::after { content: "No se pudieron cargar las fotos: " attr(data-error) ". Reintento en un minuto."; }
+
+@media (prefers-reduced-motion: reduce) {
+  .diapo { transition: none; }
+}

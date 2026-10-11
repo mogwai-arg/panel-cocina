@@ -1,0 +1,10 @@
+{
+  "name": "panel-cocina",
+  "private": true,
+  "description": "Panel familiar y marco de fotos para la cocina",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "serve": "python3 -m http.server 8080 --directory web",
+    "demo": "node scripts/generar-demo.js"
+  }
+}

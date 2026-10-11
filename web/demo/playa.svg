@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f6c08a"/><stop offset="1" stop-color="#e47f62"/></linearGradient></defs>
+  <rect width="1600" height="1200" fill="url(#g)"/>
+  <circle cx="1152" cy="336.00000000000006" r="84.00000000000001" fill="#fff" opacity=".7"/>
+  <ellipse cx="480" cy="1200" rx="960" ry="384" fill="#2c3254"/>
+  <ellipse cx="1360" cy="1200" rx="720" ry="264" fill="#2c3254" opacity=".8"/>
+  <text x="50%" y="46%" text-anchor="middle" font-family="sans-serif" font-weight="700"
+    font-size="133" fill="#fff" opacity=".85">Horizontal 4:3</text>
+  <text x="50%" y="63.733333333333334%" text-anchor="middle" font-family="sans-serif"
+    font-size="67" fill="#fff" opacity=".75">playa</text>
+</svg>

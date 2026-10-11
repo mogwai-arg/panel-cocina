@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel de Cocina · Fotos</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&family=Archivo:wght@800&display=swap">
+  <link rel="stylesheet" href="css/fotos.css">
+</head>
+<body>
+  <main class="fotos" id="fotos" aria-label="Fotos de la familia"></main>
+
+  <!-- config.js es opcional: si no existe, se usa el modo demo. -->
+  <script src="config.js" onerror="window.CONFIG = null"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/fuentes.js"></script>
+  <script src="js/fotos.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var config = window.CONFIG || {};
+      var usarDrive = config.APPS_SCRIPT_URL && params.get('demo') !== '1';
+      var fuente = usarDrive
+        ? Fuentes.drive(config.APPS_SCRIPT_URL, config.TOKEN, { ancho: config.ANCHO_FOTO })
+        : Fuentes.demo();
+
+      var show = Fotos.crearSlideshow(document.getElementById('fotos'), fuente, {
+        segundos: Number(params.get('segundos')) || config.SEGUNDOS_POR_FOTO || 15,
+        debug: params.get('debug') === '1'
+      });
+      show.iniciar();
+
+      // Tocar la mitad derecha avanza, la izquierda retrocede. Flechas del teclado también.
+      document.addEventListener('click', function (e) {
+        if (e.clientX > window.innerWidth / 2) show.siguiente(); else show.anterior();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight') show.siguiente();
+        if (e.key === 'ArrowLeft') show.anterior();
+      });
+    })();
+  </script>
+</body>
+</html>
