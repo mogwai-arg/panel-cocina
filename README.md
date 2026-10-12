@@ -212,6 +212,25 @@ un mail cuando llega o se va** de un lugar (como Findmykid, pero gratis).
 Con el teléfono quieto OwnTracks puede pasar horas sin mandar nada: el panel muestra el
 último dato y "hace cuánto".
 
+**Avisos al celular sin mail (ntfy, gratis):**
+1. Instalá **ntfy** en tu celular (App Store / Play Store) → **+** → suscribite a un tema con
+   un nombre difícil de adivinar, por ejemplo `thi-casa-8k2p9x` (quien sepa el nombre ve los
+   avisos).
+2. En el Apps Script → Propiedades del script → `NTFY_TEMA` = ese mismo nombre.
+3. Ejecutá `probarAviso`: te tiene que llegar "📍 Thi llegó a Prueba".
+
+Con `NTFY_TEMA` ya no llegan mails (si los querés igual: propiedad `AVISOS_POR_MAIL` = `si`).
+El marco además muestra un cartel "📍 Thi llegó a Colegio" cuando cambia de lugar.
+
+## Descanso de la pantalla
+
+- **De noche** (por defecto de 23 a 7) la pantalla queda negra. Un toque la despierta
+  5 minutos (ese primer toque no aprieta nada). Se configura en `config.js` → `DESCANSO`:
+  horario, `modo: 'tenue'` en vez de negro, o `noche: false` para no usarlo.
+- **Sin nadie cerca**: el marco tiene sensor de movimiento. Cuando lo conectemos (al
+  instalarlo en el marco), si no pasa nadie en 20 minutos la pantalla se atenúa, y vuelve
+  sola cuando alguien pasa. El sensor avisa llamando a `window.panelMovimiento()`.
+
 ## Fotos
 
 - **Horizontal** → pantalla completa.

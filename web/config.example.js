@@ -24,5 +24,9 @@ window.CONFIG = {
   // Color de cada persona en Tareas (el nombre como figura en la columna "persona" de la planilla)
   PERSONAS: { Thi: '#d39b1e', Javi: '#2f5fd0', Dan: '#7b4fc4' },
   // Cómo se lo nombra a Thiago en los mensajes de aliento de las notas
-  APODO_ALUMNO: 'Thi'
+  APODO_ALUMNO: 'Thi',
+  // Descanso de la pantalla: de noche queda negra ('apagado') o tenue ('tenue'); al tocarla
+  // se despierta 5 minutos. Con el sensor de movimiento conectado, de día se atenúa si no
+  // pasa nadie en 20 minutos. Para no usar el horario nocturno: noche: false
+  DESCANSO: { noche: { desde: '23:00', hasta: '07:00', modo: 'apagado' }, despiertoMinutos: 5, sinMovimientoMinutos: 20 }
 };

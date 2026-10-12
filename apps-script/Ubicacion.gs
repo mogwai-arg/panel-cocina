@@ -8,7 +8,13 @@
  *   nombre       Casa, Colegio, Club...
  *   coordenadas  como las copia Google Maps (clic derecho sobre el lugar): -34.6521, -58.6443
  *   radio_m      qué tan cerca cuenta como "estar ahí" (por defecto 150 m)
- *   avisar       casilla: te llega un mail cuando llega o se va de ese lugar
+ *   avisar       casilla: te avisa cuando llega o se va de ese lugar
+ *
+ * Cómo avisa (propiedades del script):
+ *   NTFY_TEMA        si está, notificación push con la app gratuita ntfy (iPhone/Android):
+ *                    en la app te suscribís a ese mismo tema. Usá un nombre difícil de
+ *                    adivinar (ej. thi-casa-8k2p9x): cualquiera que lo sepa ve los avisos.
+ *   AVISOS_POR_MAIL  "si" para recibir también el mail (sin NTFY_TEMA, se manda mail siempre).
  *
  *   ?action=ubicacion&token=...   → { personas: [{ quien, lat, lon, precision, bateria, cuando,
  *                                     lugar, desde, cercano: { nombre, metros }, historial }] }
@@ -112,7 +118,7 @@ function recibirUbicacion_(quien, msg) {
   });
 }
 
-/* Mail cuando llega o se va de un lugar con "avisar" tildado. */
+/* Aviso (push con ntfy y/o mail) cuando llega o se va de un lugar con "avisar" tildado. */
 function avisarCambio_(quien, cambio, lugares, estado) {
   var avisar = {};
   lugares.forEach(function (l) { if (l.avisar) avisar[l.nombre] = true; });
@@ -122,6 +128,22 @@ function avisarCambio_(quien, cambio, lugares, estado) {
   if (cambio.llego && avisar[cambio.llego]) textos.push(quien + ' llegó a ' + cambio.llego);
   if (!textos.length) return;
   var asunto = '📍 ' + textos.join(' · ') + ' (' + hora + ')';
+  var mapa = 'https://maps.google.com/?q=' + estado.lat + ',' + estado.lon;
+  var props = PropertiesService.getScriptProperties();
+  var tema = props.getProperty('NTFY_TEMA');
+  if (tema) {
+    try {
+      UrlFetchApp.fetch('https://ntfy.sh/', {
+        method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+        payload: JSON.stringify({
+          topic: tema, title: textos.join(' · '),
+          message: hora + (estado.bateria ? ' · batería ' + estado.bateria + '%' : ''),
+          tags: ['round_pushpin'], click: mapa
+        })
+      });
+    } catch (e) { Logger.log('No se pudo mandar el aviso a ntfy: ' + e.message); }
+    if (String(props.getProperty('AVISOS_POR_MAIL') || '').toLowerCase() !== 'si') return;
+  }
   try {
     MailApp.sendEmail(Session.getEffectiveUser().getEmail(), asunto,
       asunto + '\n\nVer en el mapa: https://maps.google.com/?q=' + estado.lat + ',' + estado.lon +
@@ -144,6 +166,14 @@ function ubicaciones_() {
     personas: Object.keys(props).filter(function (k) { return k.indexOf('UBI_') === 0; })
       .map(function (k) { return JSON.parse(props[k]); })
   };
+}
+
+/** Para probar el aviso (ntfy y/o mail) sin esperar a que Thi se mueva. */
+function probarAviso() {
+  avisarCambio_('Thi', { llego: 'Prueba', seFue: null }, [{ nombre: 'Prueba', avisar: true }],
+    { cuando: new Date().toISOString(), lat: -34.6521, lon: -58.6443, bateria: 80 });
+  Logger.log('Aviso de prueba enviado' + (PropertiesService.getScriptProperties().getProperty('NTFY_TEMA')
+    ? ' a ntfy.' : ' por mail (para notificaciones push, agregá la propiedad NTFY_TEMA).'));
 }
 
 /** Para probar desde el editor: lugares cargados y última ubicación recibida. */

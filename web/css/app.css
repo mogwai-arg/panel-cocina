@@ -418,3 +418,9 @@ html, body {
 .donde__detalle { font: 600 12px var(--rotulo); color: var(--suave); }
 .donde__detalle--alerta { color: #c4453a; }
 .donde__fila--viejo .donde__titulo { color: var(--suave); }
+
+/* Modo descanso: tapa todo; el primer toque solo despierta. */
+.descanso { position: absolute; inset: 0; z-index: 50; background: #000; transition: opacity 2s ease; }
+.descanso[hidden] { display: none; }
+.descanso--tenue { opacity: .62; }
+.descanso--apagado { opacity: 1; }

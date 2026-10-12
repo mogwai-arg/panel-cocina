@@ -52,6 +52,7 @@
 
   var hoy = Hoy.crearHoy(document.getElementById('vista-hoy'), fuente, {
     alTocarRecuerdo: function () { irA('fotos'); },
+    avisar: function (texto, deshacer, ms) { avisar(texto, deshacer, ms); },
     basquet: config.BASQUET || { calendario: 'Thi', color: '#d39b1e' },
     // Las entregas de Classroom de la semana también van a la agenda
     classroom: config.CLASSROOM || { calendario: 'Thi', color: '#d39b1e' },
@@ -67,13 +68,13 @@
   var avisoDeshacer = document.getElementById('aviso-deshacer');
   var avisoTimer = null;
   var avisoAccion = null;
-  function avisar(texto, deshacer) {
+  function avisar(texto, deshacer, ms) {
     avisoTexto.textContent = texto;
     avisoAccion = deshacer || null;
     avisoDeshacer.hidden = !deshacer;
     aviso.hidden = false;
     clearTimeout(avisoTimer);
-    avisoTimer = setTimeout(function () { aviso.hidden = true; }, 4000);
+    avisoTimer = setTimeout(function () { aviso.hidden = true; }, ms || 4000);
   }
   avisoDeshacer.addEventListener('click', function () {
     if (avisoAccion) avisoAccion();
@@ -169,7 +170,47 @@
   function actividad() {
     clearTimeout(temporizador);
     temporizador = setTimeout(function () { irA('fotos'); }, minutos * 60000);
+    ultimaActividad = Date.now();
+    revisarDescanso();
   }
+
+  // Modo descanso: de noche se apaga (negro) y, si hay sensor, de día se atenúa sin nadie.
+  var capaDescanso = document.getElementById('descanso');
+  var ultimaActividad = Date.now();
+  var haySensor = false;
+  var estadoDescanso = 'activo';
+  function revisarDescanso() {
+    if (!capaDescanso) return;
+    var nuevo = Descanso.estado(new Date(), ultimaActividad, config.DESCANSO, haySensor);
+    if (nuevo === estadoDescanso) return;
+    estadoDescanso = nuevo;
+    capaDescanso.hidden = nuevo === 'activo';
+    capaDescanso.className = 'descanso descanso--' + nuevo;
+    // Con la pantalla negra no tiene sentido seguir bajando fotos.
+    if (nuevo === 'apagado') fotos.pausar();
+    else if (vistaActual === 'fotos') fotos.reanudar();
+    // Si el marco usa Fully Kiosk, también se baja el brillo de verdad.
+    if (window.fully && window.fully.setScreenBrightness) {
+      window.fully.setScreenBrightness(nuevo === 'apagado' ? 0 : nuevo === 'tenue' ? 40 : 255);
+    }
+  }
+  // El primer toque con la pantalla en descanso solo la despierta (no aprieta nada).
+  if (capaDescanso) {
+    ['pointerdown', 'pointerup', 'click'].forEach(function (t) {
+      capaDescanso.addEventListener(t, function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (t === 'pointerdown') actividad();
+      });
+    });
+  }
+  // El sensor de movimiento del marco avisa llamando a esta función (se conecta al instalarlo).
+  window.panelMovimiento = function () {
+    haySensor = true;
+    ultimaActividad = Date.now();
+    revisarDescanso();
+  };
+  setInterval(revisarDescanso, 30000);
   ['pointerdown', 'keydown'].forEach(function (ev) {
     document.addEventListener(ev, actividad, { passive: true });
   });

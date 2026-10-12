@@ -200,11 +200,23 @@
 
     // Dónde está cada persona que manda su ubicación (OwnTracks).
     var ubicaciones = null;
+    var lugarVisto = {}; // quién → último lugar mostrado, para avisar los cambios en pantalla
+    function avisarCambiosDeLugar(personas) {
+      personas.forEach(function (p) {
+        var antes = lugarVisto[p.quien];
+        lugarVisto[p.quien] = p.lugar || null;
+        if (antes === undefined || antes === (p.lugar || null) || !opciones.avisar) return;
+        var texto = p.lugar ? '📍 ' + p.quien + ' llegó a ' + p.lugar : '📍 ' + p.quien + ' salió de ' + antes;
+        opciones.avisar(texto, null, 20000);
+      });
+    }
+
     function pintarDonde() {
       var caja = parte('donde');
       var personas = (ubicaciones && ubicaciones.personas) || [];
       caja.hidden = !personas.length || !root.Ubicacion;
       if (caja.hidden) return;
+      avisarCambiosDeLugar(personas);
       caja.innerHTML = '';
       var ahora = new Date();
       personas.forEach(function (p) {
