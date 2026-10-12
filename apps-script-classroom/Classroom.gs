@@ -5,7 +5,8 @@
  * la tuya. Lee sus materias, tareas (con fecha de entrega y si las entregó) y
  * avisos de los profes, y se los manda al Apps Script del panel cada hora.
  * También manda los eventos de sus calendarios (el suyo y el del curso de Classroom,
- * que no es público: solo lo ven los alumnos).
+ * que no es público: solo lo ven los alumnos) y sus mails importantes: las búsquedas
+ * se configuran en la hoja "Mails" de la planilla del panel (columna cuenta = Thi o Ambas).
  * Solo lee: no entrega, no comenta, no marca nada.
  *
  * Propiedades del script (Configuración del proyecto → Propiedades del script):
@@ -62,7 +63,37 @@ function leerClassroom_() {
     } catch (e) { Logger.log('No se pudieron leer los avisos de ' + c.name + ': ' + e.message); }
   });
   datos.eventos = eventosDeCalendarios_(ahora);
+  try {
+    datos.mails = mailsDeThi_();
+  } catch (e) { Logger.log('No se pudieron leer los mails: ' + e.message); }
   return datos;
+}
+
+/*
+ * Mails importantes de esta cuenta. Qué buscar lo dice el panel (hoja "Mails");
+ * acá solo se buscan y se mandan crudos: el panel arma el resumen y detecta las fechas.
+ */
+function mailsDeThi_() {
+  var props = PropertiesService.getScriptProperties();
+  var url = props.getProperty('PANEL_URL') + '?action=reglasMails&cuenta=Thi&token=' +
+    encodeURIComponent(props.getProperty('TOKEN'));
+  var r = JSON.parse(UrlFetchApp.fetch(url, { followRedirects: true }).getContentText());
+  if (r.error) throw new Error(r.error);
+  var vistos = {};
+  var mails = [];
+  (r.reglas || []).forEach(function (regla) {
+    GmailApp.search('(' + regla.busqueda + ')' + r.filtro, 0, r.porCategoria || 12).forEach(function (h) {
+      if (vistos[h.getId()]) return;
+      vistos[h.getId()] = true;
+      var m = h.getMessages().pop();
+      mails.push({
+        id: h.getId(), categoria: regla.categoria, asunto: m.getSubject(), de: m.getFrom(),
+        recibido: m.getDate().toISOString(), cuerpo: String(m.getPlainBody() || '').slice(0, 3000),
+        sinLeer: h.isUnread()
+      });
+    });
+  });
+  return mails;
 }
 
 /** Eventos de los calendarios que Thi tiene a la vista, de hoy a DIAS_DE_AGENDA. */
@@ -172,6 +203,10 @@ function probarClassroom() {
   datos.eventos.forEach(function (e) { porCal[e.calendario] = (porCal[e.calendario] || 0) + 1; });
   Logger.log('Calendarios de Thi: ' + CalendarApp.getAllCalendars().map(function (c) { return c.getName(); }).join(', '));
   Logger.log('Eventos de los próximos ' + DIAS_DE_AGENDA + ' días por calendario: ' + JSON.stringify(porCal));
+  var porCat = {};
+  (datos.mails || []).forEach(function (m) { porCat[m.categoria] = (porCat[m.categoria] || 0) + 1; });
+  Logger.log('Mails importantes de Thi: ' + JSON.stringify(porCat));
+  (datos.mails || []).slice(0, 8).forEach(function (m) { Logger.log('  ' + m.categoria + ' · ' + m.asunto); });
   datos.tareas.filter(function (t) { return t.estado === 'pendiente' || t.estado === 'atrasada'; })
     .slice(0, 10).forEach(function (t) {
       Logger.log('  ' + t.estado + ' · ' + t.curso + ' · ' + t.titulo + ' · vence ' + (t.vence || 'sin fecha'));

@@ -4,8 +4,10 @@
  * Las búsquedas están en la hoja "Mails" de la planilla (se crea sola con ejemplos):
  *   categoria   Cole, Salud, Pagos...
  *   busqueda    lo mismo que escribirías en el buscador de Gmail
- *               (ej. from:osde.com.ar OR turno OR "orden médica")
+ *               (ej. from:osde.com.ar OR subject:turno)
  *   activa      casilla: destildada = no se busca
+ *   cuenta      en qué Gmail: Javi, Thi o Ambas. Los de Thi los busca el script de su
+ *               cuenta (apps-script-classroom/) y llegan con lo de Classroom.
  * Siempre se agrega: últimas 3 semanas, sin promociones, social ni spam.
  *
  * De cada mail se manda asunto, remitente, un resumen corto y, si el texto tiene una
@@ -19,32 +21,90 @@
 var MAILS_POR_CATEGORIA = 12;
 var MINUTOS_CACHE_MAILS = 10;
 
+/*
+ * Búsquedas por defecto: en el ASUNTO (buscar en todo el mail encuentra palabras del pie,
+ * como "consultas" o "reserva", y se cuela publicidad). cuenta: Javi, Thi o Ambas.
+ */
 var REGLAS_MAILS_ = [
-  ['Salud', 'osde OR turno OR turnos OR "recordatorio de turno" OR "confirmación de turno" OR consulta OR laboratorio OR "orden médica" OR receta OR vacuna'],
-  ['Cole', 'colegio OR escuela OR alberdi OR colegium OR "reunión de padres" OR "cuota escolar"'],
-  ['Pagos', 'vencimiento OR "vence el" OR "fecha de vencimiento" OR "aviso de deuda" OR VEP OR ARCA OR AFIP OR expensas OR "tu factura"'],
-  ['Viajes', 'reserva OR "check-in" OR "tarjeta de embarque" OR vuelo OR boarding']
+  ['Salud', 'subject:(turno OR turnos OR "recordatorio de turno" OR "confirmación de turno" OR "orden médica" OR laboratorio OR resultados OR vacuna OR autorización OR receta OR consulta)', 'Ambas'],
+  ['Cole', 'subject:(colegio OR escuela OR alberdi OR "reunión de padres" OR "cuota escolar" OR acto OR excursión OR "salida educativa") -from:classroom.google.com', 'Ambas'],
+  ['Pagos', 'subject:(vencimiento OR vence OR VEP OR VEPS OR expensas OR "factura vencida" OR "aviso de deuda" OR "saldo total" OR "pagar tu tarjeta" OR monotributo)', 'Javi'],
+  ['Viajes', 'subject:(reserva OR "check-in" OR "tarjeta de embarque" OR vuelo OR itinerario OR boarding)', 'Javi'],
+  ['Básquet', 'subject:(básquet OR basquet OR entrenamiento OR partido OR convocatoria OR torneo OR febamba)', 'Thi']
 ];
+
+// Las búsquedas de la primera versión (si siguen sin tocar, se reemplazan por las nuevas).
+var REGLAS_VIEJAS_ = {
+  'osde OR turno OR turnos OR "recordatorio de turno" OR "confirmación de turno" OR consulta OR laboratorio OR "orden médica" OR receta OR vacuna': 'Salud',
+  'colegio OR escuela OR alberdi OR colegium OR "reunión de padres" OR "cuota escolar"': 'Cole',
+  'vencimiento OR "vence el" OR "fecha de vencimiento" OR "aviso de deuda" OR VEP OR ARCA OR AFIP OR expensas OR "tu factura"': 'Pagos',
+  'reserva OR "check-in" OR "tarjeta de embarque" OR vuelo OR boarding': 'Viajes'
+};
+
+var FILTRO_MAILS_ = ' newer_than:21d -category:promotions -category:social -in:spam -in:trash';
 
 function hojaMails_() {
   var libro = planilla_();
   var hoja = libro.getSheetByName('Mails');
-  if (hoja) return hoja;
-  hoja = libro.insertSheet('Mails');
-  hoja.getRange(1, 1, 1, 3).setValues([['categoria', 'busqueda', 'activa']]).setFontWeight('bold');
-  hoja.setFrozenRows(1);
-  hoja.getRange(2, 1, REGLAS_MAILS_.length, 2).setValues(REGLAS_MAILS_);
-  hoja.getRange(2, 3, REGLAS_MAILS_.length, 1).insertCheckboxes().setValue(true);
-  hoja.setColumnWidth(2, 640);
-  hoja.getRange(1, 2).setNote('Igual que en el buscador de Gmail. Ej.: from:osde.com.ar OR turno. ' +
-    'Se agrega solo: últimas 3 semanas, sin promociones ni spam.');
+  if (!hoja) {
+    hoja = libro.insertSheet('Mails');
+    hoja.getRange(1, 1, 1, 4).setValues([['categoria', 'busqueda', 'activa', 'cuenta']]).setFontWeight('bold');
+    hoja.setFrozenRows(1);
+    hoja.getRange(2, 1, REGLAS_MAILS_.length, 1).setValues(REGLAS_MAILS_.map(function (r) { return [r[0]]; }));
+    hoja.getRange(2, 2, REGLAS_MAILS_.length, 1).setValues(REGLAS_MAILS_.map(function (r) { return [r[1]]; }));
+    hoja.getRange(2, 3, REGLAS_MAILS_.length, 1).insertCheckboxes().setValue(true);
+    hoja.getRange(2, 4, REGLAS_MAILS_.length, 1).setValues(REGLAS_MAILS_.map(function (r) { return [r[2]]; }));
+    prepararHojaMails_(hoja);
+    return hoja;
+  }
+  actualizarHojaMails_(hoja);
   return hoja;
 }
 
-function reglasMails_() {
+function prepararHojaMails_(hoja) {
+  hoja.setColumnWidth(2, 640);
+  hoja.getRange(1, 2).setNote('Igual que en el buscador de Gmail. Ej.: from:osde.com.ar OR subject:turno. ' +
+    'Se agrega solo: últimas 3 semanas, sin promociones, social ni spam.');
+  hoja.getRange(1, 4).setNote('En qué Gmail se busca: Javi, Thi o Ambas.');
+  hoja.getRange('D2:D').setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Javi', 'Thi', 'Ambas'], true).setAllowInvalid(false).build());
+}
+
+/* La hoja de la primera versión: agrega la columna "cuenta" y mejora las búsquedas sin tocar. */
+function actualizarHojaMails_(hoja) {
+  if (String(hoja.getRange(1, 4).getValue()) === 'cuenta') return;
+  hoja.getRange(1, 4).setValue('cuenta').setFontWeight('bold');
+  var filas = hoja.getDataRange().getValues();
+  var categorias = {};
+  for (var i = 1; i < filas.length; i++) {
+    var vieja = REGLAS_VIEJAS_[String(filas[i][1]).trim()];
+    var nueva = REGLAS_MAILS_.filter(function (r) { return r[0] === vieja; })[0];
+    if (nueva) hoja.getRange(i + 1, 2).setValue(nueva[1]);
+    hoja.getRange(i + 1, 4).setValue(nueva ? nueva[2] : 'Javi');
+    categorias[String(filas[i][0]).trim()] = true;
+  }
+  REGLAS_MAILS_.forEach(function (r) {
+    if (categorias[r[0]]) return;
+    var fila = hoja.getLastRow() + 1;
+    hoja.getRange(fila, 1, 1, 2).setValues([[r[0], r[1]]]);
+    hoja.getRange(fila, 3).insertCheckboxes().setValue(true);
+    hoja.getRange(fila, 4).setValue(r[2]);
+  });
+  prepararHojaMails_(hoja);
+}
+
+/** Búsquedas activas para una cuenta ('Javi' o 'Thi'). */
+function reglasMails_(cuenta) {
   var filas = hojaMails_().getDataRange().getValues().slice(1);
-  return filas.filter(function (f) { return f[0] && f[1] && f[2] !== false; })
-    .map(function (f) { return { categoria: String(f[0]).trim(), busqueda: String(f[1]).trim() }; });
+  return filas.filter(function (f) {
+    var c = String(f[3] || 'Javi').trim().toLowerCase();
+    return f[0] && f[1] && f[2] !== false && (c === 'ambas' || c === cuenta.toLowerCase());
+  }).map(function (f) { return { categoria: String(f[0]).trim(), busqueda: String(f[1]).trim() }; });
+}
+
+/* Para el script de la cuenta de Thi: qué tiene que buscar. */
+function reglasMailsPara_(cuenta) {
+  return { reglas: reglasMails_(cuenta || 'Thi'), filtro: FILTRO_MAILS_, porCategoria: MAILS_POR_CATEGORIA };
 }
 
 function mails_() {
@@ -55,32 +115,49 @@ function mails_() {
   var ahora = new Date();
   var vistos = {};
   var mails = [];
-  reglasMails_().forEach(function (r) {
-    var hilos = GmailApp.search('(' + r.busqueda + ') newer_than:21d -category:promotions -category:social -in:spam -in:trash',
-      0, MAILS_POR_CATEGORIA);
+  reglasMails_('Javi').forEach(function (r) {
+    var hilos = GmailApp.search('(' + r.busqueda + ')' + FILTRO_MAILS_, 0, MAILS_POR_CATEGORIA);
     hilos.forEach(function (h) {
       if (vistos[h.getId()]) return; // un mail va en la primera categoría que lo encuentra
       vistos[h.getId()] = true;
       var m = h.getMessages().pop(); // el último del hilo
-      var cuerpo = limpiarCuerpo_(m.getPlainBody());
-      var cuando = primeraFechaFutura_(m.getSubject() + '\n' + cuerpo.slice(0, 4000), ahora, m.getDate());
-      mails.push({
-        id: h.getId(),
-        categoria: r.categoria,
-        asunto: corto_(m.getSubject() || '(sin asunto)', 160),
-        de: nombreRemitente_(m.getFrom()),
-        recibido: m.getDate().toISOString(),
-        resumen: corto_(cuerpo, 280),
-        link: 'https://mail.google.com/mail/u/0/#all/' + h.getId(),
-        cuando: cuando,
-        sinLeer: h.isUnread()
-      });
+      mails.push(mailParaPanel_({
+        id: h.getId(), categoria: r.categoria, asunto: m.getSubject(), de: m.getFrom(),
+        recibido: m.getDate().toISOString(), cuerpo: m.getPlainBody(),
+        link: 'https://mail.google.com/mail/u/0/#all/' + h.getId(), sinLeer: h.isUnread()
+      }, ahora, 'Javi'));
     });
+  });
+  // Los de Thi llegan con lo de Classroom (los busca el script de su cuenta, cada hora).
+  var aula = leerClassroom_().datos;
+  var yaEstan = {};
+  mails.forEach(function (m) { yaEstan[m.asunto + '|' + m.recibido.slice(0, 16)] = true; });
+  ((aula && aula.mails) || []).forEach(function (crudo) {
+    var m = mailParaPanel_(crudo, ahora, 'Thi');
+    if (!yaEstan[m.asunto + '|' + m.recibido.slice(0, 16)]) mails.push(m);
   });
   mails.sort(function (a, b) { return a.recibido < b.recibido ? 1 : -1; });
   var datos = { mails: mails, actualizado: ahora.toISOString() };
   cache.put('mails', JSON.stringify(datos), MINUTOS_CACHE_MAILS * 60);
   return datos;
+}
+
+/* Un mail (de cualquiera de las dos cuentas) como lo muestra el panel. */
+function mailParaPanel_(crudo, ahora, cuenta) {
+  var cuerpo = limpiarCuerpo_(crudo.cuerpo);
+  var recibido = new Date(crudo.recibido);
+  return {
+    id: crudo.id,
+    cuenta: cuenta,
+    categoria: crudo.categoria,
+    asunto: corto_(crudo.asunto || '(sin asunto)', 160),
+    de: nombreRemitente_(crudo.de),
+    recibido: recibido.toISOString(),
+    resumen: corto_(cuerpo, 280),
+    link: crudo.link || '',
+    cuando: primeraFechaFutura_((crudo.asunto || '') + '\n' + cuerpo.slice(0, 4000), ahora, recibido),
+    sinLeer: !!crudo.sinLeer
+  };
 }
 
 function corto_(t, n) {
@@ -168,8 +245,8 @@ function probarMails() {
   var porCat = {};
   d.mails.forEach(function (m) { porCat[m.categoria] = (porCat[m.categoria] || 0) + 1; });
   Logger.log('Mails encontrados: ' + d.mails.length + ' ' + JSON.stringify(porCat));
-  d.mails.slice(0, 12).forEach(function (m) {
-    Logger.log(m.categoria + ' · ' + m.asunto + ' · ' + m.de +
+  d.mails.slice(0, 15).forEach(function (m) {
+    Logger.log((m.cuenta === 'Thi' ? '[Thi] ' : '') + m.categoria + ' · ' + m.asunto + ' · ' + m.de +
       (m.cuando ? ' · 📅 ' + m.cuando.fecha.slice(0, m.cuando.conHora ? 16 : 10) : ''));
   });
 }

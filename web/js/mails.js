@@ -9,7 +9,8 @@
     salud: { color: '#c4453a', icono: '🩺' },
     cole: { color: '#2e7d6d', icono: '🎒' },
     pagos: { color: '#8a6d1f', icono: '💳' },
-    viajes: { color: '#3b7bbf', icono: '✈️' }
+    viajes: { color: '#3b7bbf', icono: '✈️' },
+    basquet: { color: '#d39b1e', icono: '🏀' }
   };
   var OTRA = { color: '#6d6b66', icono: '✉️' };
   var DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];

@@ -80,7 +80,7 @@
         item.appendChild(cab);
         var de = el('span', 'comunicado__de');
         de.appendChild(chipCategoria(m.categoria));
-        de.appendChild(document.createTextNode(' · ' + m.de));
+        de.appendChild(document.createTextNode(' · ' + m.de + (m.cuenta === 'Thi' ? ' · para Thi' : '')));
         item.appendChild(de);
         if (m.resumen) item.appendChild(el('p', 'comunicado__resumen', m.resumen));
         if (m.cuando) item.appendChild(el('span', 'mail__cuando', '📅 ' + Mails.textoCuando(m.cuando, ahora)));

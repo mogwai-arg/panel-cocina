@@ -182,8 +182,10 @@ no se pierda. No usa IA ni paga nada: son búsquedas de Gmail. Solo lee (no marc
 
 Las búsquedas están en la hoja **Mails** de la planilla (se crea sola): una fila por
 categoría, con lo mismo que escribirías en el buscador de Gmail, por ejemplo
-`from:osde.com.ar OR turno OR "orden médica"`. Agregá remitentes o palabras, o destildá una
-categoría. Para probarlas: `probarMails` en el editor (la primera vez pide permiso para
+`from:osde.com.ar OR subject:turno`. Conviene buscar en el asunto (`subject:(…)`): buscando
+en todo el mail se cuela publicidad que tiene esas palabras en el pie. La columna
+**cuenta** dice en qué Gmail se busca: **Javi**, **Thi** o **Ambas**. Los de Thi los busca
+el script de su cuenta (el de Classroom) cada hora, y en el panel dicen "para Thi". Para probarlas: `probarMails` en el editor (la primera vez pide permiso para
 leer Gmail).
 
 ## Fotos

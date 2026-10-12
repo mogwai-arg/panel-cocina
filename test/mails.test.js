@@ -65,3 +65,21 @@ test('mails en el panel: con fecha, eventos y nuevos', () => {
   assert.deepEqual(M.nuevos(datosMails, ahora, { a: 1 }).map((m) => m.id), ['b', 'd']);
   assert.deepEqual(M.categorias(datosMails), ['Salud', 'Pagos', 'Cole', 'Viajes']);
 });
+
+test('mails: reglas por cuenta y mail de Thi armado para el panel', () => {
+  ctx.hojaMails_ = () => ({ getDataRange: () => ({ getValues: () => [
+    ['categoria', 'busqueda', 'activa', 'cuenta'],
+    ['Salud', 'subject:turno', true, 'Ambas'],
+    ['Pagos', 'subject:vence', true, 'Javi'],
+    ['Básquet', 'subject:partido', true, 'Thi'],
+    ['Viajes', 'subject:vuelo', false, 'Thi']
+  ] }) });
+  assert.deepEqual(ctx.reglasMails_('Thi').map((r) => r.categoria), ['Salud', 'Básquet']);
+  assert.deepEqual(ctx.reglasMails_('Javi').map((r) => r.categoria), ['Salud', 'Pagos']);
+  const m = ctx.mailParaPanel_({ id: 'x', categoria: 'Básquet', asunto: 'Convocatoria', de: '"Club" <c@club.ar>',
+    recibido: '2026-10-11T20:00:00.000Z', cuerpo: 'Partido el 17/10 a las 11 hs en cancha de Echagüe' }, ahora, 'Thi');
+  assert.equal(m.de, 'Club');
+  assert.equal(m.cuenta, 'Thi');
+  assert.equal(new Date(m.cuando.fecha).getDate(), 17);
+  assert.equal(m.cuando.conHora, true);
+});

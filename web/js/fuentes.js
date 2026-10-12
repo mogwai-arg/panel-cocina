@@ -79,6 +79,9 @@
           'Los esperamos el jueves a las 19 h en el SUM para conversar sobre el viaje de fin de año.', { fecha: dia(3, 19, 0), conHora: true }),
         mail('m4', 'Salud', 'Resultados de laboratorio disponibles', 'Laboratorio', dia(-4, 10, 0),
           'Ya puede descargar los resultados de los estudios realizados.', null),
+        { id: 'm6', cuenta: 'Thi', categoria: 'Básquet', asunto: 'Convocatoria partido del sábado', de: 'Club Argentino',
+          recibido: dia(-1, 21, 0), resumen: 'Presentarse a las 10:15 en el club con la indumentaria completa.', link: '',
+          cuando: null, sinLeer: true },
         mail('m5', 'Viajes', 'Confirmación de reserva', 'Hotel Costa', dia(-6, 21, 30),
           'Reserva confirmada para 3 personas. Check-in desde las 14 h.', { fecha: dia(40), conHora: false })
       ]
