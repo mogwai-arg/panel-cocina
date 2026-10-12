@@ -52,6 +52,7 @@
 
   var hoy = Hoy.crearHoy(document.getElementById('vista-hoy'), fuente, {
     alTocarRecuerdo: function () { irA('fotos'); },
+    personas: config.PERSONAS || { Thi: '#d39b1e', Javi: '#2f5fd0', Dan: '#7b4fc4' },
     avisar: function (texto, deshacer, ms) { avisar(texto, deshacer, ms); },
     basquet: config.BASQUET || { calendario: 'Thi', color: '#d39b1e' },
     // Las entregas de Classroom de la semana también van a la agenda
@@ -110,8 +111,9 @@
   // Números en la barra lateral: compras pendientes y tareas de hoy sin hacer.
   listas.alCambiar(function (d) {
     var compras = Listas.pendientes(d.compras || []).length;
-    var tareas = Listas.progresoDelDia(d.tareas || [], new Date())
-      .reduce(function (s, p) { return s + p.total - p.hechas; }, 0);
+    var progreso = Listas.progresoDelDia(d.tareas || [], new Date());
+    hoy.tareas(progreso);
+    var tareas = progreso.reduce(function (s, p) { return s + p.total - p.hechas; }, 0);
     [['compras', compras], ['tareas', tareas]].forEach(function (x) {
       var n = document.querySelector('[data-num="' + x[0] + '"]');
       n.textContent = x[1];

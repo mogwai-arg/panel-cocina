@@ -190,8 +190,8 @@ leer Gmail).
 
 ## Ubicación de Thi (OwnTracks)
 
-En **Hoy**, arriba de la columna de Thi en la agenda: dónde está ("En Colegio · desde las 07:42", o "A 1,2 km
-de Casa"), cuándo fue el último dato y la batería, con un mapita. Y si querés, **te llega
+En **Hoy**, arriba a la derecha (junto a Javi y Dan): dónde está ("En Colegio · desde las 07:42", o "A 1,2 km
+de Casa"), cuándo fue el último dato y la batería. Y si querés, **te llega
 un mail cuando llega o se va** de un lugar (como Findmykid, pero gratis).
 
 1. En tu Apps Script: agregá `Ubicacion.gs`, reemplazá `Code.gs` y `appsscript.json`

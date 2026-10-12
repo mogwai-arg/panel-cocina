@@ -48,6 +48,7 @@
     contenedor.innerHTML =
       '<div class="reloj"><b data-r="hora"></b><div><span data-r="dia"></span><span data-r="fecha"></span></div></div>' +
       '<div class="clima" data-r="clima"></div>' +
+      '<div class="quienes" data-r="quienes"></div>' +
       '<button class="recuerdo" data-r="recuerdo" aria-label="Ver fotos"></button>' +
       '<div class="proximo" data-r="proximo"></div>' +
       '<div class="columnas" data-r="columnas"></div>' +
@@ -153,7 +154,6 @@
         if (c.mas) col.appendChild(el('span', 'mas', '+' + c.mas + ' más'));
         caja.appendChild(col);
       });
-      ponerUbicaciones(caja);
     }
 
     function pintarDias() {
@@ -213,69 +213,48 @@
     }
 
     /*
-     * La ubicación de cada persona va arriba de su columna en la agenda (la de "Thi").
-     * Si esa persona no tiene columna hoy, se agrega una solo con la ubicación.
+     * Quiénes y dónde (arriba a la derecha, como en el panel de Wes): cada persona de
+     * config.js con su ubicación si manda OwnTracks; si no, cómo vienen sus tareas de hoy.
      */
-    function ponerUbicaciones(caja) {
-      var personas = (ubicaciones && ubicaciones.personas) || [];
-      if (!personas.length || !root.Ubicacion) return;
-      var vacio = caja.querySelector('.columnas__vacio');
-      if (vacio) vacio.remove();
+    var progresoTareas = {};
+    function pintarQuienes() {
+      var caja = parte('quienes');
+      var colores = opciones.personas || {};
+      var personas = Object.keys(colores);
+      var ubis = {};
+      ((ubicaciones && ubicaciones.personas) || []).forEach(function (p) {
+        ubis[String(p.quien).toLowerCase()] = p;
+        if (personas.map(function (x) { return x.toLowerCase(); }).indexOf(String(p.quien).toLowerCase()) < 0) personas.push(p.quien);
+      });
+      caja.innerHTML = '';
+      caja.hidden = !personas.length;
       var ahora = new Date();
-      personas.forEach(function (p) {
-        var d = root.Ubicacion.describir(p, ahora);
-        var tarjeta = el('div', 'donde' + (d.viejo ? ' donde--viejo' : ''));
-        tarjeta.appendChild(mapita(p));
-        var txt = el('div', 'donde__txt');
-        txt.appendChild(el('b', 'donde__titulo', d.titulo));
-        txt.appendChild(el('small', 'donde__detalle' + (d.bateriaBaja ? ' donde__detalle--alerta' : ''), d.detalle));
-        tarjeta.appendChild(txt);
-        var col = null;
-        caja.querySelectorAll('.col').forEach(function (c) {
-          if (c.getAttribute('data-quien') === String(p.quien).toLowerCase()) col = c;
-        });
-        if (!col) {
-          col = el('div', 'col');
-          col.style.borderTopColor = color(classroomConfig.color || '#d39b1e');
-          var titulo = el('h3');
-          var av = el('span', 'av', inicial(p.quien));
-          av.style.background = color(classroomConfig.color || '#d39b1e');
-          titulo.appendChild(av);
-          titulo.appendChild(document.createTextNode(p.quien));
-          col.appendChild(titulo);
-          caja.appendChild(col);
+      personas.forEach(function (nombre) {
+        var fila = el('div', 'quien');
+        var av = el('span', 'quien__av', inicial(nombre));
+        av.style.borderColor = color(colores[nombre] || '#6d6b66');
+        av.style.color = color(colores[nombre] || '#6d6b66');
+        fila.appendChild(av);
+        fila.appendChild(el('b', 'quien__nombre', nombre));
+        var estado = el('span', 'quien__estado');
+        var u = ubis[nombre.toLowerCase()];
+        if (u && root.Ubicacion) {
+          var d = root.Ubicacion.describir(u, ahora);
+          estado.appendChild(el('span', 'quien__donde' + (d.viejo ? ' quien__donde--viejo' : ''), '📍 ' + d.titulo));
+          estado.appendChild(el('small', d.bateriaBaja ? 'quien__alerta' : null, d.detalle));
+        } else if (progresoTareas[nombre]) {
+          var t = progresoTareas[nombre];
+          estado.appendChild(el('span', 'quien__tareas', t.hechas === t.total ? '✓ Tareas listas' : 'Tareas ' + t.hechas + '/' + t.total));
         }
-        col.insertBefore(tarjeta, col.children[1] || null);
+        fila.appendChild(estado);
+        caja.appendChild(fila);
       });
     }
 
     function pintarDonde() {
       var personas = (ubicaciones && ubicaciones.personas) || [];
       avisarCambiosDeLugar(personas);
-      pintarColumnas();
-    }
-
-    // Mapa chiquito de OpenStreetMap centrado en el punto (3x3 mosaicos recortados).
-    function mapita(p) {
-      var LADO = 46;
-      var m = root.Ubicacion.mosaico(p.lat, p.lon, 15);
-      var caja = el('div', 'donde__mapa');
-      var capa = el('div', 'donde__capa');
-      capa.style.left = (LADO / 2 - 256 - m.px) + 'px';
-      capa.style.top = (LADO / 2 - 256 - m.py) + 'px';
-      for (var dy = -1; dy <= 1; dy++) {
-        for (var dx = -1; dx <= 1; dx++) {
-          var img = document.createElement('img');
-          img.alt = '';
-          img.src = 'https://tile.openstreetmap.org/15/' + (m.x + dx) + '/' + (m.y + dy) + '.png';
-          img.style.left = (dx + 1) * 256 + 'px';
-          img.style.top = (dy + 1) * 256 + 'px';
-          capa.appendChild(img);
-        }
-      }
-      caja.appendChild(capa);
-      caja.appendChild(el('i', 'donde__punto'));
-      return caja;
+      pintarQuienes();
     }
 
     function cargarUbicacion() {
@@ -416,7 +395,14 @@
     function cada(ms, fn) { timers.push(setInterval(fn, ms)); }
 
     return {
+      // Progreso de las tareas de hoy por persona (lo manda app.js cuando cambian las listas).
+      tareas: function (progreso) {
+        progresoTareas = {};
+        (progreso || []).forEach(function (p) { progresoTareas[p.persona] = p; });
+        pintarQuienes();
+      },
       iniciar: function () {
+        pintarQuienes();
         pintarReloj();
         cargarClima();
         cargarAgenda();
@@ -426,7 +412,7 @@
         cargarMails();
         cargarUbicacion();
         cada(10000, pintarReloj);
-        cada(30000, function () { pintarProximo(); pintarColumnas(); pintarDias(); pintarBasquet(); });
+        cada(30000, function () { pintarProximo(); pintarColumnas(); pintarDias(); pintarBasquet(); pintarQuienes(); });
         cada(60 * 60000, cargarBasquet);
         cada(30 * 60000, cargarClassroom);
         cada(15 * 60000, cargarMails);
