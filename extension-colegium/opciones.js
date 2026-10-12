@@ -4,9 +4,13 @@
   var token = document.getElementById('token');
   var estado = document.getElementById('estado');
 
-  chrome.storage.local.get({ config: {} }, function (r) {
-    url.value = r.config.url || '';
-    token.value = r.config.token || '';
+  // En sync: sigue a tu cuenta de Chrome en otras compus. Si había algo en local, se migra.
+  chrome.storage.sync.get({ config: null }, function (s) {
+    if (s.config) { url.value = s.config.url || ''; token.value = s.config.token || ''; return; }
+    chrome.storage.local.get({ config: {} }, function (r) {
+      url.value = r.config.url || '';
+      token.value = r.config.token || '';
+    });
   });
 
   document.getElementById('guardar').addEventListener('click', function () {
@@ -15,7 +19,7 @@
       estado.textContent = 'La URL tiene que ser la del Apps Script y terminar en /exec.';
       return;
     }
-    chrome.storage.local.set({ config: cfg }, function () {
+    chrome.storage.sync.set({ config: cfg }, function () {
       estado.textContent = 'Guardado. Probando…';
       fetch(cfg.url + '?action=colegium&token=' + encodeURIComponent(cfg.token))
         .then(function (r) { return r.json(); })

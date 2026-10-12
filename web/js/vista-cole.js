@@ -156,8 +156,16 @@
       pintarHorario(d);
       pintarAsistencia(d);
       pintarArchivos(d);
-      parte('pie').textContent = 'Datos de Colegium ' + hace(respuesta && respuesta.recibido) +
-        '. Se actualizan cuando alguien abre Colegium en la compu.';
+      var pie = parte('pie');
+      pie.className = 'cole__pie';
+      if (d && d.sesion && d.sesion.vencida) {
+        pie.className += ' cole__pie--alerta';
+        pie.textContent = 'Colegium cerró la sesión: entrá de nuevo en la compu para que se siga actualizando. ' +
+          'Datos de ' + hace(respuesta.recibido) + '.';
+      } else {
+        pie.textContent = 'Datos de Colegium ' + hace(respuesta && respuesta.recibido) +
+          '. Se actualizan solos cada 30 min mientras haya una pestaña de Colegium abierta en la compu.';
+      }
     }
 
     function cargar() {

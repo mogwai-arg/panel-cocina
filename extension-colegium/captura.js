@@ -1,24 +1,58 @@
 /*
- * Corre dentro de la página de Colegium. Mira las respuestas JSON que la página
- * ya recibe (fetch y XMLHttpRequest): las que sirven al panel se pasan resumidas
- * a la extensión, y de todas se anota la forma para el diagnóstico.
- * No hace ningún pedido propio a Colegium.
+ * Corre dentro de la página de Colegium.
+ *
+ * - Mira las respuestas JSON que la página recibe (fetch y XMLHttpRequest): las
+ *   útiles se pasan resumidas a la extensión y de todas se anota la forma para el
+ *   diagnóstico.
+ * - Aprende la dirección de cada dato útil la primera vez que la página lo pide.
+ * - Modo automático: cuando la extensión lo indica, repite esos mismos pedidos con
+ *   la sesión abierta en esta pestaña (los datos de sesión quedan solo en memoria).
+ *   Nunca pide el detalle de un comunicado, para no marcarlo como leído.
  */
 (function () {
   'use strict';
   var forma = window.__panelForma;
   var C = window.__panelColegium;
+  var fetchOriginal = window.fetch;
+  var cabeceras = {}; // por host, solo en memoria de esta pestaña
+  var credenciales = {}; // por host: cómo manda la página las cookies (para repetirlo igual)
+
+  function aObjeto(h) {
+    var o = {};
+    if (!h) return o;
+    if (typeof Headers !== 'undefined' && h instanceof Headers) h.forEach(function (v, k) { o[k] = v; });
+    else if (Array.isArray(h)) h.forEach(function (par) { o[par[0]] = par[1]; });
+    else Object.keys(h).forEach(function (k) { o[k] = h[k]; });
+    delete o['content-length'];
+    delete o['Content-Length'];
+    return o;
+  }
+
+  function recordarCabeceras(url, h) {
+    try {
+      var host = new URL(url, location.href).host;
+      if (!/colegium\.cloud$/.test(host)) return;
+      var o = aObjeto(h);
+      if (Object.keys(o).length) cabeceras[host] = o;
+    } catch (e) { /* nada */ }
+  }
 
   function avisar(metodo, url, estado, texto) {
-    var datos;
-    try { datos = JSON.parse(texto); } catch (e) { return; } // solo JSON
     var u;
     try { u = new URL(url, location.href); } catch (e) { return; }
+    var tipo = metodo === 'GET' ? C.reconocer(u.pathname) : null;
 
-    var tipo = metodo === 'GET' && estado === 200 ? C.reconocer(u.pathname) : null;
-    if (tipo) {
+    if (tipo && (estado === 401 || estado === 403)) {
+      window.postMessage({ fuente: 'panel-colegium-sesion', vencida: true }, location.origin);
+      return;
+    }
+    var datos;
+    try { datos = JSON.parse(texto); } catch (e) { return; } // solo JSON
+
+    if (tipo && estado === 200) {
       try {
         window.postMessage({ fuente: 'panel-colegium-datos', tipo: tipo, datos: C.normalizar(tipo, datos) }, location.origin);
+        window.postMessage({ fuente: 'panel-colegium-plantilla', tipo: tipo, url: u.href }, location.origin);
       } catch (e) { /* si Colegium cambió el formato, no rompe la página */ }
     }
 
@@ -33,10 +67,14 @@
     }, location.origin);
   }
 
-  var fetchOriginal = window.fetch;
   window.fetch = function (entrada, opciones) {
     var metodo = ((opciones && opciones.method) || (entrada && entrada.method) || 'GET').toUpperCase();
     var url = typeof entrada === 'string' ? entrada : (entrada && entrada.url) || String(entrada);
+    recordarCabeceras(url, (opciones && opciones.headers) || (entrada && entrada.headers));
+    try {
+      var modo = (opciones && opciones.credentials) || (entrada && entrada.credentials);
+      if (modo) credenciales[new URL(url, location.href).host] = modo;
+    } catch (e) { /* nada */ }
     return fetchOriginal.apply(this, arguments).then(function (resp) {
       try {
         resp.clone().text().then(function (t) { avisar(metodo, url, resp.status, t); }).catch(function () {});
@@ -47,12 +85,21 @@
 
   var abrir = XMLHttpRequest.prototype.open;
   var enviar = XMLHttpRequest.prototype.send;
+  var ponerCabecera = XMLHttpRequest.prototype.setRequestHeader;
   XMLHttpRequest.prototype.open = function (metodo, url) {
-    this.__panel = { metodo: String(metodo).toUpperCase(), url: url };
+    this.__panel = { metodo: String(metodo).toUpperCase(), url: url, cabeceras: {} };
     return abrir.apply(this, arguments);
+  };
+  XMLHttpRequest.prototype.setRequestHeader = function (nombre, valor) {
+    if (this.__panel) this.__panel.cabeceras[nombre] = valor;
+    return ponerCabecera.apply(this, arguments);
   };
   XMLHttpRequest.prototype.send = function () {
     var xhr = this;
+    if (xhr.__panel) {
+      recordarCabeceras(xhr.__panel.url, xhr.__panel.cabeceras);
+      try { if (xhr.withCredentials) credenciales[new URL(xhr.__panel.url, location.href).host] = 'include'; } catch (e) { /* nada */ }
+    }
     xhr.addEventListener('load', function () {
       if (!xhr.__panel) return;
       if (xhr.responseType && xhr.responseType !== 'text' && xhr.responseType !== 'json') return;
@@ -61,4 +108,22 @@
     });
     return enviar.apply(this, arguments);
   };
+
+  // Modo automático: repetir los pedidos aprendidos, de a uno y espaciados.
+  window.addEventListener('message', function (e) {
+    if (e.source !== window || !e.data || e.data.fuente !== 'panel-colegium-actualizar') return;
+    (e.data.urls || []).forEach(function (url, i) {
+      setTimeout(function () {
+        var host;
+        try { host = new URL(url).host; } catch (err) { return; }
+        if (!/colegium\.cloud$/.test(host)) return;
+        if (C.reconocer(new URL(url).pathname) === 'comunicado') return; // nunca marcar como leído
+        var opciones = { headers: cabeceras[host] || {} };
+        if (credenciales[host]) opciones.credentials = credenciales[host];
+        fetchOriginal(url, opciones).then(function (resp) {
+          return resp.text().then(function (t) { avisar('GET', url, resp.status, t); });
+        }).catch(function () { /* sin conexión: se reintenta en el próximo ciclo */ });
+      }, i * 2500);
+    });
+  });
 })();

@@ -11,15 +11,40 @@ chrome.runtime.onMessage.addListener(function (msg, _sender, responder) {
     enviar().then(responder);
     return true; // respuesta asincrónica
   }
+  if (msg && msg.sesion) marcarSesion(msg.sesion === 'vencida');
   if (msg && msg.tipo && msg.datos) recibir(msg.tipo, msg.datos);
 });
 
+function config() {
+  // La configuración vive en sync (sigue a tu cuenta de Chrome); antes estaba en local.
+  return new Promise(function (ok) {
+    chrome.storage.sync.get({ config: null }, function (s) {
+      if (s.config && s.config.url) return ok(s.config);
+      chrome.storage.local.get({ config: {} }, function (l) { ok(l.config); });
+    });
+  });
+}
+
+function marcarSesion(vencida) {
+  chrome.storage.local.get({ estado: {} }, function (r) {
+    var e = r.estado;
+    var antes = !!(e.sesion && e.sesion.vencida);
+    if (antes === vencida) return;
+    e.sesion = { vencida: vencida, cuando: new Date().toISOString() };
+    chrome.storage.local.set({ estado: e }, programarEnvio);
+  });
+}
+
+function programarEnvio() {
+  clearTimeout(temporizador);
+  temporizador = setTimeout(enviar, 4000);
+}
+
 function recibir(tipo, datos) {
   chrome.storage.local.get({ estado: {} }, function (r) {
-    chrome.storage.local.set({ estado: C.combinar(r.estado, tipo, datos, new Date()) }, function () {
-      clearTimeout(temporizador);
-      temporizador = setTimeout(enviar, 4000);
-    });
+    var e = C.combinar(r.estado, tipo, datos, new Date());
+    e.sesion = { vencida: false, cuando: new Date().toISOString() }; // llegaron datos: la sesión anda
+    chrome.storage.local.set({ estado: e }, programarEnvio);
   });
 }
 
@@ -30,10 +55,11 @@ function guardarEnvio(resultado) {
 }
 
 function enviar() {
-  return new Promise(function (ok) {
-    chrome.storage.local.get({ estado: {}, config: {} }, ok);
-  }).then(function (r) {
-    var cfg = r.config;
+  return Promise.all([
+    new Promise(function (ok) { chrome.storage.local.get({ estado: {} }, ok); }),
+    config()
+  ]).then(function (res) {
+    var r = res[0], cfg = res[1] || {};
     if (!cfg.url || !cfg.token) {
       return guardarEnvio({ cuando: new Date().toISOString(), ok: false, error: 'Falta configurar la URL y el TOKEN del panel' });
     }

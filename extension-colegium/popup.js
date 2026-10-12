@@ -20,19 +20,31 @@
   }
 
   function pintar() {
-    chrome.storage.local.get({ estado: {}, ultimoEnvio: null }, function (r) {
-      var e = r.estado, act = e.actualizado || {};
-      resumen.innerHTML = '';
-      var com = e.comunicados || [];
-      fila('Comunicados', com.length ? com.length + ' (' + com.filter(function (c) { return !c.leido; }).length + ' sin leer) · ' + hace(act.comunicados) : 'todavía no');
-      fila('Horario', e.horario ? hace(act.horario) : 'entrá a Horario');
-      fila('Asistencia', e.asistencia ? e.asistencia.presente + '% · ' + hace(act.asistencia) : 'entrá a Asistencia');
-      fila('Archivos', e.archivos ? e.archivos.length + ' · ' + hace(act.archivos) : 'entrá a Archivos');
-      var u = r.ultimoEnvio;
-      envio.className = u ? (u.ok ? 'ok' : 'mal') : '';
-      envio.textContent = !u ? 'Todavía no se mandó nada al panel.' :
-        u.ok ? '✓ Enviado al panel ' + hace(u.cuando) : '✗ ' + u.error + ' (' + hace(u.cuando) + ')';
+    chrome.storage.local.get({ estado: {}, ultimoEnvio: null, ultimaAuto: 0 }, function (r) {
+      chrome.storage.sync.get({ plantillas: {} }, function (s) { pintarCon(r, s.plantillas); });
     });
+  }
+
+  function aprendido(plantillas, tipo, datos, texto) {
+    if (!plantillas[tipo]) return 'entrá una vez a ' + texto;
+    return datos;
+  }
+
+  function pintarCon(r, plantillas) {
+    var e = r.estado, act = e.actualizado || {};
+    resumen.innerHTML = '';
+    var com = e.comunicados || [];
+    fila('Comunicados', com.length ? com.length + ' (' + com.filter(function (c) { return !c.leido; }).length + ' sin leer) · ' + hace(act.comunicados) : 'todavía no');
+    fila('Asistencia', aprendido(plantillas, 'asistencia', e.asistencia ? e.asistencia.presente + '% · ' + hace(act.asistencia) : '–', 'Asistencia'));
+    fila('Archivos', aprendido(plantillas, 'archivos', e.archivos ? e.archivos.length + ' · ' + hace(act.archivos) : '–', 'Archivos'));
+    fila('Eventos', aprendido(plantillas, 'eventos', e.eventos ? e.eventos.length + ' · ' + hace(act.eventos) : '–', 'Calendario'));
+    fila('Horario', e.horario ? hace(act.horario) + ' (no automático)' : 'entrá a Horario si lo querés');
+    fila('Automático', r.ultimaAuto ? 'última vez ' + hace(new Date(r.ultimaAuto).toISOString()) : 'en un minuto, con Colegium abierto');
+    if (e.sesion && e.sesion.vencida) fila('Sesión', 'Colegium cerró la sesión: entrá de nuevo');
+    var u = r.ultimoEnvio;
+    envio.className = u ? (u.ok ? 'ok' : 'mal') : '';
+    envio.textContent = !u ? 'Todavía no se mandó nada al panel.' :
+      u.ok ? '✓ Enviado al panel ' + hace(u.cuando) : '✗ ' + u.error + ' (' + hace(u.cuando) + ')';
   }
   pintar();
 

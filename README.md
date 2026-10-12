@@ -103,16 +103,23 @@ de Chrome propia (`extension-colegium/`) mira las respuestas que la página ya r
 Colegium (por eso no marca nada como leído), no guarda la contraseña y no esquiva
 ninguna protección.
 
-Qué toma y cuándo se actualiza:
+**Modo automático:** mientras haya una pestaña de Colegium abierta (por ejemplo,
+fijada al inicio de Chrome), la extensión repite cada 30 minutos los mismos pedidos
+que hace la página, con la sesión abierta en esa pestaña. Cada sección se aprende
+la primera vez que entrás a ella; después se actualiza sola. Si Colegium cierra la
+sesión, el panel lo avisa. Con varias pestañas o compus, actualiza una sola por vez.
 
-| Dato | Se actualiza al entrar a |
-|---|---|
-| Comunicados (título, quién, fecha, leído, adjuntos, resumen) | Colegium (la portada) |
-| Texto completo de un comunicado | ese comunicado |
-| Horario de la semana | Horario |
-| Asistencia y faltas por justificar | Asistencia |
-| Archivos compartidos | Archivos |
-| Eventos | Calendario |
+| Dato | Automático | Se aprende entrando a |
+|---|---|---|
+| Comunicados con su texto (título, quién, fecha, leído, adjuntos) | sí | Colegium (la portada) |
+| Asistencia y faltas sin justificar | sí | Asistencia |
+| Archivos compartidos | sí | Archivos |
+| Eventos | sí | Calendario |
+| Horario de la semana | no (cambia poco) | Horario |
+| Adjuntos de un comunicado | no: abrirlo lo marca como leído en Colegium | ese comunicado |
+
+La URL y el TOKEN y lo aprendido de cada sección se guardan en tu cuenta de Chrome:
+en otra compu con la misma cuenta solo hay que instalar la extensión.
 
 El panel muestra todo en la pantalla **Cole** y un número con los comunicados sin leer.
 
