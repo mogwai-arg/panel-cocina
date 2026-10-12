@@ -30,7 +30,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.11';
+var VERSION = '2026-10-12.12';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -63,8 +63,11 @@ function doPost(e) {
     // OwnTracks: el token y la acción van en la URL (la app no deja agregar campos al cuerpo).
     var q = (e && e.parameter) || {};
     if (q.action === 'ubicacion') {
-      if (!q.token || q.token !== propiedad_('TOKEN')) return json_({ error: 'Token inválido' });
-      return json_(recibirUbicacion_(q.quien, JSON.parse((e.postData && e.postData.contents) || '{}')));
+      var contenido = (e.postData && e.postData.contents) || '{}';
+      var tokenOk = !!q.token && q.token === propiedad_('TOKEN');
+      anotarLlegada_(q.quien, contenido, tokenOk); // Ubicacion.gs: para diagnosticar
+      if (!tokenOk) return json_({ error: 'Token inválido' });
+      return json_(recibirUbicacion_(q.quien, JSON.parse(contenido)));
     }
     var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (!body.token || body.token !== propiedad_('TOKEN')) return json_({ error: 'Token inválido' });

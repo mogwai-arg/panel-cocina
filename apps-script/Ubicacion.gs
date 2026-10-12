@@ -129,6 +129,15 @@ function avisarCambio_(quien, cambio, lugares, estado) {
   } catch (e) { Logger.log('No se pudo mandar el aviso: ' + e.message); }
 }
 
+/* Lo último que llegó de OwnTracks (aunque no sirviera), para probarUbicacion. */
+function anotarLlegada_(quien, contenido, tokenOk) {
+  var tipo = '?';
+  try { tipo = JSON.parse(contenido)._type || '?'; } catch (e) { tipo = 'no es JSON'; }
+  PropertiesService.getScriptProperties().setProperty('ULTIMA_LLEGADA_OWNTRACKS', JSON.stringify({
+    cuando: new Date().toISOString(), quien: quien || '(sin quien)', tipo: tipo, tokenOk: tokenOk
+  }));
+}
+
 function ubicaciones_() {
   var props = PropertiesService.getScriptProperties().getProperties();
   return {
@@ -144,6 +153,15 @@ function probarUbicacion() {
     return x.nombre + ' (' + x.radio + ' m' + (x.avisar ? ', avisa' : '') + ')';
   }).join(', ') : 'ninguno: completá la hoja Lugares'));
   var p = ubicaciones_().personas;
+  var ultima = PropertiesService.getScriptProperties().getProperty('ULTIMA_LLEGADA_OWNTRACKS');
+  if (ultima) {
+    var u = JSON.parse(ultima);
+    Logger.log('Último mensaje de OwnTracks: ' + u.cuando + ' · tipo ' + u.tipo + ' · quien ' + u.quien +
+      (u.tokenOk ? '' : ' · ⚠️ TOKEN INVÁLIDO: revisá el token en la URL de OwnTracks'));
+  } else {
+    Logger.log('OwnTracks nunca llegó a este script: revisá la URL (la /exec de config.js) y que ' +
+      'hayas publicado la versión nueva.');
+  }
   if (!p.length) Logger.log('Todavía no llegó ninguna ubicación de OwnTracks.');
   p.forEach(function (x) {
     Logger.log(x.quien + ': ' + (x.lugar ? 'en ' + x.lugar : x.cercano ? 'a ' + x.cercano.metros + ' m de ' + x.cercano.nombre : 'sin lugar') +
