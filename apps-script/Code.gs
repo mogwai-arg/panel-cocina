@@ -526,6 +526,40 @@ function decodificarHtml_(s) {
     .replace(/&amp;/g, '&');
 }
 
+/**
+ * Diagnóstico temporal de Colegium (no usa contraseña): cómo está armada la página
+ * de ingreso y a qué servidor le habla, para ver si se puede leer automáticamente.
+ * Copiá el registro y pasáselo a Claude.
+ */
+function explorarColegium() {
+  var base = 'https://app.colegium.cloud';
+  var resp = UrlFetchApp.fetch(base + '/', { muteHttpExceptions: true, followRedirects: false });
+  Logger.log('Respuesta: ' + resp.getResponseCode() + ' · redirige a: ' + (resp.getHeaders().Location || '(no)'));
+  if (resp.getResponseCode() >= 300 && resp.getResponseCode() < 400) {
+    resp = UrlFetchApp.fetch(base + '/', { muteHttpExceptions: true });
+  }
+  var html = resp.getContentText();
+  Logger.log('HTML: ' + html.length + ' caracteres');
+  Logger.log('Título: ' + ((html.match(/<title[^>]*>([^<]*)/i) || [])[1] || '(sin título)'));
+  Logger.log('Formularios: ' + ((html.match(/<form[^>]*>/gi) || []).join(' | ') || '(ninguno)'));
+  Logger.log('Campos: ' + ((html.match(/<input[^>]*>/gi) || []).slice(0, 15).join(' | ') || '(ninguno)'));
+  var scripts = (html.match(/<script[^>]+src="([^"]+)"/gi) || []).map(function (s) { return s.match(/src="([^"]+)"/)[1]; });
+  Logger.log('Scripts: ' + scripts.join('  '));
+  Logger.log('Inicio del HTML: ' + html.slice(0, 1500).replace(/\s+/g, ' '));
+
+  // Si es una app de JavaScript, buscar en sus archivos a qué servidor le pide datos.
+  var patron = /https?:\/\/[a-z0-9.-]+(?:\/[\w\-./]*)?|["'`]\/?api\/[^"'`]{1,80}["'`]|(?:login|auth|token|signin)[\w\/-]{0,40}/gi;
+  scripts.slice(0, 6).forEach(function (src) {
+    var url = /^https?:/.test(src) ? src : base + (src.charAt(0) === '/' ? '' : '/') + src;
+    var js = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+    var vistos = {};
+    (js.match(patron) || []).forEach(function (m) {
+      if (!/\.(png|svg|jpe?g|gif|woff2?|css)$|w3\.org|reactjs|github|mozilla|google-analytics|googletagmanager/i.test(m)) vistos[m] = true;
+    });
+    Logger.log('==== ' + src + ' (' + js.length + ' caracteres)\n' + Object.keys(vistos).slice(0, 60).join('\n'));
+  });
+}
+
 /** Para probar desde el editor: muestra los partidos encontrados. */
 function probarBasquet() {
   CacheService.getScriptCache().remove('basquet');
