@@ -68,8 +68,8 @@
           item.appendChild(el('p', 'comunicado__texto', det ? det.mensaje : c.resumen));
           if (det && det.adjuntos && det.adjuntos.length) {
             item.appendChild(el('span', 'comunicado__nota', 'Adjuntos: ' + det.adjuntos.join(', ')));
-          } else if (!det) {
-            item.appendChild(el('span', 'comunicado__nota', 'Para ver el texto completo y los adjuntos, abrilo una vez en Colegium.'));
+          } else if (!det && c.adjuntos) {
+            item.appendChild(el('span', 'comunicado__nota', 'Para ver los adjuntos, abrilo en Colegium.'));
           }
         } else {
           item.appendChild(el('p', 'comunicado__resumen', c.resumen));
@@ -118,6 +118,8 @@
         caja.appendChild(el('p', 'cole__alerta', pend.length === 1
           ? 'Falta del ' + pend[0].fecha.split('-').reverse().slice(0, 2).join('/') + ' sin justificar'
           : pend.length + ' faltas sin justificar'));
+      } else if ((d.faltas || []).length) {
+        caja.appendChild(el('p', 'cole__ok', 'Todas las faltas están justificadas'));
       }
     }
 

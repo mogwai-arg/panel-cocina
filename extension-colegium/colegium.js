@@ -52,7 +52,9 @@
           remitente: c.remitente || '',
           rol: c.rolRemitenteLabel || '',
           fecha: fechaUnix(c.fecha),
-          resumen: texto(c.mensaje, 400),
+          // La lista ya trae el texto del mensaje: se guarda entero (hasta 4000 caracteres)
+          // para poder leerlo en el panel sin abrirlo en Colegium.
+          resumen: texto(c.mensaje, 4000),
           leido: String(c.is_leido) === '1',
           destacado: String(c.is_destacado || c.destacado) === '1',
           adjuntos: Number(c.cantidadAdjuntos) || 0

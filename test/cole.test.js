@@ -36,12 +36,16 @@ test('horario: el viernes a la tarde muestra el lunes', () => {
 test('pendientes: sin leer, faltas por justificar y archivos nuevos', () => {
   const d = {
     comunicados: [{ id: '1', leido: false }, { id: '2', leido: true }, { id: '3', leido: false }],
-    faltas: [{ justificacion: 'pendiente' }, { justificacion: 'aprobada' }],
+    faltas: [
+      { tipo: 'Justificada', justificacion: 'pendiente' }, // justificada por el colegio: no cuenta
+      { tipo: 'Injustificada', justificacion: 'pendiente' },
+      { tipo: '', justificacion: '' },
+    ],
     archivos: [{ leido: false }, { leido: true }],
     detalles: [{ id: '2', mensaje: 'Texto completo' }],
   };
   assert.equal(Cole.sinLeer(d), 2);
-  assert.equal(Cole.faltasPorJustificar(d).length, 1);
+  assert.equal(Cole.faltasPorJustificar(d).length, 2);
   assert.equal(Cole.archivosNuevos(d).length, 1);
   assert.equal(Cole.detalleDe(d, '2').mensaje, 'Texto completo');
   assert.equal(Cole.detalleDe(d, '1'), null);

@@ -90,7 +90,8 @@
           mensaje: 'Estimadas familias:\nLes recordamos que está abierta la inscripción al programa Activamente 2026. Pueden inscribirse hasta el 30 de octubre completando el formulario adjunto.\nSaludos cordiales,\nDirección', adjuntos: ['Folleto.pdf'] }],
         horario: semana,
         asistencia: { presente: 95.8, inasistencias: 7.25, tardanzas: 0.25 },
-        faltas: [{ fecha: '2026-10-08', estado: 'A', tipo: 'Justificada', justificacion: 'pendiente' }],
+        faltas: [{ fecha: '2026-10-08', estado: 'A', tipo: 'Injustificada', justificacion: 'pendiente' },
+                 { fecha: '2026-09-21', estado: 'A', tipo: 'Justificada', justificacion: 'pendiente' }],
         archivos: [
           { nombre: 'Actividades Geografía 4°.pdf', autor: 'Carolina S.', fecha: hace(30), leido: false },
           { nombre: 'Pausa de hidratación.pdf', autor: 'Daiana A.', fecha: hace(200), leido: false },

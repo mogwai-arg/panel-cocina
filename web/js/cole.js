@@ -51,9 +51,14 @@
     return ((datos && datos.detalles) || []).filter(function (d) { return d.id === id; })[0] || null;
   }
 
-  /* Faltas cuya justificación todavía está pendiente del lado de la familia. */
+  /*
+   * Faltas que no están justificadas. Ojo: "justificacion: pendiente" es el trámite
+   * de la familia y aparece también en faltas que el colegio ya marcó "Justificada".
+   */
   function faltasPorJustificar(datos) {
-    return ((datos && datos.faltas) || []).filter(function (f) { return f.justificacion === 'pendiente'; });
+    return ((datos && datos.faltas) || []).filter(function (f) {
+      return !/^justificad/i.test(String(f.tipo || '').trim());
+    });
   }
 
   function archivosNuevos(datos) {
