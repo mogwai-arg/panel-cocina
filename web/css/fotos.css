@@ -5,6 +5,7 @@
   --dorado: #f2c879;
   --serif: "Newsreader", Georgia, "Times New Roman", serif;
   --rotulo: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --fecha: "Montserrat", "Helvetica Neue", Arial, sans-serif;
   --separacion: 8px;
 }
 
@@ -64,7 +65,8 @@
   left: 32px;
   bottom: 26px;
   right: 32px;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, .55);
+  color: var(--blanco);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .45), 0 2px 16px rgba(0, 0, 0, .5);
   pointer-events: none;
 }
 .diapo__recuerdo {
@@ -76,11 +78,13 @@
 }
 .diapo__fecha {
   display: block;
-  font: 400 58px/1.05 var(--serif);
+  font: 600 46px/1.1 var(--fecha);
+  letter-spacing: -.01em;
 }
 .diapo__fecha-chica {
-  font: italic 400 20px var(--serif);
-  opacity: .85;
+  font: 500 18px var(--fecha);
+  letter-spacing: .01em;
+  opacity: .92;
 }
 
 .diapo__debug {

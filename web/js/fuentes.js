@@ -309,9 +309,12 @@
           return Promise.resolve(u);
         }
         return pedir({ action: 'img', id: foto.id, ancho: ancho, token: token }).then(function (d) {
-          var url = URL.createObjectURL(new Blob([base64ABytes(d.data)], { type: d.mime }));
-          guardar(foto.id, url);
-          return url;
+          var blob = new Blob([base64ABytes(d.data)], { type: d.mime });
+          return (foto.girar ? girar(blob, foto.girar) : Promise.resolve(blob)).then(function (b) {
+            var url = URL.createObjectURL(b);
+            guardar(foto.id, url);
+            return url;
+          });
         });
       },
       video: videos.url,
@@ -335,6 +338,27 @@
       },
       colegium: function () { return pedir({ action: 'colegium', token: token }); }
     };
+  }
+
+  /*
+   * Gira una imagen (grados, sentido horario). Es para las fotos del iPhone cuyo
+   * giro Drive no aplica en la miniatura (el Apps Script avisa con foto.girar).
+   */
+  function girar(blob, grados) {
+    return createImageBitmap(blob).then(function (img) {
+      var deCostado = grados === 90 || grados === 270;
+      var c = document.createElement('canvas');
+      c.width = deCostado ? img.height : img.width;
+      c.height = deCostado ? img.width : img.height;
+      var ctx = c.getContext('2d');
+      ctx.translate(c.width / 2, c.height / 2);
+      ctx.rotate(grados * Math.PI / 180);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+      if (img.close) img.close();
+      return new Promise(function (ok) {
+        c.toBlob(function (b) { ok(b || blob); }, 'image/jpeg', 0.92);
+      });
+    }).catch(function () { return blob; });
   }
 
   function base64ABytes(b64) {

@@ -165,6 +165,10 @@ Los datos quedan en la hoja **Colegium** de la planilla de listas.
   guardado en el navegador; se guardan los últimos 15. Si el navegador no puede
   reproducir alguno (por ejemplo, HEVC en un Chrome viejo), lo saltea y no lo
   vuelve a intentar. En `probar()` del Apps Script se ve cuántos videos encontró.
+- **Fotos del iPhone acostadas o boca abajo**: algunas HEIC guardan el giro de una
+  forma que Drive no lee. El Apps Script lo lee del archivo y el panel las gira.
+  Se revisan de a poco al listar; para revisarlas todas de una, ejecutá
+  `revisarGiros` desde el editor.
 - Toca a la derecha para avanzar y a la izquierda para volver.
 
 La lógica de diseño está en [`web/js/layout.js`](web/js/layout.js) y tiene tests.

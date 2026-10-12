@@ -115,3 +115,35 @@ test('videos: total del Content-Range', () => {
   assert.equal(contexto.totalDeRango_('bytes 0-6291455/15000000'), 15000000);
   assert.equal(contexto.totalDeRango_(undefined), null);
 });
+
+// Caja ISO: tamaño (4 bytes) + tipo (4) + contenido
+function caja(tipo, contenido) {
+  const largo = 8 + contenido.length;
+  return [largo >>> 24, (largo >> 16) & 255, (largo >> 8) & 255, largo & 255, ...Buffer.from(tipo), ...contenido];
+}
+
+test('giro: HEIC con irot (vueltas antihorarias) → grados horarios', () => {
+  const heic = (vueltas) => [
+    ...caja('ftyp', [...Buffer.from('heicmif1')]),
+    ...caja('meta', [0, 0, 0, 0, ...caja('hdlr', [0, 0, 0, 0]), ...caja('iprp', caja('ipco', [...caja('ispe', [0, 0, 0, 0]), ...caja('irot', [vueltas])]))]),
+    ...caja('mdat', [1, 2, 3])
+  ];
+  assert.equal(contexto.giroDeBytes_(heic(1)), 270);
+  assert.equal(contexto.giroDeBytes_(heic(2)), 180);
+  assert.equal(contexto.giroDeBytes_(heic(3)), 90);
+  assert.equal(contexto.giroDeBytes_(heic(0)), 0);
+  assert.equal(contexto.giroDeBytes_(caja('ftyp', [...Buffer.from('heic')])), 0);
+});
+
+test('giro: orientación EXIF de un JPG', () => {
+  const jpg = (o) => {
+    const tiff = [0x4D, 0x4D, 0, 42, 0, 0, 0, 8, 0, 1, 0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, o, 0, 0, 0, 0, 0, 0];
+    const app1 = [...Buffer.from('Exif'), 0, 0, ...tiff];
+    const l = app1.length + 2;
+    return [0xFF, 0xD8, 0xFF, 0xE1, l >> 8, l & 255, ...app1, 0xFF, 0xDA, 0, 2];
+  };
+  assert.equal(contexto.giroDeBytes_(jpg(6)), 90);
+  assert.equal(contexto.giroDeBytes_(jpg(3)), 180);
+  assert.equal(contexto.giroDeBytes_(jpg(8)), 270);
+  assert.equal(contexto.giroDeBytes_(jpg(1)), 0);
+});

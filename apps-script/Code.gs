@@ -26,7 +26,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.3';
+var VERSION = '2026-10-12.4';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -81,6 +81,7 @@ function listarFotos_() {
   var vistas = {};
   var fotos = [];
   var sinTamano = [];
+  var sinGiro = []; // Drive dice "sin giro": se confirma leyendo el archivo
   ultimoResumen_ = { porTipo: {}, sinTamano: 0, recuperadas: 0, descartadas: [], videosSalteados: 0 };
 
   while (pendientes.length) {
@@ -120,6 +121,7 @@ function listarFotos_() {
           foto.ancho = girada ? m.height : m.width;
           foto.alto = girada ? m.width : m.height;
           if (m.rotation) foto.rotacion = m.rotation; // para diagnosticar fotos giradas
+          else if (PUEDE_TENER_GIRO_.test(f.mimeType)) sinGiro.push(foto);
           fotos.push(foto);
         } else {
           sinTamano.push(foto);
@@ -145,8 +147,195 @@ function listarFotos_() {
     }
   });
 
+  aplicarGiros_(props, sinGiro, SEGUNDOS_GIROS_POR_LISTA);
+
   guardarCacheGrande_(cache, 'lista', fotos, MINUTOS_CACHE_LISTA * 60);
   return fotos;
+}
+
+/*
+ * Algunas fotos del iPhone (HEIC) guardan el giro de una forma que Drive no lee:
+ * Drive dice "sin giro" y su miniatura sale acostada o boca abajo. Para esas se lee
+ * el comienzo del archivo y se manda `girar` (grados, sentido horario): el panel
+ * gira la miniatura antes de mostrarla. El resultado queda guardado (gir_<id>).
+ */
+var PUEDE_TENER_GIRO_ = /^image\/(heic|heif|jpeg)/;
+var SEGUNDOS_GIROS_POR_LISTA = 10;
+
+function aplicarGiros_(props, fotos, segundos) {
+  var hasta = Date.now() + segundos * 1000;
+  var pendientes = 0;
+  var guardados = props.getProperties();
+  fotos.forEach(function (foto) {
+    var g = guardados['gir_' + foto.id];
+    if (g === undefined || g === null) {
+      if (Date.now() > hasta) { pendientes++; return; }
+      g = leerGiro_(foto.id);
+      if ((g === 90 || g === 270) && miniaturaYaGirada_(foto)) g = 0;
+      g = String(g);
+      props.setProperty('gir_' + foto.id, g);
+    }
+    g = Number(g);
+    if (!g) return;
+    foto.girar = g;
+    if (g === 90 || g === 270) {
+      var a = foto.ancho; foto.ancho = foto.alto; foto.alto = a;
+    }
+  });
+  if (ultimoResumen_) ultimoResumen_.girosPendientes = pendientes;
+  return pendientes;
+}
+
+/** ¿Drive ya giró la miniatura? (entonces no hay que girarla de nuevo) */
+function miniaturaYaGirada_(foto) {
+  try {
+    var f = Drive.Files.get(foto.id, { fields: 'thumbnailLink', supportsAllDrives: true });
+    if (!f.thumbnailLink) return false;
+    var resp = UrlFetchApp.fetch(f.thumbnailLink.replace(/=s\d+$/, '') + '=s200', {
+      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true
+    });
+    var t = resp.getResponseCode() === 200 && tamanoImagen_(resp.getContent());
+    if (!t || t.ancho === t.alto || foto.ancho === foto.alto) return false;
+    return (t.ancho > t.alto) !== (foto.ancho > foto.alto);
+  } catch (e) {
+    return false;
+  }
+}
+
+/** Grados (horario) que hay que girar la foto, leyendo los primeros 128 KB. */
+function leerGiro_(id) {
+  try {
+    var resp = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) +
+      '?alt=media&supportsAllDrives=true', {
+      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), Range: 'bytes=0-131071' },
+      muteHttpExceptions: true
+    });
+    var c = resp.getResponseCode();
+    if (c !== 200 && c !== 206) return 0;
+    return giroDeBytes_(resp.getContent());
+  } catch (e) {
+    return 0;
+  }
+}
+
+function giroDeBytes_(bytes) {
+  var b = function (i) { return bytes[i] & 255; };
+  if (b(0) === 0xFF && b(1) === 0xD8) return giroDeOrientacion_(orientacionJpeg_(bytes));
+  return giroDeHeic_(bytes);
+}
+
+/** Orientación EXIF (1-8) → grados en sentido horario (los espejados, aproximados). */
+function giroDeOrientacion_(o) {
+  return { 3: 180, 4: 180, 5: 90, 6: 90, 7: 270, 8: 270 }[o] || 0;
+}
+
+function orientacionJpeg_(bytes) {
+  var b = function (i) { return bytes[i] & 255; };
+  var i = 2;
+  while (i + 4 < bytes.length && b(i) === 0xFF) {
+    var marca = b(i + 1);
+    var largo = b(i + 2) << 8 | b(i + 3);
+    if (marca === 0xE1 && b(i + 4) === 0x45 && b(i + 5) === 0x78 && b(i + 6) === 0x69 && b(i + 7) === 0x66) {
+      return orientacionTiff_(bytes, i + 10);
+    }
+    if (marca === 0xDA) break; // empieza la imagen: no hay EXIF
+    i += 2 + largo;
+  }
+  return 1;
+}
+
+function orientacionTiff_(bytes, t) {
+  var b = function (i) { return bytes[i] & 255; };
+  var le = b(t) === 0x49;
+  var u16 = function (i) { return le ? b(i) | b(i + 1) << 8 : b(i) << 8 | b(i + 1); };
+  var u32 = function (i) { return le ? (b(i) | b(i + 1) << 8 | b(i + 2) << 16 | b(i + 3) << 24) >>> 0 : (b(i) << 24 | b(i + 1) << 16 | b(i + 2) << 8 | b(i + 3)) >>> 0; };
+  var ifd = t + u32(t + 4);
+  var n = u16(ifd);
+  for (var k = 0; k < n; k++) {
+    var e = ifd + 2 + k * 12;
+    if (e + 12 > bytes.length) break;
+    if (u16(e) === 0x0112) return u16(e + 8);
+  }
+  return 1;
+}
+
+/*
+ * HEIC: cajas ISO (tamaño + tipo). El giro está en meta → iprp → ipco → irot
+ * (vueltas de 90° en sentido antihorario). Si no está, se busca la orientación EXIF.
+ */
+function giroDeHeic_(bytes) {
+  var b = function (i) { return bytes[i] & 255; };
+  var tipo = function (i) { return String.fromCharCode(b(i + 4), b(i + 5), b(i + 6), b(i + 7)); };
+  var largo = function (i) { return (b(i) << 24 | b(i + 1) << 16 | b(i + 2) << 8 | b(i + 3)) >>> 0; };
+  function buscar(desde, hasta, nombre) {
+    var i = desde;
+    while (i + 8 <= hasta && i + 8 <= bytes.length) {
+      var l = largo(i);
+      if (tipo(i) === nombre) return { inicio: i, fin: Math.min(i + (l || hasta - i), hasta) };
+      if (l < 8) return null;
+      i += l;
+    }
+    return null;
+  }
+  if (tipo(0) !== 'ftyp') return 0;
+  var meta = buscar(0, bytes.length, 'meta');
+  if (!meta) return 0;
+  var iprp = buscar(meta.inicio + 12, meta.fin, 'iprp'); // meta es "full box": 4 bytes más
+  var ipco = iprp && buscar(iprp.inicio + 8, iprp.fin, 'ipco');
+  var irot = ipco && buscar(ipco.inicio + 8, ipco.fin, 'irot');
+  if (irot) return ((4 - (b(irot.inicio + 8) & 3)) % 4) * 90;
+  // Sin irot: orientación EXIF, si quedó dentro de lo leído.
+  for (var i = 0; i + 10 < bytes.length; i++) {
+    if (b(i) === 0x45 && b(i + 1) === 0x78 && b(i + 2) === 0x69 && b(i + 3) === 0x66 && b(i + 4) === 0 && b(i + 5) === 0) {
+      return giroDeOrientacion_(orientacionTiff_(bytes, i + 6));
+    }
+  }
+  return 0;
+}
+
+/**
+ * Para correr una vez desde el editor: revisa el giro de todas las fotos
+ * (al listar se revisan de a poco). Si se corta por tiempo, correrla de nuevo.
+ */
+function revisarGiros() {
+  CacheService.getScriptCache().remove('lista_n');
+  var props = PropertiesService.getScriptProperties();
+  ultimoResumen_ = null;
+  var fotos = listarFotosSinGiros_();
+  var pendientes = aplicarGiros_(props, fotos, 300);
+  var giradas = fotos.filter(function (f) { return f.girar; });
+  Logger.log('Fotos revisadas: ' + (fotos.length - pendientes) + ' de ' + fotos.length +
+    '. Con giro que Drive no informa: ' + giradas.length +
+    (pendientes ? '. Faltan ' + pendientes + ': volvé a ejecutar revisarGiros.' : '. Listo.'));
+  CacheService.getScriptCache().remove('lista_n');
+}
+
+/** Fotos que Drive informa "sin giro" (para revisarGiros). */
+function listarFotosSinGiros_() {
+  var pendientes = propiedad_('CARPETAS').split(',').map(function (s) { return s.trim(); });
+  var vistas = {};
+  var out = [];
+  while (pendientes.length) {
+    var carpeta = pendientes.shift();
+    if (!carpeta || vistas[carpeta]) continue;
+    vistas[carpeta] = true;
+    var token = null;
+    do {
+      var r = Drive.Files.list({
+        q: "'" + carpeta + "' in parents and trashed = false and " +
+           "(mimeType contains 'image/' or mimeType = 'application/vnd.google-apps.folder')",
+        fields: 'nextPageToken, files(id, mimeType, imageMediaMetadata(width, height, rotation))',
+        pageSize: 1000, pageToken: token, supportsAllDrives: true, includeItemsFromAllDrives: true
+      });
+      (r.files || []).forEach(function (f) {
+        if (f.mimeType === 'application/vnd.google-apps.folder') { pendientes.push(f.id); return; }
+        var m = f.imageMediaMetadata || {};
+        if (!m.rotation && PUEDE_TENER_GIRO_.test(f.mimeType)) out.push({ id: f.id, ancho: m.width, alto: m.height });
+      });
+      token = r.nextPageToken;
+    } while (token);
+  }
+  return out;
 }
 
 var ultimoResumen_ = null;
@@ -685,9 +874,9 @@ function probar() {
   Logger.log('Sin tamaño informado por Drive: ' + r.sinTamano +
              ' (recuperadas midiendo la miniatura: ' + r.recuperadas + ')');
   if (r.descartadas.length) Logger.log('No se pudieron mostrar: ' + r.descartadas.join(', '));
-  var giros = {};
-  fotos.forEach(function (f) { if (!f.video) giros[f.rotacion || 0] = (giros[f.rotacion || 0] || 0) + 1; });
-  Logger.log('Fotos por giro (0 = derecha, 1 = 90°, 2 = 180°, 3 = 270°): ' + JSON.stringify(giros));
+  var giradas = fotos.filter(function (f) { return f.girar; }).length;
+  Logger.log('Fotos con giro que Drive no informa (las gira el panel): ' + giradas +
+    (r.girosPendientes ? ' · faltan revisar ' + r.girosPendientes + ' (ejecutá revisarGiros)' : ''));
   var videos = fotos.filter(function (f) { return f.video; });
   Logger.log('Videos: ' + videos.length + ' (salteados por cortos —Live Photos—, pesados o sin procesar: ' +
              r.videosSalteados + ')');
