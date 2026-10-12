@@ -117,3 +117,31 @@
 @media (prefers-reduced-motion: reduce) {
   .diapo { transition: none; }
 }
+
+/* Menú para girar a mano una foto (mantener apretada). */
+.giro {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 22px;
+  background: rgba(13, 13, 13, .82);
+  border-radius: 99px;
+  color: var(--blanco);
+  z-index: 5;
+}
+.giro__titulo { font: 600 16px var(--fecha); margin-right: 6px; }
+.giro button {
+  min-width: 64px;
+  height: 56px;
+  border: 0;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .16);
+  color: var(--blanco);
+  font: 600 28px var(--fecha);
+  cursor: pointer;
+}
+.giro .giro__listo { font-size: 16px; padding: 0 20px; background: var(--blanco); color: var(--negro); }

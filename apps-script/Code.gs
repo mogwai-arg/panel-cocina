@@ -14,6 +14,7 @@
  * Pedidos:
  *   ?action=lista&token=...            → { fotos: [{ id, ancho, alto, fecha }] }
  *   ?action=img&id=...&ancho=1600&token=...  → { mime, data (base64) }  (de un video: su miniatura)
+ *   ?action=girar&id=...&grados=90&token=...   → gira a mano una foto (queda guardado)
  *   ?action=video&id=...&parte=0&token=...   → { parte, partes, total, data (base64) }
  *   ?action=agenda&dias=7&token=...    → { eventos: [{ titulo, inicio, fin, todoElDia,
  *                                          lugar, calendario, color }] }
@@ -26,7 +27,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.4';
+var VERSION = '2026-10-12.5';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -34,6 +35,7 @@ function doGet(e) {
     if (!p.token || p.token !== propiedad_('TOKEN')) return json_({ error: 'Token inválido' });
     if (p.action === 'lista') return json_({ fotos: listarFotos_() });
     if (p.action === 'img') return json_(imagen_(p.id, Number(p.ancho) || 1600));
+    if (p.action === 'girar') return json_(girarFoto_(p.id, Number(p.grados) || 0));
     if (p.action === 'video') return json_(videoParte_(p.id, Number(p.parte) || 0));
     if (p.action === 'agenda') return json_({ eventos: agenda_(Number(p.dias) || 7) });
     if (p.action === 'basquet') return json_(basquet_());
@@ -148,6 +150,7 @@ function listarFotos_() {
   });
 
   aplicarGiros_(props, sinGiro, SEGUNDOS_GIROS_POR_LISTA);
+  aplicarGirosManuales_(props, fotos);
 
   guardarCacheGrande_(cache, 'lista', fotos, MINUTOS_CACHE_LISTA * 60);
   return fotos;
@@ -184,6 +187,33 @@ function aplicarGiros_(props, fotos, segundos) {
   });
   if (ultimoResumen_) ultimoResumen_.girosPendientes = pendientes;
   return pendientes;
+}
+
+/*
+ * Giros hechos a mano desde el panel (mantener apretada la foto). Sirven para las
+ * fotos que perdieron el dato de giro (pasadas por WhatsApp, editadas, etc.).
+ */
+function girarFoto_(id, grados) {
+  if (!id) throw new Error('Falta el id de la foto');
+  if (grados % 90) throw new Error('Los grados tienen que ser múltiplo de 90');
+  var props = PropertiesService.getScriptProperties();
+  var total = (((Number(props.getProperty('man_' + id)) || 0) + grados) % 360 + 360) % 360;
+  if (total) props.setProperty('man_' + id, String(total)); else props.deleteProperty('man_' + id);
+  CacheService.getScriptCache().remove('lista_n');
+  return { id: id, manual: total };
+}
+
+function aplicarGirosManuales_(props, fotos) {
+  var guardados = props.getProperties();
+  fotos.forEach(function (foto) {
+    var m = Number(guardados['man_' + foto.id]) || 0;
+    if (!m || foto.video) return;
+    foto.girar = ((foto.girar || 0) + m) % 360;
+    if (!foto.girar) delete foto.girar;
+    if (m === 90 || m === 270) {
+      var a = foto.ancho; foto.ancho = foto.alto; foto.alto = a;
+    }
+  });
 }
 
 /** ¿Drive ya giró la miniatura? (entonces no hay que girarla de nuevo) */

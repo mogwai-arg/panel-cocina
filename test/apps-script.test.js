@@ -147,3 +147,12 @@ test('giro: orientación EXIF de un JPG', () => {
   assert.equal(contexto.giroDeBytes_(jpg(8)), 270);
   assert.equal(contexto.giroDeBytes_(jpg(1)), 0);
 });
+
+test('giro manual: suma al giro y da vuelta ancho y alto', () => {
+  const props = { getProperties: () => ({ man_a: '90', man_b: '180' }) };
+  const fotos = [{ id: 'a', ancho: 800, alto: 600 }, { id: 'b', ancho: 800, alto: 600, girar: 180 }, { id: 'c', ancho: 1, alto: 2 }];
+  contexto.aplicarGirosManuales_(props, fotos);
+  assert.deepEqual([fotos[0].girar, fotos[0].ancho, fotos[0].alto], [90, 600, 800]);
+  assert.equal(fotos[1].girar, undefined); // 180 + 180 = derecha
+  assert.equal(fotos[2].girar, undefined);
+});

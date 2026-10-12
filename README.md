@@ -169,6 +169,9 @@ Los datos quedan en la hoja **Colegium** de la planilla de listas.
   forma que Drive no lee. El Apps Script lo lee del archivo y el panel las gira.
   Se revisan de a poco al listar; para revisarlas todas de una, ejecutá
   `revisarGiros` desde el editor.
+- **Girar a mano**: algunas fotos perdieron el dato de giro (pasadas por WhatsApp,
+  editadas…) y nadie puede saber que están acostadas. Mantené apretada la foto
+  (en la compu: mantener el clic, o la tecla G) → ↺ / ↻. Queda guardado para siempre.
 - Toca a la derecha para avanzar y a la izquierda para volver.
 
 La lógica de diseño está en [`web/js/layout.js`](web/js/layout.js) y tiene tests.

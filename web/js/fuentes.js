@@ -46,6 +46,7 @@
       listar: function () { return Promise.resolve(fotos); },
       url: function (foto) { return Promise.resolve('demo/' + foto.id + (foto.video ? '.jpg' : '.svg')); },
       video: function (foto) { return Promise.resolve('demo/' + foto.id + '.mp4'); },
+      girar: function () { return Promise.resolve({}); },
       agenda: function () { return Promise.resolve(agendaEjemplo(new Date())); },
       clima: function () { return Promise.resolve(Clima.ejemplo(new Date())); },
       basquet: function () { return Promise.resolve(basquetEjemplo(new Date())); },
@@ -289,6 +290,12 @@
       });
     }
 
+    function olvidar(id) {
+      if (!cache.has(id)) return;
+      URL.revokeObjectURL(cache.get(id));
+      cache.delete(id);
+    }
+
     function guardar(id, url) {
       cache.set(id, url);
       if (cache.size > maxCache) {
@@ -318,6 +325,13 @@
         });
       },
       video: videos.url,
+      // Gira a mano una foto (queda guardado en el Apps Script).
+      girar: function (foto, grados) {
+        return pedir({ action: 'girar', id: foto.id, grados: grados, token: token }).then(function (d) {
+          olvidar(foto.id);
+          return d;
+        });
+      },
       agenda: function () {
         var nombres = opciones.nombresCalendarios || {};
         return pedir({ action: 'agenda', dias: 7, token: token }).then(function (d) {

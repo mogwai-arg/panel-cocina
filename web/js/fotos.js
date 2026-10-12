@@ -82,6 +82,7 @@
     function construir(diapo, urls) {
       var el = document.createElement('div');
       el.className = 'diapo diapo--' + diapo.tipo;
+      el.__diapo = diapo;
 
       if (diapo.tipo === 'centrada' || diapo.tipo === 'video') {
         var fondo = document.createElement('div');
@@ -99,9 +100,10 @@
         el.appendChild(v);
         urls = [];
       }
-      urls.forEach(function (u) {
+      urls.forEach(function (u, i) {
         var img = document.createElement('img');
         img.className = 'diapo__foto';
+        img.setAttribute('data-n', i);
         img.src = u;
         img.alt = '';
         el.appendChild(img);
@@ -224,6 +226,73 @@
       });
     }
 
+    /* ---- Girar a mano (mantener apretada una foto) ---- */
+    var menu = null;
+
+    function cerrarMenu() {
+      if (!menu) return;
+      clearTimeout(menu.t);
+      menu.el.remove();
+      menu = null;
+      if (!pausado && actual && !videoActual()) programar(segundos * 1000);
+    }
+
+    // Muestra los botones de girar para la foto tocada (en un collage, la que está debajo del dedo).
+    function menuGiro(objetivo) {
+      if (!actual || videoActual()) return false;
+      var diapo = actual.__diapo;
+      if (!diapo) return false;
+      var n = Number(objetivo && objetivo.getAttribute && objetivo.getAttribute('data-n')) || 0;
+      var foto = diapo.fotos[n];
+      if (!foto) return false;
+      cerrarMenu();
+      clearTimeout(temporizador);
+      var el = document.createElement('div');
+      el.className = 'giro';
+      el.innerHTML = '<span class="giro__titulo">Girar esta foto</span>' +
+        '<button data-g="-90" aria-label="Girar a la izquierda">↺</button>' +
+        '<button data-g="90" aria-label="Girar a la derecha">↻</button>' +
+        '<button data-g="0" class="giro__listo">Listo</button>';
+      // Que tocar el menú no cuente como "tocar la foto" (eso vuelve al panel).
+      ['pointerdown', 'pointerup', 'click'].forEach(function (t) {
+        el.addEventListener(t, function (e) { e.stopPropagation(); });
+      });
+      el.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var g = Number(b.getAttribute('data-g'));
+          if (!g) { cerrarMenu(); return; }
+          clearTimeout(menu.t);
+          menu.t = setTimeout(cerrarMenu, 15000);
+          girarFoto(diapo, n, g);
+        });
+      });
+      contenedor.appendChild(el);
+      menu = { el: el, t: setTimeout(cerrarMenu, 15000) };
+      return true;
+    }
+
+    function girarFoto(diapo, n, grados) {
+      var foto = diapo.fotos[n];
+      foto.girar = (((foto.girar || 0) + grados) % 360 + 360) % 360;
+      var a = foto.ancho; foto.ancho = foto.alto; foto.alto = a;
+      // Una foto sola puede pasar de horizontal a vertical: cambia cómo se muestra.
+      if (diapo.fotos.length === 1) {
+        diapo.tipo = Layout.orientacion(foto) === 'horizontal' ? 'completa' : 'centrada';
+      }
+      return fuente.girar(foto, grados).then(function () {
+        return Promise.all(diapo.fotos.map(fuente.url));
+      }).then(function (urls) {
+        return Promise.all(urls.map(precargar));
+      }).then(function (urls) {
+        if (!actual || actual.__diapo !== diapo) return;
+        entrar(construir(diapo, urls));
+        if (menu) contenedor.appendChild(menu.el); // el menú queda arriba
+      }).catch(function (err) {
+        console.error(err);
+        contenedor.setAttribute('data-error', 'No se pudo girar: ' + err.message);
+      });
+    }
+
     function videoActual() { return actual && actual.querySelector('video'); }
 
     // Si ya hay una diapositiva cargándose, no se pide otra encima.
@@ -237,6 +306,7 @@
 
     function avanzar(paso) {
       clearTimeout(temporizador);
+      if (menu) cerrarMenu();
       var recargar = !secuencia.length || Date.now() - ultimaLista > minutosLista * 60000;
       var listo = recargar ? cargarLista() : Promise.resolve();
 
@@ -278,7 +348,9 @@
       siguiente: function () { return mostrar(1); },
       anterior: function () { return mostrar(-1); },
       // Mientras está pausado no cambia de foto ni descarga nada.
+      menuGiro: menuGiro,
       pausar: function () {
+        cerrarMenu();
         pausado = true;
         clearTimeout(temporizador);
         var v = videoActual();

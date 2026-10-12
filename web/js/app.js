@@ -126,21 +126,26 @@
 
   // En las fotos: deslizar cambia de foto; tocar vuelve al panel.
   var vistaFotos = document.getElementById('vista-fotos');
+  // Mantener apretada una foto: botones para girarla (por si quedó acostada).
   var inicioX = null;
-  vistaFotos.addEventListener('pointerdown', function (e) { inicioX = e.clientX; });
+  var inicioT = 0;
+  vistaFotos.addEventListener('pointerdown', function (e) { inicioX = e.clientX; inicioT = Date.now(); });
   vistaFotos.addEventListener('pointerup', function (e) {
     if (inicioX === null) return;
     var dx = e.clientX - inicioX;
     inicioX = null;
     if (dx < -60) fotos.siguiente();
     else if (dx > 60) fotos.anterior();
+    else if (Date.now() - inicioT > 700 && fotos.menuGiro(e.target)) return;
     else irA('hoy');
   });
+  vistaFotos.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   document.addEventListener('keydown', function (e) {
     if (vistaActual !== 'fotos') return;
     if (e.key === 'ArrowRight') fotos.siguiente();
     if (e.key === 'ArrowLeft') fotos.anterior();
     if (e.key === 'Escape') irA('hoy');
+    if (e.key === 'g') fotos.menuGiro(null);
   });
 
   // Sin tocar la pantalla por un rato → fotos.
