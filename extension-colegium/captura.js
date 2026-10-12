@@ -12,7 +12,7 @@
     var u;
     try { u = new URL(url, location.href); } catch (e) { return; }
     var params = {};
-    u.searchParams.forEach(function (_, k) { params[k] = '…'; });
+    u.searchParams.forEach(function (_, k) { params[k] = true; });
     window.postMessage({
       fuente: 'panel-colegium',
       captura: {
