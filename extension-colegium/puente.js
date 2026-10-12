@@ -28,11 +28,12 @@
       });
     } else if (d.fuente === 'panel-colegium') {
       var c = d.captura;
+      if (/\/assets\/|nr-data\.net/.test(c.host + c.ruta)) return; // textos de la app y estadísticas: no sirven
       chrome.storage.local.get({ capturas: [] }, function (r) {
         var clave = c.metodo + ' ' + c.host + c.ruta;
         var lista = r.capturas.filter(function (x) { return x.metodo + ' ' + x.host + x.ruta !== clave; });
         lista.push(c);
-        chrome.storage.local.set({ capturas: lista.slice(-120) });
+        chrome.storage.local.set({ capturas: lista.slice(-80) });
       });
     }
   });

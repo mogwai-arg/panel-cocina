@@ -37,7 +37,24 @@
     } catch (e) { /* nada */ }
   }
 
-  function avisar(metodo, url, estado, texto) {
+  /* Forma del cuerpo de un pedido (JSON o formulario), para el diagnóstico. */
+  function formaCuerpo(cuerpo) {
+    if (cuerpo === undefined || cuerpo === null || cuerpo === '') return null;
+    if (typeof cuerpo === 'string') {
+      try { return forma(JSON.parse(cuerpo)); } catch (e) { /* no es JSON */ }
+      var o = {};
+      try { new URLSearchParams(cuerpo).forEach(function (v, k) { o[k] = forma(v); }); } catch (e) { /* nada */ }
+      return Object.keys(o).length ? o : '(texto de ' + cuerpo.length + ' caracteres)';
+    }
+    if (typeof FormData !== 'undefined' && cuerpo instanceof FormData) {
+      var f = {};
+      cuerpo.forEach(function (v, k) { f[k] = typeof v === 'string' ? forma(v) : '(archivo)'; });
+      return f;
+    }
+    return '(' + (cuerpo.constructor && cuerpo.constructor.name || typeof cuerpo) + ')';
+  }
+
+  function avisar(metodo, url, estado, texto, cuerpo) {
     var u;
     try { u = new URL(url, location.href); } catch (e) { return; }
     var tipo = metodo === 'GET' ? C.reconocer(u.pathname) : null;
@@ -62,6 +79,7 @@
       fuente: 'panel-colegium',
       captura: {
         metodo: metodo, host: u.host, ruta: u.pathname, parametros: Object.keys(params),
+        pedido: formaCuerpo(cuerpo),
         estado: estado, reconocido: tipo, forma: forma(datos), cuando: new Date().toISOString()
       }
     }, location.origin);
@@ -77,7 +95,8 @@
     } catch (e) { /* nada */ }
     return fetchOriginal.apply(this, arguments).then(function (resp) {
       try {
-        resp.clone().text().then(function (t) { avisar(metodo, url, resp.status, t); }).catch(function () {});
+        var cuerpo = opciones && opciones.body;
+        resp.clone().text().then(function (t) { avisar(metodo, url, resp.status, t, cuerpo); }).catch(function () {});
       } catch (e) { /* nada */ }
       return resp;
     });
@@ -94,8 +113,9 @@
     if (this.__panel) this.__panel.cabeceras[nombre] = valor;
     return ponerCabecera.apply(this, arguments);
   };
-  XMLHttpRequest.prototype.send = function () {
+  XMLHttpRequest.prototype.send = function (cuerpo) {
     var xhr = this;
+    if (xhr.__panel) xhr.__panel.cuerpo = cuerpo;
     if (xhr.__panel) {
       recordarCabeceras(xhr.__panel.url, xhr.__panel.cabeceras);
       try { if (xhr.withCredentials) credenciales[new URL(xhr.__panel.url, location.href).host] = 'include'; } catch (e) { /* nada */ }
@@ -104,7 +124,7 @@
       if (!xhr.__panel) return;
       if (xhr.responseType && xhr.responseType !== 'text' && xhr.responseType !== 'json') return;
       var texto = xhr.responseType === 'json' ? JSON.stringify(xhr.response) : xhr.responseText;
-      avisar(xhr.__panel.metodo, xhr.__panel.url, xhr.status, texto);
+      avisar(xhr.__panel.metodo, xhr.__panel.url, xhr.status, texto, xhr.__panel.cuerpo);
     });
     return enviar.apply(this, arguments);
   };

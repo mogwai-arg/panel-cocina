@@ -14,15 +14,17 @@
   // Datos personales que no hacen falta para entender la estructura.
   var OCULTAR = /^(dni|documento|cuil|cuit|telefono|celular|movil|fecha_nac|fecha_nacimiento|nacimiento|direccion|domicilio)$/i;
 
+  var PROFUNDIDAD = 9;
+
   function forma(v, profundidad) {
     profundidad = profundidad || 0;
     if (v === null || v === undefined) return v;
     if (Array.isArray(v)) {
       if (!v.length) return [];
-      return profundidad >= 5 ? ['...' + v.length + ' elementos'] : [forma(v[0], profundidad + 1), '...' + v.length + ' elementos'];
+      return profundidad >= PROFUNDIDAD ? ['...' + v.length + ' elementos'] : [forma(v[0], profundidad + 1), '...' + v.length + ' elementos'];
     }
     if (typeof v === 'object') {
-      if (profundidad >= 5) return '{...' + Object.keys(v).length + ' campos}';
+      if (profundidad >= PROFUNDIDAD) return '{...' + Object.keys(v).length + ' campos}';
       var o = {};
       Object.keys(v).slice(0, 40).forEach(function (k) {
         o[k] = OCULTAR.test(k) && v[k] ? '<oculto>' : forma(v[k], profundidad + 1);
