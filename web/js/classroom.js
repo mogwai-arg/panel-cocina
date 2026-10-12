@@ -93,7 +93,26 @@
     });
   }
 
-  var api = { cuando: cuando, resumen: resumen, urgentes: urgentes, comoEventos: comoEventos };
+  /*
+   * Si el calendario de Classroom del curso también está en la agenda, sus eventos de
+   * entrega quedarían repetidos con los "Entregar: …" del panel (que además saben si ya
+   * se entregó). Se sacan esos; lo demás de ese calendario (pruebas, actos) queda.
+   */
+  function sinRepetidos(eventos, datos) {
+    var tareas = {};
+    ((datos && datos.tareas) || []).forEach(function (t) { tareas[normal(t.titulo)] = true; });
+    return eventos.filter(function (e) {
+      if (!/^classroom/i.test(e.calendarioId || '')) return true;
+      return !tareas[normal(e.titulo)];
+    });
+  }
+
+  function normal(s) {
+    return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/[^a-z0-9ñ ]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  var api = { sinRepetidos: sinRepetidos, cuando: cuando, resumen: resumen, urgentes: urgentes, comoEventos: comoEventos };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Classroom = api;
 })(typeof window !== 'undefined' ? window : this);

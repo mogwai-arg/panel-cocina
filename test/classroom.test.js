@@ -64,3 +64,13 @@ test('script de Classroom: estado y vencimiento de una tarea', () => {
   const devuelta = ctx.tareaDe_(w, { state: 'RETURNED', assignedGrade: 8 }, curso, ahoraUtc);
   assert.deepEqual([devuelta.estado, devuelta.nota], ['devuelta', 8]);
 });
+
+test('del calendario de Classroom se sacan las entregas repetidas, el resto queda', () => {
+  const ev = [
+    { titulo: 'TP Polinomios', calendarioId: 'classroom1083@group.calendar.google.com' },
+    { titulo: 'Prueba de Historia', calendarioId: 'classroom1083@group.calendar.google.com' },
+    { titulo: 'TP Polinomios', calendarioId: 'javi@gmail.com' }
+  ];
+  assert.deepEqual(C.sinRepetidos(ev, datos).map((e) => e.titulo + '@' + e.calendarioId.slice(0, 4)),
+    ['Prueba de Historia@clas', 'TP Polinomios@javi']);
+});

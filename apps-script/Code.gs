@@ -28,7 +28,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.6';
+var VERSION = '2026-10-12.7';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -509,6 +509,7 @@ function agenda_(dias) {
         todoElDia: e.isAllDayEvent(),
         lugar: e.getLocation(),
         calendario: cal.getName(),
+        calendarioId: cal.getId(),
         color: cal.getColor()
       });
     });

@@ -194,7 +194,8 @@
 
     function cargarAgenda() {
       return fuente.agenda().then(function (lista) {
-        eventos = (lista || []).concat(eventosDeBasquet(), eventosDeClassroom());
+        var propios = aula && classroomConfig.enAgenda !== false ? Classroom.sinRepetidos(lista || [], aula) : (lista || []);
+        eventos = propios.concat(eventosDeBasquet(), eventosDeClassroom());
         errorAgenda = null;
       }).catch(function (err) {
         console.error(err);
