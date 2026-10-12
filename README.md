@@ -14,7 +14,7 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 | Panel "Hoy" (reloj, clima, agenda, próximo evento) | ✅ funcionando con Google Calendar |
 | Partidos de básquet de Thiago (FeBAMBA) | ✅ primera versión |
 | Tareas y compras (Google Sheets) | ✅ primera versión |
-| Colegium (extensión de Chrome) | 🔬 diagnóstico |
+| Colegium (extensión de Chrome) | ✅ primera versión |
 | Avisos del cole leídos de Gmail con IA | pendiente |
 | Ubicación de Thiago (OwnTracks) | pendiente |
 | Instalación en el marco por ADB, con backup de Frameo | pendiente |
@@ -98,16 +98,38 @@ archivo [`apps-script/Listas.gs`](apps-script/Listas.gs) al proyecto de Apps Scr
 
 Colegium está detrás de una verificación de Cloudflare que bloquea el acceso
 automático, así que no se puede leer desde el Apps Script. En cambio, una extensión
-de Chrome propia lee los datos que la página recibe **mientras alguien la usa** en el
-navegador (después de pasar la verificación como cualquier persona) y los manda al
-panel. No guarda la contraseña ni esquiva ninguna protección.
+de Chrome propia (`extension-colegium/`) mira las respuestas que la página ya recibe
+**mientras alguien la usa** y manda lo útil al panel. No hace pedidos propios a
+Colegium (por eso no marca nada como leído), no guarda la contraseña y no esquiva
+ninguna protección.
 
-Por ahora la extensión (`extension-colegium/`) es solo un **diagnóstico**: anota qué
-pedidos hace la página y la forma de las respuestas (campos, tipos y un pedacito de
-cada texto; los mails se ocultan), sin mandar nada a ningún lado. Para instalarla:
-Chrome → `chrome://extensions` → activar **Modo de desarrollador** → **Cargar
-extensión sin empaquetar** → elegir la carpeta `extension-colegium`.
+Qué toma y cuándo se actualiza:
 
+| Dato | Se actualiza al entrar a |
+|---|---|
+| Comunicados (título, quién, fecha, leído, adjuntos, resumen) | Colegium (la portada) |
+| Texto completo de un comunicado | ese comunicado |
+| Horario de la semana | Horario |
+| Asistencia y faltas por justificar | Asistencia |
+| Archivos compartidos | Archivos |
+| Eventos | Calendario |
+
+El panel muestra todo en la pantalla **Cole** y un número con los comunicados sin leer.
+
+**Instalación**
+
+1. Agregá [`apps-script/Colegium.gs`](apps-script/Colegium.gs) al proyecto de Apps Script
+   (**+ → Apps Script**, nombre `Colegium`), actualizá `Código.gs` y hacé una nueva versión
+   de la implementación.
+2. Chrome → `chrome://extensions` → **Modo de desarrollador** → **Cargar extensión sin
+   empaquetar** → carpeta `extension-colegium`. Si ya estaba, tocá **↻ Actualizar**.
+3. En la extensión, **Configurar**: la misma URL y TOKEN de `web/config.js`.
+4. Abrí Colegium e iniciá sesión. El ícono de la extensión muestra qué tomó y si lo
+   mandó al panel.
+
+Los datos quedan en la hoja **Colegium** de la planilla de listas.
+
+## Fotos
 ## Fotos
 
 - **Horizontal** → pantalla completa.
@@ -174,7 +196,7 @@ implementaciones → Editar → Nueva versión** para que el cambio llegue al ma
 ## Estructura
 
 ```
-apps-script/   backend (Google Apps Script): Code.gs y Listas.gs
+apps-script/   backend (Google Apps Script): Code.gs, Listas.gs y Colegium.gs
 web/           lo que muestra el marco (HTML/CSS/JS sin dependencias, compatible con Chrome 106)
   js/layout.js   motor de diseño de diapositivas (función pura)
   js/fuentes.js  de dónde salen las fotos: demo o Drive
@@ -184,9 +206,11 @@ web/           lo que muestra el marco (HTML/CSS/JS sin dependencias, compatible
   js/basquet.js  lógica de la tarjeta de básquet (función pura)
   js/listas.js   lógica de tareas y compras (función pura)
   js/vistas-listas.js  vistas Tareas y Compras
+  js/cole.js     lógica de la pantalla Cole (función pura)
+  js/vista-cole.js  pantalla Cole
   js/hoy.js      vista "Hoy"
   js/app.js      arranque, barra lateral, inactividad
-extension-colegium/  extensión de Chrome para Colegium (diagnóstico)
+extension-colegium/  extensión de Chrome que manda los datos de Colegium al panel
 test/          tests (`node --test`)
 scripts/       generador de imágenes de ejemplo
 ```

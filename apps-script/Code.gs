@@ -19,6 +19,7 @@
  *   ?action=basquet&token=...          → { equipo, actualizado, partidos: [{ fecha, cancha,
  *                                          local: { nombre, escudo, puntos }, visitante }] }
  *   ?action=listas | compra | tarea     → ver Listas.gs
+ *   ?action=colegium y POST colegium   → ver Colegium.gs
  */
 
 var MINUTOS_CACHE_LISTA = 30;
@@ -34,7 +35,20 @@ function doGet(e) {
     if (p.action === 'listas') return json_(listas_());     // Listas.gs
     if (p.action === 'compra') return json_(compra_(p));
     if (p.action === 'tarea') return json_(tarea_(p));
+    if (p.action === 'colegium') return json_(leerColegium_()); // Colegium.gs
     return json_({ error: 'Acción desconocida: ' + p.action });
+  } catch (err) {
+    return json_({ error: String(err && err.message || err) });
+  }
+}
+
+/** Pedidos POST: por ahora, los datos de Colegium que manda la extensión de Chrome. */
+function doPost(e) {
+  try {
+    var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (!body.token || body.token !== propiedad_('TOKEN')) return json_({ error: 'Token inválido' });
+    if (body.action === 'colegium') return json_(guardarColegium_(body.datos));
+    return json_({ error: 'Acción desconocida: ' + body.action });
   } catch (err) {
     return json_({ error: String(err && err.message || err) });
   }

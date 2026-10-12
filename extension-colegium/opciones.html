@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Colegium → Panel · Configuración</title>
+  <style>
+    body { font: 15px system-ui, sans-serif; max-width: 560px; margin: 40px auto; padding: 0 16px; color: #141414; }
+    label { display: block; font-weight: 600; margin: 18px 0 6px; }
+    input { width: 100%; box-sizing: border-box; padding: 10px; font: 14px ui-monospace, Menlo, monospace; border: 1px solid #bbb; border-radius: 8px; }
+    p { color: #555; }
+    button { margin-top: 20px; padding: 12px 18px; border: 0; border-radius: 8px; font-weight: 600; background: #141414; color: #fff; cursor: pointer; }
+    #estado { margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Colegium → Panel de Cocina</h1>
+  <p>Los mismos datos que tenés en <code>web/config.js</code>. Quedan guardados solo en este Chrome.</p>
+  <label for="url">URL del Apps Script (termina en /exec)</label>
+  <input id="url" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+  <label for="token">TOKEN</label>
+  <input id="token" type="password" autocomplete="off">
+  <button id="guardar">Guardar y probar</button>
+  <div id="estado" role="status"></div>
+  <script src="opciones.js"></script>
+</body>
+</html>

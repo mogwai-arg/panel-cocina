@@ -80,7 +80,15 @@
       // Mismos colores que en la agenda
       colores: config.PERSONAS || { Thiago: '#d39b1e', Javi: '#2f5fd0' }
     }),
-    compras: VistasListas.crearCompras(document.getElementById('vista-compras'), listas, { avisar: avisar })
+    compras: VistasListas.crearCompras(document.getElementById('vista-compras'), listas, { avisar: avisar }),
+    cole: VistaCole.crearCole(document.getElementById('vista-cole'), fuente, {
+      alCambiar: function (d) {
+        var n = document.querySelector('[data-num="cole"]');
+        var sinLeer = Cole.sinLeer(d);
+        n.textContent = sinLeer;
+        n.hidden = !sinLeer;
+      }
+    })
   };
 
   // Números en la barra lateral: compras pendientes y tareas de hoy sin hacer.
@@ -108,7 +116,8 @@
       else b.removeAttribute('aria-current');
     });
     if (vista === 'fotos') fotos.reanudar(); else fotos.pausar();
-    if (vistas[vista]) { listas.cargar(); vistas[vista].alMostrar(); }
+    if (vista === 'tareas' || vista === 'compras') listas.cargar();
+    if (vistas[vista]) vistas[vista].alMostrar();
   }
 
   document.querySelectorAll('.nav [data-ir]').forEach(function (b) {
@@ -150,20 +159,20 @@
   pintarReloj();
 
   listas.cargar();
+  vistas.cole.cargar();
   // Mantener las listas al día por si alguien las cambia desde el celular.
   // Cada minuto si se están mirando; si no, cada 5 (para los números de la barra).
   var minutosSinRecargar = 0;
   setInterval(function () {
     minutosSinRecargar++;
-    if (vistas[vistaActual] || minutosSinRecargar >= 5) {
-      minutosSinRecargar = 0;
-      listas.cargar();
-    }
+    if (vistaActual === 'tareas' || vistaActual === 'compras' || minutosSinRecargar >= 5) listas.cargar();
+    if (vistaActual === 'cole' || minutosSinRecargar >= 5) vistas.cole.cargar();
+    if (minutosSinRecargar >= 5) minutosSinRecargar = 0;
   }, 60000);
 
   fotos.iniciar();
   fotos.pausar();
   hoy.iniciar();
-  irA(['fotos', 'tareas', 'compras'].indexOf(params.get('vista')) >= 0 ? params.get('vista') : 'hoy');
+  irA(['fotos', 'tareas', 'compras', 'cole'].indexOf(params.get('vista')) >= 0 ? params.get('vista') : 'hoy');
   actividad();
 })();

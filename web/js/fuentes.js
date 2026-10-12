@@ -11,6 +11,7 @@
  *   clima(): Promise<clima>        ver js/clima.js
  *   basquet(): Promise<partidos>   ver js/basquet.js
  *   listas(), compra(op, datos), tarea(op, datos)   ver js/listas.js y apps-script/Listas.gs
+ *   colegium(): Promise<{ datos, recibido }>         ver js/cole.js y extension-colegium/
  */
 (function (root) {
   'use strict';
@@ -47,7 +48,56 @@
       basquet: function () { return Promise.resolve(basquetEjemplo(new Date())); },
       listas: function () { return Promise.resolve(listasDemo.copia()); },
       compra: function (op, datos) { return Promise.resolve(listasDemo.compra(op, datos)); },
-      tarea: function (op, datos) { return Promise.resolve(listasDemo.tarea(op, datos)); }
+      tarea: function (op, datos) { return Promise.resolve(listasDemo.tarea(op, datos)); },
+      colegium: function () { return Promise.resolve(coleEjemplo(new Date())); }
+    };
+  }
+
+  // Datos de Colegium de ejemplo (nombres inventados).
+  function coleEjemplo(ahora) {
+    function hace(horas) { return new Date(ahora.getTime() - horas * 3600000).toISOString(); }
+    function b(inicio, fin, modulo, materia) { return { inicio: inicio, fin: fin, modulo: modulo, materias: [materia] }; }
+    var semana = {
+      lun: [b('07:40', '08:40', '1er hora', 'Matemática'), b('08:40', '09:40', '2da hora', 'Lengua y Literatura'),
+            b('10:00', '11:00', '3er hora', 'Historia'), b('11:00', '12:00', '4ta hora', 'Comunicación'),
+            b('12:10', '13:10', '5ta hora', 'Educación Física')],
+      mar: [b('07:40', '08:40', '1er hora', 'Inglés'), b('08:40', '09:40', '2da hora', 'Química'),
+            b('10:00', '11:00', '3er hora', 'Geografía'), b('11:00', '12:00', '4ta hora', 'Matemática')],
+      mie: [b('07:40', '08:40', '1er hora', 'Biología'), b('08:40', '09:40', '2da hora', 'Lengua y Literatura'),
+            b('10:00', '11:00', '3er hora', 'Arte'), b('11:00', '12:00', '4ta hora', 'Comunicación')],
+      jue: [b('07:40', '08:40', '1er hora', 'Física'), b('08:40', '09:40', '2da hora', 'Historia'),
+            b('10:00', '11:00', '3er hora', 'Inglés'), b('11:00', '12:00', '4ta hora', 'Matemática')],
+      vie: [b('07:40', '08:40', '1er hora', 'Geografía'), b('08:40', '09:40', '2da hora', 'Química'),
+            b('10:00', '11:00', '3er hora', 'Educación Física')]
+    };
+    return {
+      recibido: hace(2),
+      datos: {
+        colegio: { colegio: 'Colegio de ejemplo', alumno: 'Thiago' },
+        comunicados: [
+          { id: 'c1', titulo: 'Gira deportiva a Miramar', remitente: 'Paula Gómez', rol: 'Administración', fecha: hace(5),
+            resumen: 'Buenos días, les envío las novedades sobre la gira deportiva: salida el viernes 6 a las 7 h desde el colegio. Traer DNI y autorización firmada.',
+            leido: false, destacado: true, adjuntos: 1 },
+          { id: 'c2', titulo: 'Prueba integradora de Matemática', remitente: 'Laura Pérez', rol: 'Docente', fecha: hace(28),
+            resumen: 'El jueves 22 tomaremos la prueba integradora. Temas: funciones lineales y sistemas de ecuaciones.',
+            leido: false, destacado: false, adjuntos: 0 },
+          { id: 'c3', titulo: 'Inscripción Activamente 2026', remitente: 'Dirección', rol: 'Director', fecha: hace(120),
+            resumen: 'Les recordamos que está abierta la inscripción al programa Activamente.', leido: true, destacado: false, adjuntos: 4 },
+          { id: 'c4', titulo: 'Acto del Día de la Diversidad Cultural', remitente: 'Preceptoría', rol: 'Preceptor', fecha: hace(150),
+            resumen: 'El acto será el martes a las 8 h. Los alumnos de 4° B participan con una lectura.', leido: true, destacado: false, adjuntos: 0 }
+        ],
+        detalles: [{ id: 'c3', titulo: 'Inscripción Activamente 2026',
+          mensaje: 'Estimadas familias:\nLes recordamos que está abierta la inscripción al programa Activamente 2026. Pueden inscribirse hasta el 30 de octubre completando el formulario adjunto.\nSaludos cordiales,\nDirección', adjuntos: ['Folleto.pdf'] }],
+        horario: semana,
+        asistencia: { presente: 95.8, inasistencias: 7.25, tardanzas: 0.25 },
+        faltas: [{ fecha: '2026-10-08', estado: 'A', tipo: 'Justificada', justificacion: 'pendiente' }],
+        archivos: [
+          { nombre: 'Actividades Geografía 4°.pdf', autor: 'Carolina S.', fecha: hace(30), leido: false },
+          { nombre: 'Pausa de hidratación.pdf', autor: 'Daiana A.', fecha: hace(200), leido: false },
+          { nombre: 'Cronograma de evaluaciones.pdf', autor: 'Preceptoría', fecha: hace(400), leido: true }
+        ],
+        actualizado: { comunicados: hace(2), horario: hace(50), asistencia: hace(50), archivos: hace(50) }
+      }
     };
   }
 
@@ -261,7 +311,8 @@
       },
       tarea: function (op, datos) {
         return pedir(Object.assign({ action: 'tarea', op: op, token: token }, datos));
-      }
+      },
+      colegium: function () { return pedir({ action: 'colegium', token: token }); }
     };
   }
 

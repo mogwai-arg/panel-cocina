@@ -3,27 +3,38 @@
 <head>
   <meta charset="utf-8">
   <style>
-    body { font: 14px system-ui, sans-serif; width: 380px; margin: 0; padding: 14px; color: #141414; }
-    h1 { font-size: 16px; margin: 0 0 6px; }
+    body { font: 14px system-ui, sans-serif; width: 360px; margin: 0; padding: 14px; color: #141414; }
+    h1 { font-size: 16px; margin: 0 0 4px; }
     p { margin: 0 0 10px; color: #555; }
-    ul { list-style: none; margin: 0 0 12px; padding: 0; max-height: 300px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; }
-    li { padding: 6px 8px; border-bottom: 1px solid #eee; font: 12px ui-monospace, Menlo, monospace; word-break: break-all; }
-    li:last-child { border-bottom: 0; }
-    .botones { display: flex; gap: 8px; }
-    button { flex: 1; padding: 10px; border: 0; border-radius: 8px; font-weight: 600; cursor: pointer; background: #141414; color: #fff; }
+    dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; }
+    dt { color: #555; } dd { margin: 0; font-weight: 600; }
+    .ok { color: #2e7d4f; } .mal { color: #c4453a; }
+    .botones { display: flex; gap: 8px; margin-bottom: 8px; }
+    button { flex: 1; padding: 9px; border: 0; border-radius: 8px; font-weight: 600; cursor: pointer; background: #141414; color: #fff; }
     button.secundario { background: #eee; color: #141414; }
-    #estado { margin-top: 8px; font-size: 13px; }
+    details { margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; }
+    summary { cursor: pointer; color: #555; }
+    #estado { font-size: 13px; margin-top: 6px; }
   </style>
 </head>
 <body>
-  <h1>Colegium → Panel (diagnóstico)</h1>
-  <p>Recorré en Colegium las secciones que te interesan. Acá se anota qué datos recibió la página.</p>
-  <ul id="lista"></ul>
+  <h1>Colegium → Panel</h1>
+  <p>Se actualiza solo cada vez que abrís Colegium. Entrá a Horario, Asistencia y Archivos de vez en cuando para que también se actualicen.</p>
+  <dl id="resumen"></dl>
+  <div id="envio"></div>
   <div class="botones">
-    <button id="copiar">Copiar diagnóstico</button>
-    <button id="borrar" class="secundario">Borrar</button>
+    <button id="enviar">Enviar ahora</button>
+    <button id="configurar" class="secundario">Configurar</button>
   </div>
-  <div id="estado"></div>
+  <details>
+    <summary>Diagnóstico</summary>
+    <p>Lo que recibió la página (para ajustar la extensión si Colegium cambia).</p>
+    <div class="botones">
+      <button id="copiar" class="secundario">Copiar diagnóstico</button>
+      <button id="borrar" class="secundario">Borrar</button>
+    </div>
+  </details>
+  <div id="estado" role="status"></div>
   <script src="popup.js"></script>
 </body>
 </html>

@@ -1,14 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "Panel de Cocina · Colegium (diagnóstico)",
-  "version": "0.1.0",
-  "description": "Anota qué datos recibe Colegium mientras lo usás, para armar la sincronización con el panel. No manda nada a ningún lado.",
+  "name": "Panel de Cocina · Colegium",
+  "version": "0.2.0",
+  "description": "Mientras usás Colegium, guarda comunicados, horario, asistencia y archivos y los manda a tu Panel de Cocina. No hace pedidos propios a Colegium.",
   "permissions": ["storage"],
-  "host_permissions": ["https://app.colegium.cloud/*"],
+  "host_permissions": [
+    "https://app.colegium.cloud/*",
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*"
+  ],
+  "background": { "service_worker": "sw.js" },
   "content_scripts": [
     {
       "matches": ["https://app.colegium.cloud/*"],
-      "js": ["forma.js", "captura.js"],
+      "js": ["forma.js", "colegium.js", "captura.js"],
       "run_at": "document_start",
       "world": "MAIN"
     },
@@ -18,6 +23,7 @@
       "run_at": "document_start"
     }
   ],
+  "options_page": "opciones.html",
   "action": {
     "default_popup": "popup.html",
     "default_title": "Colegium → Panel"
