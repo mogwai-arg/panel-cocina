@@ -210,109 +210,34 @@ function probarAgenda() {
 }
 
 /**
- * Diagnóstico temporal: mira cómo están armadas las páginas de FeBAMBA y CAB
- * para saber de dónde leer los partidos de Thiago. Copiá el registro y pasáselo a Claude.
+ * Diagnóstico temporal del básquet: fases, grupos y cómo viene armado un partido
+ * de Argentino de Castelar en el fixture de FeBAMBA. Copiá el registro y pasáselo a Claude.
  */
 function explorarBasquet() {
-  var paginas = [
-    'https://www.febamba.com/detalle-torneo/2015/formativas-2026',
-    'https://argentina.basketball/detalle-torneo/liga-federal-masculina/5594/liga-federal-formativa-cadetes-masculina'
-  ];
-  paginas.forEach(function (url) {
-    Logger.log('==== ' + url);
-    var resp;
-    try {
-      resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
-    } catch (e) {
-      Logger.log('No se pudo abrir: ' + e.message);
-      return;
-    }
-    var html = resp.getContentText();
-    Logger.log('Respuesta: ' + resp.getResponseCode() + ' · ' + html.length + ' caracteres');
-    var titulo = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-    Logger.log('Título: ' + (titulo ? titulo[1].trim() : '(sin título)'));
-
-    // Direcciones que suelen delatar de dónde salen los datos.
-    var urls = {};
-    (html.match(/https?:\/\/[^"'\s<>)]+/g) || []).forEach(function (u) {
-      if (/api|json|ajax|gesdeportiva|indalweb|partido|calendario|competici|torneo|jornada|fixture/i.test(u) &&
-          !/\.(png|jpe?g|svg|gif|webp|css|woff2?)(\?|$)/i.test(u)) urls[u] = true;
-    });
-    (html.match(/(?:src|href|url)\s*[:=]\s*["'](\/[^"']+)["']/gi) || []).forEach(function (u) {
-      var ruta = u.replace(/^[^"']+["']/, '').replace(/["']$/, '');
-      if (/api|json|ajax|partido|calendario|competici|torneo|jornada|fixture|\.js/i.test(ruta)) urls[ruta] = true;
-    });
-    Logger.log('Direcciones interesantes:\n' + Object.keys(urls).slice(0, 40).join('\n'));
-
-    ['Castelar', 'Echague', 'CADETES', 'Cadetes'].forEach(function (palabra) {
-      var i = html.indexOf(palabra);
-      Logger.log('"' + palabra + '": ' + (i < 0 ? 'no aparece' :
-        'aparece. Contexto: ' + html.slice(Math.max(0, i - 300), i + 300).replace(/\s+/g, ' ')));
-    });
-  });
-}
-
-/**
- * Diagnóstico temporal (segunda parte): el formulario de la página de FeBAMBA
- * y las direcciones a las que su JavaScript pide los partidos.
- */
-function explorarBasquet2() {
   var base = 'https://www.febamba.com';
-  var html = UrlFetchApp.fetch(base + '/detalle-torneo/2015/formativas-2026', { muteHttpExceptions: true }).getContentText();
-
-  var formularios = html.match(/<form[\s\S]*?<\/form>/gi) || [];
-  Logger.log('Formularios: ' + formularios.length);
-  formularios.forEach(function (f, n) {
-    var apertura = (f.match(/<form[^>]*>/i) || [''])[0];
-    Logger.log('--- Formulario ' + (n + 1) + ': ' + apertura);
-    (f.match(/<select[\s\S]*?<\/select>/gi) || []).forEach(function (s) {
-      var nombre = (s.match(/name="([^"]+)"/) || [])[1];
-      var opciones = (s.match(/<option[^>]*value="([^"]*)"[^>]*>([^<]*)/gi) || []).slice(0, 12).map(function (o) {
-        var m = o.match(/value="([^"]*)"[^>]*>([^<]*)/);
-        return m[1] + '=' + m[2].trim();
-      });
-      Logger.log('  select ' + nombre + ': ' + opciones.join(' | '));
-    });
-    (f.match(/<input[^>]*>/gi) || []).forEach(function (i) { Logger.log('  ' + i); });
+  var compCat = 5077; // CADETES MASCULINO
+  var fases = JSON.parse(UrlFetchApp.fetch(base + '/api/clasificacion/' + compCat + '/fases').getContentText());
+  Logger.log('Fases: ' + JSON.stringify(fases));
+  fases.slice(0, 4).forEach(function (f) {
+    var grupos = JSON.parse(UrlFetchApp.fetch(base + '/api/clasificacion/' + f.idFase + '/grupos').getContentText());
+    Logger.log('  Grupos de ' + f.nombre + ': ' + JSON.stringify(grupos));
   });
 
-  // Atributos data-* y ids que el JavaScript puede usar
-  var datos = {};
-  (html.match(/data-[a-z-]+="[^"]{1,80}"/gi) || []).forEach(function (d) { datos[d] = true; });
-  Logger.log('Atributos data-*: ' + Object.keys(datos).slice(0, 40).join('  '));
-
-  ['/js/funciones.min.js', '/js/min/funciones-clasificaciones.min.js?a=1', '/js/site.js'].forEach(function (ruta) {
-    var js = UrlFetchApp.fetch(base + ruta, { muteHttpExceptions: true }).getContentText();
-    Logger.log('==== ' + ruta + ' (' + js.length + ' caracteres)');
-    var vistos = {};
-    var patron = /(url\s*:\s*[^,}]{1,160}|\$\.(?:get|post|ajax|getJSON)\s*\([^;]{0,200}|\.load\s*\([^;]{0,160}|fetch\s*\([^;]{0,160}|["'`]\/[A-Za-z]+\/[A-Za-z]+[^"'`]{0,60}["'`])/g;
-    var m;
-    var cuenta = 0;
-    while ((m = patron.exec(js)) && cuenta < 50) {
-      var t = m[1].replace(/\s+/g, ' ');
-      if (vistos[t]) continue;
-      vistos[t] = true;
-      cuenta++;
-      Logger.log(t);
-    }
+  var hoy = new Date();
+  var fecha = function (dias) {
+    return Utilities.formatDate(new Date(hoy.getTime() + dias * 86400000), 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd');
+  };
+  var url = base + '/detalle-torneo?handler=CargarSubPagina&competicionId=2015&compCatId=' + compCat +
+    '&fechaIni=' + fecha(-21) + '&fechaFin=' + fecha(21) + '&faseId=0&grupoId=0&seccion=fixture';
+  var html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+  var filas = html.match(/<tr[\s\S]*?<\/tr>/gi) || [];
+  Logger.log('Fixture: ' + html.length + ' caracteres, ' + filas.length + ' filas');
+  Logger.log('Encabezado: ' + html.slice(0, 1500).replace(/\s+/g, ' '));
+  var deCastelar = filas.filter(function (f) { return /castelar/i.test(f); });
+  Logger.log('Filas con Castelar: ' + deCastelar.length);
+  deCastelar.slice(0, 2).forEach(function (f, n) {
+    Logger.log('---- Partido ' + (n + 1) + ':\n' + f.replace(/\s+/g, ' ').slice(0, 4000));
   });
-}
-
-/** Diagnóstico temporal (tercera parte): los scripts escritos dentro de la página. */
-function explorarBasquet3() {
-  var base = 'https://www.febamba.com';
-  var html = UrlFetchApp.fetch(base + '/detalle-torneo/2015/formativas-2026', { muteHttpExceptions: true }).getContentText();
-  var scripts = (html.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/gi) || [])
-    .map(function (s) { return s.replace(/<\/?script[^>]*>/gi, '').trim(); })
-    .filter(function (s) { return s.length > 0; });
-  Logger.log('Scripts dentro de la página: ' + scripts.length);
-  scripts.forEach(function (s, n) {
-    Logger.log('==== Script ' + (n + 1) + ' (' + s.length + ' caracteres)');
-    for (var i = 0; i < s.length && i < 12000; i += 3000) Logger.log(s.slice(i, i + 3000));
-  });
-  var js = UrlFetchApp.fetch(base + '/js/funciones.min.js', { muteHttpExceptions: true }).getContentText();
-  Logger.log('==== funciones.min.js');
-  for (var j = 0; j < js.length; j += 3000) Logger.log(js.slice(j, j + 3000));
 }
 
 /** "2024:07:15 18:22:01" (EXIF) → "2024-07-15T18:22:01" */
