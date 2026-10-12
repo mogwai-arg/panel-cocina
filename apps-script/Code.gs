@@ -47,6 +47,8 @@ function listarFotos_() {
   var pendientes = propiedad_('CARPETAS').split(',').map(function (s) { return s.trim(); });
   var vistas = {};
   var fotos = [];
+  var sinTamano = [];
+  ultimoResumen_ = { porTipo: {}, sinTamano: 0, recuperadas: 0, descartadas: [] };
 
   while (pendientes.length) {
     var carpeta = pendientes.shift();
@@ -70,22 +72,87 @@ function listarFotos_() {
           pendientes.push(f.id);
           return;
         }
-        var m = f.imageMediaMetadata;
-        if (!m || !m.width || !m.height) return;
-        var girada = m.rotation === 1 || m.rotation === 3;
-        fotos.push({
-          id: f.id,
-          ancho: girada ? m.height : m.width,
-          alto: girada ? m.width : m.height,
-          fecha: fechaExif_(m.time) || f.createdTime
-        });
+        ultimoResumen_.porTipo[f.mimeType] = (ultimoResumen_.porTipo[f.mimeType] || 0) + 1;
+        var m = f.imageMediaMetadata || {};
+        var foto = { id: f.id, fecha: fechaExif_(m.time) || f.createdTime };
+        if (m.width && m.height) {
+          var girada = m.rotation === 1 || m.rotation === 3;
+          foto.ancho = girada ? m.height : m.width;
+          foto.alto = girada ? m.width : m.height;
+          fotos.push(foto);
+        } else {
+          sinTamano.push(foto);
+        }
       });
       token = r.nextPageToken;
     } while (token);
   }
 
+  // A algunas fotos (a veces HEIC) Drive no les informa el tamaño:
+  // se mide la miniatura JPG que genera Drive y se guarda para no repetirlo.
+  ultimoResumen_.sinTamano = sinTamano.length;
+  var props = PropertiesService.getScriptProperties();
+  sinTamano.forEach(function (foto) {
+    var t = tamanoGuardado_(props, foto.id) || medirMiniatura_(props, foto.id);
+    if (t) {
+      foto.ancho = t.ancho;
+      foto.alto = t.alto;
+      fotos.push(foto);
+      ultimoResumen_.recuperadas++;
+    } else {
+      ultimoResumen_.descartadas.push(foto.id);
+    }
+  });
+
   guardarCacheGrande_(cache, 'lista', fotos, MINUTOS_CACHE_LISTA * 60);
   return fotos;
+}
+
+var ultimoResumen_ = null;
+
+function tamanoGuardado_(props, id) {
+  var v = props.getProperty('tam_' + id);
+  if (!v) return null;
+  var p = v.split('x');
+  return { ancho: Number(p[0]), alto: Number(p[1]) };
+}
+
+function medirMiniatura_(props, id) {
+  try {
+    var f = Drive.Files.get(id, { fields: 'thumbnailLink', supportsAllDrives: true });
+    if (!f.thumbnailLink) return null;
+    var url = f.thumbnailLink.replace(/=s\d+$/, '') + '=s400';
+    var resp = UrlFetchApp.fetch(url, {
+      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+      muteHttpExceptions: true
+    });
+    if (resp.getResponseCode() !== 200) return null;
+    var t = tamanoImagen_(resp.getContent());
+    if (t) props.setProperty('tam_' + id, t.ancho + 'x' + t.alto);
+    return t;
+  } catch (e) {
+    return null;
+  }
+}
+
+/** Lee ancho y alto de los bytes de un JPG o PNG, sin decodificar la imagen. */
+function tamanoImagen_(bytes) {
+  var b = function (i) { return bytes[i] & 255; };
+  if (b(0) === 0x89 && b(1) === 0x50) { // PNG
+    return { ancho: (b(16) << 24 | b(17) << 16 | b(18) << 8 | b(19)) >>> 0,
+             alto: (b(20) << 24 | b(21) << 16 | b(22) << 8 | b(23)) >>> 0 };
+  }
+  if (b(0) !== 0xFF || b(1) !== 0xD8) return null; // no es JPG
+  var i = 2;
+  while (i + 9 < bytes.length) {
+    if (b(i) !== 0xFF) return null;
+    var marca = b(i + 1);
+    var largo = b(i + 2) << 8 | b(i + 3);
+    var esSOF = marca >= 0xC0 && marca <= 0xCF && marca !== 0xC4 && marca !== 0xC8 && marca !== 0xCC;
+    if (esSOF) return { alto: b(i + 5) << 8 | b(i + 6), ancho: b(i + 7) << 8 | b(i + 8) };
+    i += 2 + largo;
+  }
+  return null;
 }
 
 /** "2024:07:15 18:22:01" (EXIF) → "2024-07-15T18:22:01" */
@@ -138,6 +205,11 @@ function leerCacheGrande_(cache, clave) {
 function probar() {
   CacheService.getScriptCache().remove('lista_n');
   var fotos = listarFotos_();
-  Logger.log('Fotos encontradas: ' + fotos.length);
-  Logger.log(JSON.stringify(fotos.slice(0, 3), null, 2));
+  var r = ultimoResumen_;
+  Logger.log('Fotos que se van a mostrar: ' + fotos.length);
+  Logger.log('Por tipo de archivo: ' + JSON.stringify(r.porTipo));
+  Logger.log('Sin tamaño informado por Drive: ' + r.sinTamano +
+             ' (recuperadas midiendo la miniatura: ' + r.recuperadas + ')');
+  if (r.descartadas.length) Logger.log('No se pudieron mostrar: ' + r.descartadas.join(', '));
+  Logger.log('Ejemplo: ' + JSON.stringify(fotos.slice(0, 2), null, 2));
 }
