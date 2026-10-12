@@ -38,6 +38,7 @@
     }
 
     function cargarLista() {
+      if (!actual) contenedor.setAttribute('data-estado', 'cargando');
       return fuente.listar().then(function (fotos) {
         var ds = Layout.armarDiapositivas(fotos, { proporcionPantalla: proporcionPantalla() });
         secuencia = Layout.ordenar(ds, new Date());

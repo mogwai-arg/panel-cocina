@@ -51,9 +51,18 @@
       var qs = Object.keys(params).map(function (k) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
       }).join('&');
-      return fetch(urlScript + '?' + qs).then(function (r) {
-        if (!r.ok) throw new Error('El Apps Script respondió ' + r.status);
-        return r.json();
+      return fetch(urlScript + '?' + qs).catch(function () {
+        throw new Error('No hay conexión con el Apps Script. Revisá la URL en config.js');
+      }).then(function (r) {
+        if (!r.ok) throw new Error('El Apps Script respondió con el error ' + r.status);
+        return r.text();
+      }).then(function (texto) {
+        try {
+          return JSON.parse(texto);
+        } catch (e) {
+          throw new Error('El Apps Script devolvió una página en vez de datos. ' +
+            'Revisá que la implementación tenga acceso "Cualquier persona"');
+        }
       }).then(function (datos) {
         if (datos.error) throw new Error(datos.error);
         return datos;

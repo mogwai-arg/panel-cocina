@@ -94,6 +94,7 @@ html, body {
   letter-spacing: .05em;
 }
 
+.fotos[data-estado="cargando"]::after,
 .fotos[data-estado="vacio"]::after,
 .fotos[data-estado="error"]::after {
   position: absolute;
@@ -104,6 +105,7 @@ html, body {
   text-align: center;
   font: 400 26px/1.4 var(--serif);
 }
+.fotos[data-estado="cargando"]::after { content: "Cargando fotos…"; opacity: .7; }
 .fotos[data-estado="vacio"]::after { content: "Todavía no hay fotos en la carpeta de Drive."; }
 .fotos[data-estado="error"]::after { content: "No se pudieron cargar las fotos: " attr(data-error) ". Reintento en un minuto."; }
 
