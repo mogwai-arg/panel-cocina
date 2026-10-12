@@ -124,6 +124,7 @@
     if (vista === vistaActual) return;
     vistaActual = vista;
     pantalla.setAttribute('data-vista', vista);
+    if (vista === 'fotos') enFotosDesde = Date.now();
     document.querySelectorAll('[data-vista-panel]').forEach(function (v) {
       v.hidden = v.getAttribute('data-vista-panel') !== vista;
     });
@@ -171,8 +172,64 @@
     clearTimeout(temporizador);
     temporizador = setTimeout(function () { irA('fotos'); }, minutos * 60000);
     ultimaActividad = Date.now();
+    // Si alguien toca mientras se muestra el panel automático, se queda en el panel.
+    if (panelAutomatico) { panelAutomatico = false; clearTimeout(vueltaAFotos); }
     revisarDescanso();
   }
+
+  // Ajustes que se cambian desde la pantalla (tocando la hora de la barra lateral).
+  // Se guardan en este aparato; los valores iniciales salen de config.js.
+  var alternarCfg = Object.assign({ activo: true, cadaMinutos: 10, segundosPanel: 30 }, config.ALTERNAR || {});
+  var ajustes = (function () {
+    var guardados = {};
+    try { guardados = JSON.parse(localStorage.getItem('panel-ajustes') || '{}') || {}; } catch (e) { /* nada */ }
+    return {
+      alternar: guardados.alternar !== undefined ? guardados.alternar : alternarCfg.activo !== false,
+      noche: guardados.noche !== undefined ? guardados.noche : !(config.DESCANSO && config.DESCANSO.noche === false)
+    };
+  })();
+  function guardarAjustes() {
+    try { localStorage.setItem('panel-ajustes', JSON.stringify(ajustes)); } catch (e) { /* nada */ }
+  }
+  function configDescanso() {
+    var c = Object.assign({}, config.DESCANSO || {});
+    if (!ajustes.noche) c.noche = false;
+    return c;
+  }
+
+  var panelAjustes = document.getElementById('ajustes');
+  function pintarAjustes() {
+    panelAjustes.querySelectorAll('[data-ajuste]').forEach(function (i) { i.checked = !!ajustes[i.getAttribute('data-ajuste')]; });
+    var n = Descanso.configuracion(config.DESCANSO).noche || { desde: '23:00', hasta: '07:00' };
+    panelAjustes.querySelector('[data-r="alternar-detalle"]').textContent =
+      'Cada ' + alternarCfg.cadaMinutos + ' min de fotos, el panel ' + alternarCfg.segundosPanel + ' s y vuelve a las fotos';
+    panelAjustes.querySelector('[data-r="noche-detalle"]').textContent =
+      'De ' + n.desde + ' a ' + n.hasta + ' la pantalla queda ' + (n.modo === 'tenue' ? 'tenue' : 'negra');
+  }
+  reloj.addEventListener('click', function () { pintarAjustes(); panelAjustes.hidden = false; });
+  panelAjustes.querySelector('[data-r="cerrar"]').addEventListener('click', function () { panelAjustes.hidden = true; });
+  panelAjustes.querySelectorAll('[data-ajuste]').forEach(function (i) {
+    i.addEventListener('change', function () {
+      ajustes[i.getAttribute('data-ajuste')] = i.checked;
+      guardarAjustes();
+      estadoDescanso = null; // recalcular ya
+      revisarDescanso();
+    });
+  });
+
+  // Alternar: después de un rato de fotos, el panel Hoy unos segundos, y de vuelta a fotos.
+  var enFotosDesde = Date.now();
+  var vueltaAFotos = null;
+  var panelAutomatico = false;
+  setInterval(function () {
+    if (!ajustes.alternar || vistaActual !== 'fotos' || estadoDescanso !== 'activo') return;
+    if (!Descanso.tocaPanel(Date.now(), enFotosDesde, ultimaActividad, alternarCfg)) return;
+    panelAutomatico = true;
+    irA('hoy');
+    vueltaAFotos = setTimeout(function () {
+      if (panelAutomatico) { panelAutomatico = false; irA('fotos'); }
+    }, alternarCfg.segundosPanel * 1000);
+  }, 15000);
 
   // Modo descanso: de noche se apaga (negro) y, si hay sensor, de día se atenúa sin nadie.
   var capaDescanso = document.getElementById('descanso');
@@ -181,7 +238,7 @@
   var estadoDescanso = 'activo';
   function revisarDescanso() {
     if (!capaDescanso) return;
-    var nuevo = Descanso.estado(new Date(), ultimaActividad, config.DESCANSO, haySensor);
+    var nuevo = Descanso.estado(new Date(), ultimaActividad, configDescanso(), haySensor);
     if (nuevo === estadoDescanso) return;
     estadoDescanso = nuevo;
     capaDescanso.hidden = nuevo === 'activo';

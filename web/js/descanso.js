@@ -47,7 +47,16 @@
     return 'activo';
   }
 
-  var api = { estado: estado, esDeNoche: esDeNoche, configuracion: configuracion };
+  /*
+   * Alternar fotos y panel: ¿toca mostrar el panel un rato? Sí, si hace `cadaMinutos`
+   * que se ven fotos y que nadie toca la pantalla.
+   */
+  function tocaPanel(ahora, enFotosDesde, ultimaActividad, cfg) {
+    var cada = ((cfg && cfg.cadaMinutos) || 10) * 60000;
+    return ahora - enFotosDesde >= cada && ahora - ultimaActividad >= cada;
+  }
+
+  var api = { tocaPanel: tocaPanel, estado: estado, esDeNoche: esDeNoche, configuracion: configuracion };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Descanso = api;
 })(typeof window !== 'undefined' ? window : this);

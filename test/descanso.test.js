@@ -24,3 +24,10 @@ test('descanso: de día se atenúa sin movimiento solo si hay sensor', () => {
   assert.equal(D.estado(a(15, 0), a(14, 0), {}, true), 'tenue');
   assert.equal(D.estado(a(15, 0), a(14, 50), {}, true), 'activo');
 });
+
+test('alternar: muestra el panel cada 10 minutos de fotos sin tocar', () => {
+  assert.equal(D.tocaPanel(a(15, 10), a(15, 0), a(14, 0), {}), true);
+  assert.equal(D.tocaPanel(a(15, 9), a(15, 0), a(14, 0), {}), false);
+  assert.equal(D.tocaPanel(a(15, 10), a(15, 0), a(15, 5), {}), false);
+  assert.equal(D.tocaPanel(a(15, 5), a(15, 0), a(14, 0), { cadaMinutos: 5 }), true);
+});

@@ -424,3 +424,17 @@ html, body {
 .descanso[hidden] { display: none; }
 .descanso--tenue { opacity: .62; }
 .descanso--apagado { opacity: 1; }
+
+/* Ajustes (se abren tocando la hora de la barra lateral) */
+.nav button.nav__reloj { margin-top: auto; text-align: center; font-variant-numeric: tabular-nums; height: auto; padding: 8px 0 16px; display: block; width: 100%; letter-spacing: 0; text-transform: none; font: 800 22px var(--rotulo); font-stretch: 75%; color: var(--tinta); }
+.ajustes { position: absolute; left: 118px; bottom: 20px; z-index: 40; width: 420px; background: var(--tarjeta); border-radius: 16px; padding: 18px 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, .25); display: flex; flex-direction: column; gap: 14px; }
+.ajustes[hidden] { display: none; }
+.ajustes__titulo { font: 400 30px var(--serif); }
+.interruptor { display: flex; gap: 14px; align-items: center; cursor: pointer; font: 600 17px var(--texto); }
+.interruptor input { position: absolute; opacity: 0; pointer-events: none; }
+.interruptor > span { flex: none; width: 52px; height: 30px; border-radius: 99px; background: var(--linea); position: relative; transition: background .2s; }
+.interruptor > span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: left .2s; box-shadow: 0 1px 3px rgba(0, 0, 0, .2); }
+.interruptor input:checked + span { background: #2e7d4f; }
+.interruptor input:checked + span::after { left: 25px; }
+.interruptor small { display: block; font: 500 13px var(--texto); color: var(--suave); }
+.ajustes__cerrar { align-self: flex-end; border: 0; border-radius: 99px; padding: 10px 22px; background: var(--tinta); color: #fff; font: 800 14px var(--rotulo); letter-spacing: .08em; cursor: pointer; }

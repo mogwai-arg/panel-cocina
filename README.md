@@ -222,9 +222,19 @@ Con el teléfono quieto OwnTracks puede pasar horas sin mandar nada: el panel mu
 Con `NTFY_TEMA` ya no llegan mails (si los querés igual: propiedad `AVISOS_POR_MAIL` = `si`).
 El marco además muestra un cartel "📍 Thi llegó a Colegio" cuando cambia de lugar.
 
+## Fotos y panel, alternados
+
+Mientras están las fotos, **cada 10 minutos** aparece el panel Hoy **30 segundos** y vuelve
+solo a las fotos (si alguien toca la pantalla en ese rato, se queda en el panel). De noche,
+con la pantalla en descanso, no lo hace.
+
+Se prende y apaga **tocando la hora de la barra lateral** → Ajustes (queda guardado en ese
+aparato). Los tiempos se cambian en `config.js` → `ALTERNAR: { activo, cadaMinutos, segundosPanel }`.
+
 ## Descanso de la pantalla
 
-- **De noche** (por defecto de 23 a 7) la pantalla queda negra. Un toque la despierta
+- **De noche** (por defecto de 23 a 7) la pantalla queda negra. Se prende y apaga desde
+  Ajustes (tocando la hora de la barra lateral). Un toque la despierta
   5 minutos (ese primer toque no aprieta nada). Se configura en `config.js` → `DESCANSO`:
   horario, `modo: 'tenue'` en vez de negro, o `noche: false` para no usarlo.
 - **Sin nadie cerca**: el marco tiene sensor de movimiento. Cuando lo conectemos (al

@@ -33,7 +33,7 @@
       <button data-ir="fotos">
         <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l6-5 4 3 3-2 4 3"/></svg>Fotos
       </button>
-      <div class="nav__reloj" id="reloj-lateral"></div>
+      <button class="nav__reloj" id="reloj-lateral" aria-label="Ajustes"></button>
     </nav>
 
     <div class="aviso-config" id="aviso-config" hidden></div>
@@ -46,6 +46,14 @@
     <section class="vista cole" id="vista-cole" data-vista-panel="cole" aria-label="Cole" hidden></section>
     <section class="vista cole avisos" id="vista-avisos" data-vista-panel="avisos" aria-label="Avisos" hidden></section>
 
+    <div class="ajustes" id="ajustes" hidden>
+      <b class="ajustes__titulo">Ajustes</b>
+      <label class="interruptor"><input type="checkbox" data-ajuste="alternar"><span></span>
+        <div>Mostrar el panel cada tanto<small data-r="alternar-detalle"></small></div></label>
+      <label class="interruptor"><input type="checkbox" data-ajuste="noche"><span></span>
+        <div>Descanso nocturno<small data-r="noche-detalle"></small></div></label>
+      <button class="ajustes__cerrar" data-r="cerrar">Listo</button>
+    </div>
     <div class="descanso" id="descanso" hidden></div>
 
     <div class="aviso" id="aviso" role="status" hidden><span id="aviso-texto"></span><button id="aviso-deshacer" hidden>↺ DESHACER</button></div>

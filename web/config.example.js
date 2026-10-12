@@ -25,6 +25,9 @@ window.CONFIG = {
   PERSONAS: { Thi: '#d39b1e', Javi: '#2f5fd0', Dan: '#7b4fc4' },
   // Cómo se lo nombra a Thiago en los mensajes de aliento de las notas
   APODO_ALUMNO: 'Thi',
+  // Alternar: con fotos un rato, muestra el panel Hoy unos segundos y vuelve a las fotos.
+  // También se prende/apaga desde la pantalla (tocando la hora de la barra lateral).
+  ALTERNAR: { activo: true, cadaMinutos: 10, segundosPanel: 30 },
   // Descanso de la pantalla: de noche queda negra ('apagado') o tenue ('tenue'); al tocarla
   // se despierta 5 minutos. Con el sensor de movimiento conectado, de día se atenúa si no
   // pasa nadie en 20 minutos. Para no usar el horario nocturno: noche: false
