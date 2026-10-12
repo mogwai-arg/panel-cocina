@@ -149,5 +149,7 @@ function probarUbicacion() {
     Logger.log(x.quien + ': ' + (x.lugar ? 'en ' + x.lugar : x.cercano ? 'a ' + x.cercano.metros + ' m de ' + x.cercano.nombre : 'sin lugar') +
       ' · ' + x.cuando + (x.bateria ? ' · batería ' + x.bateria + '%' : ''));
   });
-  Logger.log('URL para OwnTracks: ' + ScriptApp.getService().getUrl() + '?action=ubicacion&quien=Thi&token=<TU TOKEN>');
+  // Desde el editor getUrl() da la URL de prueba (/dev), que no sirve para OwnTracks.
+  Logger.log('URL para OwnTracks: la APPS_SCRIPT_URL de tu config.js (termina en /exec) + ' +
+    '?action=ubicacion&quien=Thi&token=<TU TOKEN>');
 }
