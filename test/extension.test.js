@@ -14,3 +14,30 @@ test('extensión: resume la forma de una respuesta sin copiarla entera', () => {
     vacio: [],
   });
 });
+
+test('plantillas: una por clave y migra el formato viejo', async () => {
+  const vm = require('node:vm');
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const sync = { plantillas: { asistencia: { url: 'a' } } };
+  const chrome = {
+    runtime: { lastError: null },
+    storage: { sync: {
+      get(claves, cb) {
+        if (claves === null) return cb({ ...sync });
+        cb({ [claves]: sync[claves] });
+      },
+      set(o, cb) { Object.assign(sync, o); if (cb) cb(); },
+      remove(k) { delete sync[k]; }
+    } }
+  };
+  const ctx = { chrome, console, window: {} };
+  ctx.window = ctx;
+  vm.createContext(ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../extension-colegium/plantillas.js'), 'utf8'), ctx);
+  ctx.PanelPlantillas.guardar('calificaciones:X', { url: 'c', metodo: 'POST' });
+  const leidas = await new Promise((ok) => ctx.PanelPlantillas.leer(ok));
+  assert.deepEqual(Object.keys(leidas).sort(), ['asistencia', 'calificaciones:X']);
+  assert.equal(sync.plantillas, undefined);
+  assert.deepEqual(sync['pl:asistencia'], { url: 'a' });
+});

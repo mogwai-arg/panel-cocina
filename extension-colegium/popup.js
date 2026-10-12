@@ -21,7 +21,7 @@
 
   function pintar() {
     chrome.storage.local.get({ estado: {}, ultimoEnvio: null, ultimaAuto: 0 }, function (r) {
-      chrome.storage.sync.get({ plantillas: {} }, function (s) { pintarCon(r, s.plantillas); });
+      PanelPlantillas.leer(function (plantillas) { pintarCon(r, plantillas); });
     });
   }
 

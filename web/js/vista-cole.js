@@ -36,7 +36,8 @@
 
     contenedor.innerHTML =
       '<div class="cole__principal">' +
-      '  <div class="listas__cab"><div><span class="lbl" data-r="colegio">Colegio</span><h2 class="listas__titulo"><span data-r="titulo">Comunicados</span> <small data-r="sinleer"></small></h2></div>' +
+      '  <div class="listas__cab"><div><span class="lbl" data-r="colegio">Colegio</span><h2 class="listas__titulo"><span data-r="titulo">Comunicados</span> <small data-r="sinleer"></small></h2>' +
+      '    <button class="cole__vistos" data-r="vistos" hidden>Marcar todos como vistos</button></div>' +
       '    <div class="seg" role="group" aria-label="Sección"><button data-tab="comunicados" aria-pressed="true">COMUNICADOS</button><button data-tab="notas" aria-pressed="false">NOTAS</button></div></div>' +
       '  <div class="comunicados" data-r="comunicados"></div>' +
       '  <div class="notas" data-r="notas" hidden></div>' +
@@ -141,6 +142,7 @@
       parte('notas').hidden = pestana !== 'notas';
       parte('titulo').textContent = pestana === 'notas' ? 'Notas' : 'Comunicados';
       parte('sinleer').hidden = pestana !== 'comunicados';
+      pintarSinLeer(respuesta && respuesta.datos);
     }
 
     contenedor.querySelectorAll('[data-tab]').forEach(function (b) {
@@ -210,7 +212,16 @@
     function pintarSinLeer(d) {
       var n = Cole.sinLeer(d);
       parte('sinleer').textContent = n ? n + ' sin leer' : '';
+      parte('vistos').hidden = !n || pestana !== 'comunicados';
     }
+
+    parte('vistos').addEventListener('click', function () {
+      var d = respuesta && respuesta.datos;
+      ((d && d.comunicados) || []).forEach(function (c) { if (Cole.esNuevo(c)) Cole.marcarVisto(c.id); });
+      pintarSinLeer(d);
+      pintarComunicados(d);
+      alCambiar(d);
+    });
 
     function pintar() {
       var d = respuesta && respuesta.datos;

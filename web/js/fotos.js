@@ -211,6 +211,19 @@
       });
     }
 
+    function hayFotos() {
+      return secuencia.some(function (d) { return d.tipo !== 'video'; });
+    }
+
+    // ¿El video ya está bajado (en memoria o guardado)? Si tarda más de 2 s, no.
+    // La descarga sigue igual, para la próxima vez que le toque.
+    function videoListo(foto) {
+      return new Promise(function (ok) {
+        var t = setTimeout(function () { ok(false); }, 2000);
+        fuente.video(foto).then(function () { clearTimeout(t); ok(true); }, function () { clearTimeout(t); ok(true); });
+      });
+    }
+
     function videoActual() { return actual && actual.querySelector('video'); }
 
     // Si ya hay una diapositiva cargándose, no se pide otra encima.
@@ -235,7 +248,16 @@
         }
         posicion = (posicion + paso + secuencia.length) % secuencia.length;
         var diapo = secuencia[posicion];
-        if (diapo.tipo === 'video') return mostrarVideo(diapo);
+        if (diapo.tipo === 'video') {
+          return videoListo(diapo.fotos[0]).then(function (listo) {
+            if (listo || !hayFotos()) return mostrarVideo(diapo);
+            // Todavía se está bajando: se sigue con fotos y el video sale un poco después.
+            secuencia.splice(posicion, 1);
+            secuencia.splice(Math.min(posicion + 3, secuencia.length), 0, diapo);
+            posicion--;
+            return avanzar(1);
+          });
+        }
         return Promise.all(diapo.fotos.map(fuente.url)).then(function (urls) {
           return Promise.all(urls.map(precargar));
         }).then(function (urls) {

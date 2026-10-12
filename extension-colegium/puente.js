@@ -15,8 +15,14 @@
     return AUTOMATICOS.indexOf(clave) >= 0 || /^calificaciones:.+/.test(clave);
   }
 
+  // Al actualizar la extensión, esta copia vieja (en una pestaña ya abierta) queda
+  // desconectada: deja de hacer cosas en vez de tirar errores. Recargá la pestaña.
+  function conectada() {
+    try { return !!(chrome.runtime && chrome.runtime.id); } catch (e) { return false; }
+  }
+
   window.addEventListener('message', function (e) {
-    if (e.source !== window || !e.data) return;
+    if (e.source !== window || !e.data || !conectada()) return;
     var d = e.data;
     if (d.fuente === 'panel-colegium-datos') {
       chrome.runtime.sendMessage({ tipo: d.tipo, datos: d.datos });
@@ -24,12 +30,7 @@
       chrome.runtime.sendMessage({ sesion: d.vencida ? 'vencida' : 'ok' });
     } else if (d.fuente === 'panel-colegium-plantilla') {
       if (!esAutomatico(d.clave)) return;
-      chrome.storage.sync.get({ plantillas: {} }, function (r) {
-        var nuevo = JSON.stringify(d.pedido);
-        if (JSON.stringify(r.plantillas[d.clave]) === nuevo) return;
-        r.plantillas[d.clave] = d.pedido;
-        chrome.storage.sync.set({ plantillas: r.plantillas });
-      });
+      PanelPlantillas.guardar(d.clave, d.pedido);
     } else if (d.fuente === 'panel-colegium') {
       var c = d.captura;
       if (/\/assets\/|nr-data\.net/.test(c.host + c.ruta)) return; // textos de la app y estadísticas: no sirven
@@ -43,11 +44,12 @@
   });
 
   function quizasActualizar() {
+    if (!conectada()) { clearInterval(intervalo); return; }
     chrome.storage.local.get({ ultimaAuto: 0 }, function (r) {
       if (Date.now() - r.ultimaAuto < MINUTOS * 60000) return; // otra pestaña ya lo hizo
       chrome.storage.local.set({ ultimaAuto: Date.now() }, function () {
-        chrome.storage.sync.get({ plantillas: {} }, function (p) {
-          var pedidos = Object.keys(p.plantillas).filter(esAutomatico).map(function (k) { return p.plantillas[k]; });
+        PanelPlantillas.leer(function (plantillas) {
+          var pedidos = Object.keys(plantillas).filter(esAutomatico).map(function (k) { return plantillas[k]; });
           if (pedidos.length) window.postMessage({ fuente: 'panel-colegium-actualizar', pedidos: pedidos }, location.origin);
         });
       });
@@ -56,5 +58,5 @@
 
   // La primera vez, un minuto después de abrir (la página ya cargó lo suyo).
   setTimeout(quizasActualizar, 60000);
-  setInterval(quizasActualizar, 5 * 60000);
+  var intervalo = setInterval(quizasActualizar, 5 * 60000);
 })();

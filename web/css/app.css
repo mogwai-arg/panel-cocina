@@ -352,3 +352,14 @@ html, body {
 .materia__tendencia--mejora, .materia__tendencia--excelente { color: #2e7d4f; }
 .materia__tendencia--baja, .materia__tendencia--atencion { color: #a3501d; }
 .materia__tendencia--parejo { color: var(--suave); }
+
+.cole__vistos {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 600 15px var(--texto);
+  color: var(--suave);
+  text-decoration: underline;
+  cursor: pointer;
+}
