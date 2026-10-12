@@ -21,7 +21,16 @@
     try { return !!(chrome.runtime && chrome.runtime.id); } catch (e) { return false; }
   }
 
-  window.addEventListener('message', function (e) {
+  // Por las dudas, si se desconecta justo en el medio, tampoco tira error.
+  function seguro(fn) {
+    return function () {
+      try { return fn.apply(this, arguments); } catch (e) {
+        if (!/context invalidated/i.test(String(e && e.message))) throw e;
+      }
+    };
+  }
+
+  window.addEventListener('message', seguro(function (e) {
     if (e.source !== window || !e.data || !conectada()) return;
     var d = e.data;
     if (d.fuente === 'panel-colegium-datos') {
@@ -41,7 +50,7 @@
         chrome.storage.local.set({ capturas: lista.slice(-80) });
       });
     }
-  });
+  }));
 
   function quizasActualizar() {
     if (!conectada()) { clearInterval(intervalo); return; }
@@ -57,6 +66,7 @@
   }
 
   // La primera vez, un minuto después de abrir (la página ya cargó lo suyo).
+  quizasActualizar = seguro(quizasActualizar);
   setTimeout(quizasActualizar, 60000);
   var intervalo = setInterval(quizasActualizar, 5 * 60000);
 })();
