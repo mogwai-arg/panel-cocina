@@ -80,3 +80,47 @@ test('Listas.gs: estrellas de la semana por persona', () => {
   ];
   assert.deepEqual({ ...ctx.estrellasDeLaSemana_(historial, '2026-10-14') }, { Thiago: 3, Javi: 1 });
 });
+
+// Hoja falsa para probar lectura y escritura sin Google
+function hojaFalsa(filas) {
+  const datos = filas.map((f) => f.slice());
+  return {
+    datos,
+    getDataRange: () => ({ getValues: () => datos.map((f) => f.slice()) }),
+    getRange: (fila, col, nf, nc) => ({
+      setValue: (v) => { datos[fila - 1][col - 1] = v; },
+      setValues: ([vals]) => { vals.forEach((v, j) => { datos[fila - 1][col - 1 + j] = v; }); },
+    }),
+    appendRow: (vals) => datos.push(vals.slice()),
+    getLastRow: () => datos.length,
+  };
+}
+
+test('Listas.gs: las filas con casillas sin tildar cuentan como vacías', () => {
+  ctx.Utilities.getUuid = () => 'abcdef12-xxxx';
+  const hoja = hojaFalsa([
+    ['id', 'item', 'cantidad', 'categoria', 'comprado', 'comprado_el', 'agregado_el'],
+    ['a1', 'Leche', 2, 'Lácteos', false, '', '2026-10-12'],
+    ['', '', '', '', false, '', ''],
+    ['', 'Pan', 1, '', false, '', ''], // cargado a mano, sin id
+    ['', '', '', '', false, '', ''],
+  ]);
+  const libro = { getSheetByName: () => hoja };
+  const filas = ctx.leerHoja_(libro, 'Compras');
+  assert.deepEqual([...filas.map((f) => f.item)], ['Leche', 'Pan']);
+  assert.equal(filas[1].id, 'abcdef12');
+  assert.equal(hoja.datos[3][0], 'abcdef12'); // quedó guardado en la planilla
+});
+
+test('Listas.gs: agrega en la primera fila libre, no al final de las casillas', () => {
+  const hoja = hojaFalsa([
+    ['id', 'item', 'comprado'],
+    ['a1', 'Leche', false],
+    ['', '', false],
+    ['', '', false],
+  ]);
+  assert.equal(ctx.agregarFila_(hoja, ['b2', 'Yerba', false]), 3);
+  assert.deepEqual([...hoja.datos[2]], ['b2', 'Yerba', false]);
+  const llena = hojaFalsa([['id', 'item'], ['a1', 'Leche']]);
+  assert.equal(ctx.agregarFila_(llena, ['b2', 'Yerba']), 3);
+});

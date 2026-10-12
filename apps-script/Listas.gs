@@ -40,18 +40,49 @@ function planilla_() {
   return SpreadsheetApp.openById(id);
 }
 
-/** Filas de una hoja como objetos, con el número de fila para poder editarlas. */
+/* Una celda vacía o una casilla sin tildar no cuentan como datos. */
+function vacia_(v) {
+  return v === '' || v === null || v === undefined || v === false;
+}
+
+function filaVacia_(fila) {
+  return fila.every(vacia_);
+}
+
+/**
+ * Filas de una hoja como objetos, con el número de fila para poder editarlas.
+ * A las filas cargadas a mano sin id les asigna uno.
+ */
 function leerHoja_(libro, nombre) {
   var hoja = libro.getSheetByName(nombre);
   var valores = hoja.getDataRange().getValues();
   var columnas = valores.shift();
-  return valores.map(function (fila, i) {
+  var colId = columnas.indexOf('id');
+  var filas = [];
+  valores.forEach(function (fila, i) {
+    if (filaVacia_(fila)) return;
     var o = { _fila: i + 2 };
     columnas.forEach(function (c, j) { o[c] = fila[j]; });
-    return o;
-  }).filter(function (o) {
-    return columnas.some(function (c) { return o[c] !== '' && o[c] !== null; });
+    if (colId >= 0 && vacia_(o.id)) {
+      o.id = nuevoId_();
+      hoja.getRange(o._fila, colId + 1).setValue(o.id);
+    }
+    filas.push(o);
   });
+  return filas;
+}
+
+/** Escribe `valores` en la primera fila libre (sin contar casillas vacías) y devuelve su número. */
+function agregarFila_(hoja, valores) {
+  var datos = hoja.getDataRange().getValues();
+  for (var i = 1; i < datos.length; i++) {
+    if (filaVacia_(datos[i])) {
+      hoja.getRange(i + 1, 1, 1, valores.length).setValues([valores]);
+      return i + 1;
+    }
+  }
+  hoja.appendRow(valores);
+  return hoja.getLastRow();
 }
 
 function columna_(nombreHoja, columna) {
@@ -130,7 +161,8 @@ function compra_(p) {
           .setValue((Number(existente.cantidad) || 1) + (Number(p.cantidad) || 1));
       } else {
         var categoria = p.categoria || categoriaHabitual_(libro, item) || 'Otros';
-        hoja.appendRow([nuevoId_(), item, Number(p.cantidad) || 1, categoria, false, '', hoyIso_()]);
+        var fila = agregarFila_(hoja, [nuevoId_(), item, Number(p.cantidad) || 1, categoria, false, '', hoyIso_()]);
+        hoja.getRange(fila, columna_('Compras', 'comprado')).insertCheckboxes();
       }
     } else {
       var fila = buscarPorId_(libro, 'Compras', p.id);
@@ -175,7 +207,7 @@ function tarea_(p) {
 
     var historial = libro.getSheetByName('Historial');
     if (hecha && !yaEstaba) {
-      historial.appendRow([hoy, t.persona, t.tarea, Number(t.estrellas) || 0]);
+      agregarFila_(historial, [hoy, t.persona, t.tarea, Number(t.estrellas) || 0]);
     } else if (!hecha && yaEstaba) {
       // Destildar devuelve las estrellas: borra la anotación de hoy de esa tarea.
       var h = leerHoja_(libro, 'Historial').filter(function (x) {
@@ -228,7 +260,7 @@ function crearPlanilla() {
   tareas.getRange('D2:D').setDataValidation(SpreadsheetApp.newDataValidation()
     .requireValueInList(['Mañana', 'Tarde', 'Noche'], true).setAllowInvalid(true).build());
   tareas.getRange(1, 6).setNote('Días en que toca, separados por coma: lun,mar,mié,jue,vie,sáb,dom. Vacío = todos los días.');
-  libro.getSheetByName('Compras').getRange('E2:E').insertCheckboxes();
+  libro.getSheetByName('Compras').getRange(2, columna_('Compras', 'comprado'), ejemplos.Compras.length, 1).insertCheckboxes();
   props.setProperty('PLANILLA_ID', libro.getId());
   Logger.log('Planilla creada: ' + libro.getUrl());
 }
