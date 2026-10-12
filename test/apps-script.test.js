@@ -34,3 +34,19 @@ test('convierte la fecha EXIF', () => {
   assert.equal(contexto.fechaExif_('2024:02:10 17:26:53'), '2024-02-10T17:26:53');
   assert.equal(contexto.fechaExif_(undefined), null);
 });
+
+test('básquet: lee los partidos del equipo desde el fixture de FeBAMBA', () => {
+  const html = fs.readFileSync(path.join(__dirname, 'fixtures', 'fixture-febamba.html'), 'utf8');
+  const partidos = JSON.parse(JSON.stringify(
+    contexto.partidosDelEquipo_(html, 'Argentino de Castelar Norte A', 'https://www.febamba.com')));
+  assert.equal(partidos.length, 2); // el de Centro B no es de Thiago
+  assert.deepEqual(partidos[0], {
+    fecha: '2026-09-26T11:00:00-03:00',
+    cancha: 'Argentino de Castelar',
+    local: { nombre: 'ARGENTINO DE CASTELAR NORTE A', escudo: 'https://www.febamba.com/escudos/6/95446', puntos: 73 },
+    visitante: { nombre: 'LANUS A', escudo: 'https://www.febamba.com/escudos/63/94306', puntos: 75 },
+  });
+  // Partido sin jugar: sin puntos, y el nombre con acento decodificado
+  assert.equal(partidos[1].visitante.nombre, 'PEDRO ECHAGÜE AZUL');
+  assert.equal(partidos[1].local.puntos, null);
+});

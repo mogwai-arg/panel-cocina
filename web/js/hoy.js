@@ -43,6 +43,7 @@
   function crearHoy(contenedor, fuente, opciones) {
     opciones = opciones || {};
     var alTocarRecuerdo = opciones.alTocarRecuerdo || function () {};
+    var basquetConfig = opciones.basquet || {};
 
     contenedor.innerHTML =
       '<div class="reloj"><b data-r="hora"></b><div><span data-r="dia"></span><span data-r="fecha"></span></div></div>' +
@@ -50,12 +51,14 @@
       '<button class="recuerdo" data-r="recuerdo" aria-label="Ver fotos"></button>' +
       '<div class="proximo" data-r="proximo"></div>' +
       '<div class="columnas" data-r="columnas"></div>' +
-      '<div class="dias" data-r="dias"></div>';
+      '<div class="lateral"><div class="basquet" data-r="basquet" hidden></div>' +
+      '<div class="dias" data-r="dias"></div></div>';
 
     function parte(nombre) { return contenedor.querySelector('[data-r="' + nombre + '"]'); }
 
     var eventos = [];
     var errorAgenda = null;
+    var basquet = null; // datos crudos de los partidos
 
     function pintarReloj() {
       var ahora = new Date();
@@ -151,7 +154,7 @@
       var caja = parte('dias');
       caja.innerHTML = '';
       caja.appendChild(el('span', 'lbl', 'Próximos días'));
-      var lista = Agenda.proximosDias(eventos, new Date(), 9);
+      var lista = Agenda.proximosDias(eventos, new Date(), basquet ? 4 : 9);
       if (!lista.length) {
         caja.appendChild(el('p', 'dias__vacio', 'Nada agendado.'));
         return;
@@ -167,9 +170,15 @@
       });
     }
 
+    function eventosDeBasquet() {
+      if (!basquet || basquetConfig.enAgenda === false) return [];
+      return Basquet.comoEventos(basquet, new Date(),
+        basquetConfig.calendario || 'Básquet', basquetConfig.color || '#d39b1e');
+    }
+
     function cargarAgenda() {
       return fuente.agenda().then(function (lista) {
-        eventos = lista || [];
+        eventos = (lista || []).concat(eventosDeBasquet());
         errorAgenda = null;
       }).catch(function (err) {
         console.error(err);
@@ -185,6 +194,74 @@
       return fuente.clima().then(pintarClima).catch(function (err) {
         console.error(err);
         pintarClima(null);
+      });
+    }
+
+    function escudo(lado) {
+      var caja = el('div', 'escudo');
+      caja.appendChild(el('span', 'escudo__iniciales', Basquet.nombreLindo(lado.nombre).charAt(0)));
+      if (lado.escudo) {
+        var img = el('img');
+        img.alt = '';
+        img.onerror = function () { img.remove(); };
+        img.src = lado.escudo;
+        caja.appendChild(img);
+      }
+      return caja;
+    }
+
+    function pintarBasquet() {
+      var caja = parte('basquet');
+      if (!basquet) { caja.hidden = true; return; }
+      var r = Basquet.resumen(basquet, new Date());
+      caja.hidden = false;
+      caja.innerHTML = '';
+
+      var cab = el('div', 'basquet__cab');
+      cab.appendChild(el('span', 'lbl', r.proximo ? 'Básquet · próximo' : 'Básquet'));
+      if (r.proximo) {
+        cab.appendChild(el('b', 'basquet__dia',
+          Agenda.etiquetaDia(r.proximo.fecha, new Date()) + ' · ' + Agenda.hora(r.proximo.fecha)));
+      }
+      caja.appendChild(cab);
+
+      if (r.proximo) {
+        var duelo = el('div', 'duelo');
+        var p = r.proximo;
+        var izq = p.esLocal ? p.propio : p.rival;
+        var der = p.esLocal ? p.rival : p.propio;
+        duelo.appendChild(escudo(izq));
+        duelo.appendChild(el('span', 'duelo__vs', 'vs'));
+        duelo.appendChild(escudo(der));
+        caja.appendChild(duelo);
+        caja.appendChild(el('p', 'basquet__rival', Basquet.nombreLindo(p.rival.nombre)));
+        caja.appendChild(el('p', 'basquet__cancha', (p.esLocal ? 'De local · ' : 'De visitante · ') + p.cancha));
+      } else {
+        caja.appendChild(el('p', 'basquet__rival', 'Sin partidos programados'));
+      }
+
+      if (r.ultimo) {
+        var pie = el('div', 'basquet__pie');
+        var u = r.ultimo;
+        pie.appendChild(el('span', 'basquet__ultimo', (u.gano ? 'Ganaron ' : 'Perdieron ') +
+          u.propio.puntos + '–' + u.rival.puntos + ' vs ' + Basquet.nombreLindo(u.rival.nombre)));
+        var racha = el('span', 'racha');
+        racha.title = 'Últimos partidos';
+        r.racha.forEach(function (g) { racha.appendChild(el('i', g ? 'g' : 'p', g ? 'G' : 'P')); });
+        pie.appendChild(racha);
+        caja.appendChild(pie);
+      }
+    }
+
+    function cargarBasquet() {
+      if (!fuente.basquet) return Promise.resolve();
+      return fuente.basquet().then(function (d) {
+        basquet = d;
+      }).catch(function (err) {
+        console.error(err);
+      }).then(function () {
+        pintarBasquet();
+        return cargarAgenda();
       });
     }
 
@@ -220,8 +297,10 @@
         cargarClima();
         cargarAgenda();
         cargarRecuerdo();
+        cargarBasquet();
         cada(10000, pintarReloj);
-        cada(30000, function () { pintarProximo(); pintarColumnas(); pintarDias(); });
+        cada(30000, function () { pintarProximo(); pintarColumnas(); pintarDias(); pintarBasquet(); });
+        cada(60 * 60000, cargarBasquet);
         cada(5 * 60000, cargarAgenda);
         cada(30 * 60000, cargarClima);
         cada(10 * 60000, cargarRecuerdo);

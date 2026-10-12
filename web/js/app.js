@@ -39,7 +39,8 @@
   });
 
   var hoy = Hoy.crearHoy(document.getElementById('vista-hoy'), fuente, {
-    alTocarRecuerdo: function () { irA('fotos'); }
+    alTocarRecuerdo: function () { irA('fotos'); },
+    basquet: config.BASQUET || { calendario: 'Thiago', color: '#d39b1e' }
   });
 
   var vistaActual = null;

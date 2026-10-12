@@ -16,6 +16,8 @@
  *   ?action=img&id=...&ancho=1600&token=...  → { mime, data (base64) }
  *   ?action=agenda&dias=7&token=...    → { eventos: [{ titulo, inicio, fin, todoElDia,
  *                                          lugar, calendario, color }] }
+ *   ?action=basquet&token=...          → { equipo, actualizado, partidos: [{ fecha, cancha,
+ *                                          local: { nombre, escudo, puntos }, visitante }] }
  */
 
 var MINUTOS_CACHE_LISTA = 30;
@@ -27,6 +29,7 @@ function doGet(e) {
     if (p.action === 'lista') return json_({ fotos: listarFotos_() });
     if (p.action === 'img') return json_(imagen_(p.id, Number(p.ancho) || 1600));
     if (p.action === 'agenda') return json_({ eventos: agenda_(Number(p.dias) || 7) });
+    if (p.action === 'basquet') return json_(basquet_());
     return json_({ error: 'Acción desconocida: ' + p.action });
   } catch (err) {
     return json_({ error: String(err && err.message || err) });
@@ -210,33 +213,102 @@ function probarAgenda() {
 }
 
 /**
- * Diagnóstico temporal del básquet: fases, grupos y cómo viene armado un partido
- * de Argentino de Castelar en el fixture de FeBAMBA. Copiá el registro y pasáselo a Claude.
+ * Partidos del equipo de básquet desde el sitio de la federación (sistema Gesdeportiva).
+ * Lee el mismo fixture que muestra la página del torneo y se queda con los del equipo.
+ *
+ * Propiedades opcionales (los valores por defecto son los de Thiago):
+ *   BASQUET_SITIO        https://www.febamba.com
+ *   BASQUET_COMPETICION  2015  (Formativas 2026, sale de la URL del torneo)
+ *   BASQUET_CATEGORIA    5077  (Cadetes Masculino)
+ *   BASQUET_EQUIPO       ARGENTINO DE CASTELAR NORTE A
  */
-function explorarBasquet() {
-  var base = 'https://www.febamba.com';
-  var compCat = 5077; // CADETES MASCULINO
-  var fases = JSON.parse(UrlFetchApp.fetch(base + '/api/clasificacion/' + compCat + '/fases').getContentText());
-  Logger.log('Fases: ' + JSON.stringify(fases));
-  fases.slice(0, 4).forEach(function (f) {
-    var grupos = JSON.parse(UrlFetchApp.fetch(base + '/api/clasificacion/' + f.idFase + '/grupos').getContentText());
-    Logger.log('  Grupos de ' + f.nombre + ': ' + JSON.stringify(grupos));
-  });
+function basquet_() {
+  var cache = CacheService.getScriptCache();
+  var guardada = cache.get('basquet');
+  if (guardada) return JSON.parse(guardada);
 
-  var hoy = new Date();
+  var props = PropertiesService.getScriptProperties();
+  var sitio = props.getProperty('BASQUET_SITIO') || 'https://www.febamba.com';
+  var competicion = props.getProperty('BASQUET_COMPETICION') || '2015';
+  var categoria = props.getProperty('BASQUET_CATEGORIA') || '5077';
+  var equipo = props.getProperty('BASQUET_EQUIPO') || 'ARGENTINO DE CASTELAR NORTE A';
+
   var fecha = function (dias) {
-    return Utilities.formatDate(new Date(hoy.getTime() + dias * 86400000), 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd');
+    return Utilities.formatDate(new Date(Date.now() + dias * 86400000), 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd');
   };
-  var url = base + '/detalle-torneo?handler=CargarSubPagina&competicionId=2015&compCatId=' + compCat +
-    '&fechaIni=' + fecha(-21) + '&fechaFin=' + fecha(21) + '&faseId=0&grupoId=0&seccion=fixture';
-  var html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
-  var filas = html.match(/<tr[\s\S]*?<\/tr>/gi) || [];
-  Logger.log('Fixture: ' + html.length + ' caracteres, ' + filas.length + ' filas');
-  Logger.log('Encabezado: ' + html.slice(0, 1500).replace(/\s+/g, ' '));
-  var deCastelar = filas.filter(function (f) { return /castelar/i.test(f); });
-  Logger.log('Filas con Castelar: ' + deCastelar.length);
-  deCastelar.slice(0, 2).forEach(function (f, n) {
-    Logger.log('---- Partido ' + (n + 1) + ':\n' + f.replace(/\s+/g, ' ').slice(0, 4000));
+  var url = sitio + '/detalle-torneo?handler=CargarSubPagina&competicionId=' + competicion +
+    '&compCatId=' + categoria + '&fechaIni=' + fecha(-45) + '&fechaFin=' + fecha(45) +
+    '&faseId=0&grupoId=0&seccion=fixture';
+  var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  if (resp.getResponseCode() !== 200) throw new Error('El sitio de la federación respondió ' + resp.getResponseCode());
+
+  var datos = {
+    equipo: equipo,
+    partidos: partidosDelEquipo_(resp.getContentText(), equipo, sitio),
+    actualizado: new Date().toISOString()
+  };
+  cache.put('basquet', JSON.stringify(datos), 3600);
+  return datos;
+}
+
+/** Lee las filas del fixture (HTML) y devuelve los partidos donde juega `equipo`. */
+function partidosDelEquipo_(html, equipo, sitio) {
+  var buscado = normalizarTexto_(equipo);
+  var partidos = [];
+  (html.match(/<tr[^>]*datos-estadisticos[\s\S]*?<\/tr>/gi) || []).forEach(function (fila) {
+    var nombres = todas_(fila, /<strong class="nombre-equipo">([^<]*)<\/strong>/g);
+    if (nombres.length < 2) return;
+    if (normalizarTexto_(nombres[0]) !== buscado && normalizarTexto_(nombres[1]) !== buscado) return;
+    var escudos = todas_(fila, /<img src="([^"]+)"/g);
+    var puntos = todas_(fila, /<td class="resultados">\s*<strong>([^<]*)<\/strong>/g);
+    var cuando = fila.match(/fecha-campo[\s\S]*?<strong>\s*(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})\s*<\/strong>(?:\s*<small>([^<]*)<\/small>)?/);
+    if (!cuando) return;
+    var lado = function (i) {
+      return {
+        nombre: decodificarHtml_(nombres[i]).trim(),
+        escudo: escudos[i] ? (/^https?:/.test(escudos[i]) ? escudos[i] : sitio + escudos[i]) : null,
+        puntos: /^\d+$/.test((puntos[i] || '').trim()) ? Number(puntos[i]) : null
+      };
+    };
+    partidos.push({
+      // Argentina no tiene horario de verano: siempre UTC-3.
+      fecha: cuando[3] + '-' + cuando[2] + '-' + cuando[1] + 'T' + cuando[4] + ':' + cuando[5] + ':00-03:00',
+      cancha: cuando[6] ? decodificarHtml_(cuando[6]).trim() : '',
+      local: lado(0),
+      visitante: lado(1)
+    });
+  });
+  partidos.sort(function (a, b) { return a.fecha < b.fecha ? -1 : 1; });
+  return partidos;
+}
+
+function todas_(texto, patron) {
+  var res = [], m;
+  while ((m = patron.exec(texto))) res.push(m[1]);
+  return res;
+}
+
+function normalizarTexto_(s) {
+  return decodificarHtml_(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+function decodificarHtml_(s) {
+  return String(s)
+    .replace(/&#x([0-9a-f]+);/gi, function (_, h) { return String.fromCharCode(parseInt(h, 16)); })
+    .replace(/&#(\d+);/g, function (_, d) { return String.fromCharCode(Number(d)); })
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
+/** Para probar desde el editor: muestra los partidos encontrados. */
+function probarBasquet() {
+  CacheService.getScriptCache().remove('basquet');
+  var d = basquet_();
+  Logger.log('Equipo: ' + d.equipo + ' · partidos encontrados: ' + d.partidos.length);
+  d.partidos.forEach(function (p) {
+    Logger.log(p.fecha.slice(0, 16) + '  ' + p.local.nombre + ' ' + (p.local.puntos === null ? '-' : p.local.puntos) +
+      ' – ' + (p.visitante.puntos === null ? '-' : p.visitante.puntos) + ' ' + p.visitante.nombre + '  (' + p.cancha + ')');
   });
 }
 

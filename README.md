@@ -11,7 +11,8 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 | Módulo | Estado |
 |---|---|
 | Fotos desde Drive con diseño inteligente | ✅ funcionando con Drive |
-| Panel "Hoy" (reloj, clima, agenda, próximo evento) | ✅ primera versión |
+| Panel "Hoy" (reloj, clima, agenda, próximo evento) | ✅ funcionando con Google Calendar |
+| Partidos de básquet de Thiago (FeBAMBA) | ✅ primera versión |
 | Tareas y compras (Google Sheets) | pendiente |
 | Avisos del cole leídos de Gmail con IA | pendiente |
 | Ubicación de Thiago (OwnTracks) | pendiente |
@@ -35,6 +36,26 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
   (las de más eventos primero, hasta 4).
 - **Próximos días**: lo que viene a partir de pasado mañana.
 - Un recuerdo: una foto de "un día como hoy" si hay, si no una al azar.
+- **Básquet**: el próximo partido de Thiago con los dos escudos, día, hora y cancha;
+  el último resultado y la racha de los últimos 5. Los partidos por jugar también
+  entran en la agenda, así que el día del partido aparece en "Próximo" con cuenta regresiva.
+
+## Básquet
+
+Los partidos salen del sitio de la federación (FeBAMBA usa el sistema Gesdeportiva,
+el mismo de la app de CAB). El Apps Script lee el fixture del torneo una vez por hora
+y se queda con los partidos del equipo. Por defecto busca a **Argentino de Castelar
+Norte A** en **Cadetes Masculino, Formativas 2026**. Para otro equipo o temporada,
+cambiá estas propiedades del script:
+
+| Propiedad | Por defecto | De dónde sale |
+|---|---|---|
+| `BASQUET_SITIO` | `https://www.febamba.com` | sitio de la federación |
+| `BASQUET_COMPETICION` | `2015` | el número en la URL del torneo (`/detalle-torneo/2015/...`) |
+| `BASQUET_CATEGORIA` | `5077` | el valor de la categoría en el selector de esa página |
+| `BASQUET_EQUIPO` | `ARGENTINO DE CASTELAR NORTE A` | el nombre como figura en el fixture |
+
+Para probarlo desde el editor: ejecutá `probarBasquet`.
 
 ## Fotos
 
@@ -109,6 +130,7 @@ web/           lo que muestra el marco (HTML/CSS/JS sin dependencias, compatible
   js/fotos.js    slideshow
   js/agenda.js   lógica de la agenda (función pura)
   js/clima.js    clima de Open-Meteo
+  js/basquet.js  lógica de la tarjeta de básquet (función pura)
   js/hoy.js      vista "Hoy"
   js/app.js      arranque, barra lateral, inactividad
 test/          tests (`node --test`)

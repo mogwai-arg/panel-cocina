@@ -17,5 +17,8 @@ window.CONFIG = {
   NOMBRES_CALENDARIOS: {
     'tu-mail@gmail.com': 'Javi',
     'Festivos en Argentina': 'Feriados'
-  }
+  },
+  // Partidos de básquet (el equipo se configura en las propiedades del Apps Script).
+  // Los partidos por jugar también aparecen en la agenda, en la columna `calendario`.
+  BASQUET: { calendario: 'Thiago', color: '#d39b1e' }
 };

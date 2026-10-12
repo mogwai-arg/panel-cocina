@@ -9,6 +9,7 @@
  *   url(foto): Promise<string>
  *   agenda(): Promise<evento[]>    ver js/agenda.js
  *   clima(): Promise<clima>        ver js/clima.js
+ *   basquet(): Promise<partidos>   ver js/basquet.js
  */
 (function (root) {
   'use strict';
@@ -41,7 +42,41 @@
       listar: function () { return Promise.resolve(fotos); },
       url: function (foto) { return Promise.resolve('demo/' + foto.id + '.svg'); },
       agenda: function () { return Promise.resolve(agendaEjemplo(new Date())); },
-      clima: function () { return Promise.resolve(Clima.ejemplo(new Date())); }
+      clima: function () { return Promise.resolve(Clima.ejemplo(new Date())); },
+      basquet: function () { return Promise.resolve(basquetEjemplo(new Date())); }
+    };
+  }
+
+  // Escudo de ejemplo: un círculo con las iniciales.
+  function escudoEjemplo(letras, fondo, texto) {
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+      '<circle cx="50" cy="50" r="46" fill="' + fondo + '" stroke="#141414" stroke-width="4"/>' +
+      '<text x="50" y="62" font-family="Arial" font-weight="700" font-size="34" text-anchor="middle" fill="' +
+      texto + '">' + letras + '</text></svg>';
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  }
+
+  function basquetEjemplo(ahora) {
+    var EQUIPO = 'ARGENTINO DE CASTELAR NORTE A';
+    function sabado(semanas) {
+      var d = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 11, 0);
+      d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7) + semanas * 7);
+      return d.toISOString();
+    }
+    function equipo(nombre, escudo, puntos) { return { nombre: nombre, escudo: escudo, puntos: puntos }; }
+    var castelar = escudoEjemplo('A', '#8fb8de', '#141414');
+    var p = function (fecha, local, visitante, cancha) {
+      return { fecha: fecha, cancha: cancha, local: local, visitante: visitante };
+    };
+    return {
+      equipo: EQUIPO,
+      partidos: [
+        p(sabado(-3), equipo(EQUIPO, castelar, 73), equipo('LANUS A', escudoEjemplo('L', '#7a1f2b', '#fff'), 75), 'Argentino de Castelar'),
+        p(sabado(-2), equipo('RIVER PLATE', escudoEjemplo('R', '#fff', '#d0302b'), 60), equipo(EQUIPO, castelar, 81), 'River Plate'),
+        p(sabado(-1), equipo(EQUIPO, castelar, 82), equipo('MIDLAND', escudoEjemplo('M', '#1f3f8f', '#fff'), 65), 'Argentino de Castelar'),
+        p(sabado(1), equipo(EQUIPO, castelar, null), equipo('PEDRO ECHAGÜE AZUL', escudoEjemplo('PE', '#f2c230', '#1f3f8f'), null), 'Argentino de Castelar'),
+        p(sabado(2), equipo('OBRAS', escudoEjemplo('O', '#e6e6e6', '#141414'), null), equipo(EQUIPO, castelar, null), 'Obras Sanitarias')
+      ]
     };
   }
 
@@ -142,7 +177,8 @@
           });
         });
       },
-      clima: function () { return Clima.obtener(latitud, longitud); }
+      clima: function () { return Clima.obtener(latitud, longitud); },
+      basquet: function () { return pedir({ action: 'basquet', token: token }); }
     };
   }
 

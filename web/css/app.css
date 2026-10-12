@@ -187,7 +187,26 @@ html, body {
 .evt small { display: block; font: 600 12px var(--rotulo); color: var(--suave); }
 .mas { font: 800 12px var(--rotulo); letter-spacing: .08em; color: var(--suave); padding-left: 4px; }
 
-.dias { grid-column: 3; background: var(--tarjeta); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: hidden; }
+.lateral { grid-column: 3; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.dias { flex: 1; background: var(--tarjeta); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: hidden; }
+
+/* Básquet */
+.basquet { background: var(--tarjeta); border-radius: 12px; padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+.basquet__cab { display: flex; justify-content: space-between; align-items: baseline; }
+.basquet__dia { font: 800 14px var(--rotulo); letter-spacing: .06em; text-transform: uppercase; }
+.duelo { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 4px 0 2px; }
+.duelo__vs { font: italic 400 20px var(--serif); color: var(--suave); }
+.escudo { position: relative; width: 58px; height: 58px; border-radius: 50%; background: var(--papel); display: grid; place-items: center; overflow: hidden; }
+.escudo img { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); object-fit: contain; background: var(--tarjeta); border-radius: 50%; }
+.escudo__iniciales { font: 800 22px var(--rotulo); color: var(--suave); }
+.basquet__rival { margin: 0; text-align: center; font: 400 22px/1.1 var(--serif); }
+.basquet__cancha { margin: 0; text-align: center; font-size: 13px; color: var(--suave); }
+.basquet__pie { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--linea); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.basquet__ultimo { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.racha { display: flex; gap: 3px; flex: none; }
+.racha i { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 800 10px var(--rotulo); font-style: normal; color: #fff; }
+.racha .g { background: #2e7d4f; }
+.racha .p { background: #c4453a; }
 .dia { display: grid; grid-template-columns: 10px 64px 1fr; gap: 8px; align-items: baseline; font-size: 15px; }
 .dia i { width: 10px; height: 10px; border-radius: 50%; align-self: center; }
 .dia b { font: 800 13px var(--rotulo); letter-spacing: .04em; }
