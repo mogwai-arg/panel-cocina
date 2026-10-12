@@ -13,7 +13,7 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 | Fotos desde Drive con diseño inteligente | ✅ funcionando con Drive |
 | Panel "Hoy" (reloj, clima, agenda, próximo evento) | ✅ funcionando con Google Calendar |
 | Partidos de básquet de Thiago (FeBAMBA) | ✅ primera versión |
-| Tareas y compras (Google Sheets) | pendiente |
+| Tareas y compras (Google Sheets) | ✅ primera versión |
 | Avisos del cole leídos de Gmail con IA | pendiente |
 | Ubicación de Thiago (OwnTracks) | pendiente |
 | Instalación en el marco por ADB, con backup de Frameo | pendiente |
@@ -76,6 +76,22 @@ copia los partidos y los mantiene al día cada 3 horas (cambios de horario o can
 el resultado en el título: "🏀 Ganaron 96–73 vs San Miguel Verde"). Así los ves también
 en el celular. Con la sincronización activa, el panel toma los partidos de ese
 calendario y no los duplica.
+
+## Tareas y Compras
+
+Viven en una planilla de Google Sheets (**Panel de Cocina · Listas**) que se puede
+editar a mano, también desde la app de Sheets del celular. Para crearla, agregá el
+archivo [`apps-script/Listas.gs`](apps-script/Listas.gs) al proyecto de Apps Script
+(**+ → Secuencia de comandos**, nombre `Listas`) y ejecutá `crearPlanilla` una vez.
+
+- **Compras**: agrupadas por categoría, con cantidad. Tocar tacha (con "Deshacer");
+  lo tachado desaparece al día siguiente. "Agregar algo…" o los **habituales**
+  (hoja Habituales) suman a la lista; si ya estaba, suman cantidad.
+- **Tareas**: una columna por persona, filtradas por mañana, tarde o noche
+  (arranca en el momento actual). En la columna `dias` de la planilla van los días
+  en que toca (`lun,mié,vie`); vacío = todos los días. Cada tarea suma `estrellas`
+  y la cabecera muestra las de la semana (se cuentan desde la hoja Historial).
+- La barra lateral muestra cuántas compras y tareas de hoy quedan pendientes.
 
 ## Fotos
 
@@ -143,7 +159,7 @@ implementaciones → Editar → Nueva versión** para que el cambio llegue al ma
 ## Estructura
 
 ```
-apps-script/   backend (Google Apps Script)
+apps-script/   backend (Google Apps Script): Code.gs y Listas.gs
 web/           lo que muestra el marco (HTML/CSS/JS sin dependencias, compatible con Chrome 106)
   js/layout.js   motor de diseño de diapositivas (función pura)
   js/fuentes.js  de dónde salen las fotos: demo o Drive
@@ -151,6 +167,8 @@ web/           lo que muestra el marco (HTML/CSS/JS sin dependencias, compatible
   js/agenda.js   lógica de la agenda (función pura)
   js/clima.js    clima de Open-Meteo
   js/basquet.js  lógica de la tarjeta de básquet (función pura)
+  js/listas.js   lógica de tareas y compras (función pura)
+  js/vistas-listas.js  vistas Tareas y Compras
   js/hoy.js      vista "Hoy"
   js/app.js      arranque, barra lateral, inactividad
 test/          tests (`node --test`)

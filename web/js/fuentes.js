@@ -10,6 +10,7 @@
  *   agenda(): Promise<evento[]>    ver js/agenda.js
  *   clima(): Promise<clima>        ver js/clima.js
  *   basquet(): Promise<partidos>   ver js/basquet.js
+ *   listas(), compra(op, datos), tarea(op, datos)   ver js/listas.js y apps-script/Listas.gs
  */
 (function (root) {
   'use strict';
@@ -43,9 +44,83 @@
       url: function (foto) { return Promise.resolve('demo/' + foto.id + '.svg'); },
       agenda: function () { return Promise.resolve(agendaEjemplo(new Date())); },
       clima: function () { return Promise.resolve(Clima.ejemplo(new Date())); },
-      basquet: function () { return Promise.resolve(basquetEjemplo(new Date())); }
+      basquet: function () { return Promise.resolve(basquetEjemplo(new Date())); },
+      listas: function () { return Promise.resolve(listasDemo.copia()); },
+      compra: function (op, datos) { return Promise.resolve(listasDemo.compra(op, datos)); },
+      tarea: function (op, datos) { return Promise.resolve(listasDemo.tarea(op, datos)); }
     };
   }
+
+  // Listas de ejemplo que se pueden tocar (los cambios se pierden al recargar).
+  var listasDemo = (function () {
+    var n = 100;
+    function id() { return 'd' + (n++); }
+    var estado = {
+      compras: [
+        { id: id(), item: 'Leche', cantidad: 2, categoria: 'Lácteos', comprado: false },
+        { id: id(), item: 'Queso cremoso', cantidad: 1, categoria: 'Lácteos', comprado: false },
+        { id: id(), item: 'Yerba', cantidad: 1, categoria: 'Almacén', comprado: false },
+        { id: id(), item: 'Galletitas para la vianda', cantidad: 3, categoria: 'Almacén', comprado: false },
+        { id: id(), item: 'Bananas', cantidad: 6, categoria: 'Verdulería', comprado: false },
+        { id: id(), item: 'Paltas', cantidad: 2, categoria: 'Verdulería', comprado: true },
+        { id: id(), item: 'Cartulina celeste', cantidad: 1, categoria: 'Librería', comprado: false }
+      ],
+      habituales: [
+        { item: 'Leche', categoria: 'Lácteos' }, { item: 'Yerba', categoria: 'Almacén' },
+        { item: 'Pan', categoria: 'Panadería' }, { item: 'Huevos', categoria: 'Almacén' },
+        { item: 'Bananas', categoria: 'Verdulería' }, { item: 'Café', categoria: 'Almacén' },
+        { item: 'Manteca', categoria: 'Lácteos' }, { item: 'Papel de cocina', categoria: 'Limpieza' },
+        { item: 'Detergente', categoria: 'Limpieza' }
+      ],
+      tareas: [
+        { id: id(), tarea: 'Tender la cama', persona: 'Thiago', momento: 'Mañana', estrellas: 1, dias: '', hecha: true },
+        { id: id(), tarea: 'Desayunar y lavar la taza', persona: 'Thiago', momento: 'Mañana', estrellas: 1, dias: '', hecha: false },
+        { id: id(), tarea: 'Tarea del colegio', persona: 'Thiago', momento: 'Tarde', estrellas: 2, dias: '', hecha: false },
+        { id: id(), tarea: 'Preparar el bolso de básquet', persona: 'Thiago', momento: 'Tarde', estrellas: 1, dias: '', hecha: true },
+        { id: id(), tarea: 'Practicar tiros libres', persona: 'Thiago', momento: 'Tarde', estrellas: 2, dias: '', hecha: false },
+        { id: id(), tarea: 'Pagar expensas', persona: 'Javi', momento: 'Tarde', estrellas: 1, dias: '', hecha: true },
+        { id: id(), tarea: 'Llamar al plomero', persona: 'Javi', momento: 'Tarde', estrellas: 1, dias: '', hecha: true },
+        { id: id(), tarea: 'Sacar la basura', persona: 'Javi', momento: 'Noche', estrellas: 1, dias: '', hecha: false },
+        { id: id(), tarea: 'Regar las plantas', persona: 'Cualquiera', momento: 'Tarde', estrellas: 2, dias: '', hecha: false },
+        { id: id(), tarea: 'Vaciar el lavavajillas', persona: 'Cualquiera', momento: '', estrellas: 3, dias: '', hecha: false },
+        { id: id(), tarea: 'Poner la mesa', persona: 'Cualquiera', momento: 'Noche', estrellas: 1, dias: '', hecha: false }
+      ],
+      estrellas: { Thiago: 42, Javi: 9 }
+    };
+    function copia() { return JSON.parse(JSON.stringify(estado)); }
+    function buscar(lista, idBuscado) {
+      var x = lista.filter(function (o) { return o.id === idBuscado; })[0];
+      if (!x) throw new Error('No encontré ese elemento');
+      return x;
+    }
+    return {
+      copia: copia,
+      compra: function (op, d) {
+        if (op === 'agregar') {
+          var existente = estado.compras.filter(function (c) {
+            return !c.comprado && c.item.toLowerCase() === d.item.toLowerCase();
+          })[0];
+          if (existente) existente.cantidad += Number(d.cantidad) || 1;
+          else estado.compras.push({ id: id(), item: d.item, cantidad: Number(d.cantidad) || 1,
+            categoria: d.categoria || 'Otros', comprado: false });
+        } else if (op === 'marcar') {
+          buscar(estado.compras, d.id).comprado = d.valor === '1';
+        } else if (op === 'cantidad') {
+          buscar(estado.compras, d.id).cantidad = Math.max(1, Number(d.cantidad) || 1);
+        }
+        return copia();
+      },
+      tarea: function (op, d) {
+        var t = buscar(estado.tareas, d.id);
+        var hecha = d.valor === '1';
+        if (hecha !== t.hecha) {
+          estado.estrellas[t.persona] = (estado.estrellas[t.persona] || 0) + (hecha ? t.estrellas : -t.estrellas);
+        }
+        t.hecha = hecha;
+        return copia();
+      }
+    };
+  })();
 
   // Escudo de ejemplo: un círculo con las iniciales.
   function escudoEjemplo(letras, fondo, texto) {
@@ -179,7 +254,14 @@
         });
       },
       clima: function () { return Clima.obtener(latitud, longitud); },
-      basquet: function () { return pedir({ action: 'basquet', token: token }); }
+      basquet: function () { return pedir({ action: 'basquet', token: token }); },
+      listas: function () { return pedir({ action: 'listas', token: token }); },
+      compra: function (op, datos) {
+        return pedir(Object.assign({ action: 'compra', op: op, token: token }, datos));
+      },
+      tarea: function (op, datos) {
+        return pedir(Object.assign({ action: 'tarea', op: op, token: token }, datos));
+      }
     };
   }
 

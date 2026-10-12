@@ -23,15 +23,15 @@
   var pantalla = document.getElementById('pantalla');
 
   // Avisar en pantalla si se está usando el modo demo y por qué.
-  var aviso = document.getElementById('aviso-config');
+  var avisoConfig = document.getElementById('aviso-config');
   if (window.ERROR_CONFIG || window.CONFIG === undefined) {
-    aviso.textContent = 'Modo demo: config.js tiene un error y no se pudo leer — ' +
+    avisoConfig.textContent = 'Modo demo: config.js tiene un error y no se pudo leer — ' +
       (window.ERROR_CONFIG || 'revisá que esté bien escrito');
-    aviso.hidden = false;
+    avisoConfig.hidden = false;
   } else if (!usarDrive) {
-    aviso.textContent = window.CONFIG ? 'Modo demo (?demo=1)' : 'Modo demo: no hay config.js';
-    aviso.className += ' aviso-config--suave';
-    aviso.hidden = false;
+    avisoConfig.textContent = window.CONFIG ? 'Modo demo (?demo=1)' : 'Modo demo: no hay config.js';
+    avisoConfig.className += ' aviso-config--suave';
+    avisoConfig.hidden = false;
   }
   var reloj = document.getElementById('reloj-lateral');
 
@@ -55,6 +55,46 @@
     basquet: config.BASQUET || { calendario: 'Thiago', color: '#d39b1e' }
   });
 
+  // Aviso abajo de la pantalla, con "Deshacer" opcional.
+  var aviso = document.getElementById('aviso');
+  var avisoTexto = document.getElementById('aviso-texto');
+  var avisoDeshacer = document.getElementById('aviso-deshacer');
+  var avisoTimer = null;
+  var avisoAccion = null;
+  function avisar(texto, deshacer) {
+    avisoTexto.textContent = texto;
+    avisoAccion = deshacer || null;
+    avisoDeshacer.hidden = !deshacer;
+    aviso.hidden = false;
+    clearTimeout(avisoTimer);
+    avisoTimer = setTimeout(function () { aviso.hidden = true; }, 4000);
+  }
+  avisoDeshacer.addEventListener('click', function () {
+    if (avisoAccion) avisoAccion();
+    aviso.hidden = true;
+  });
+
+  var listas = VistasListas.crearListas(fuente, { avisar: avisar });
+  var vistas = {
+    tareas: VistasListas.crearTareas(document.getElementById('vista-tareas'), listas, {
+      // Mismos colores que en la agenda
+      colores: config.PERSONAS || { Thiago: '#d39b1e', Javi: '#2f5fd0' }
+    }),
+    compras: VistasListas.crearCompras(document.getElementById('vista-compras'), listas, { avisar: avisar })
+  };
+
+  // Números en la barra lateral: compras pendientes y tareas de hoy sin hacer.
+  listas.alCambiar(function (d) {
+    var compras = Listas.pendientes(d.compras || []).length;
+    var tareas = Listas.progresoDelDia(d.tareas || [], new Date())
+      .reduce(function (s, p) { return s + p.total - p.hechas; }, 0);
+    [['compras', compras], ['tareas', tareas]].forEach(function (x) {
+      var n = document.querySelector('[data-num="' + x[0] + '"]');
+      n.textContent = x[1];
+      n.hidden = !x[1];
+    });
+  });
+
   var vistaActual = null;
   function irA(vista) {
     if (vista === vistaActual) return;
@@ -68,6 +108,7 @@
       else b.removeAttribute('aria-current');
     });
     if (vista === 'fotos') fotos.reanudar(); else fotos.pausar();
+    if (vistas[vista]) { listas.cargar(); vistas[vista].alMostrar(); }
   }
 
   document.querySelectorAll('.nav [data-ir]').forEach(function (b) {
@@ -108,9 +149,21 @@
   setInterval(pintarReloj, 10000);
   pintarReloj();
 
+  listas.cargar();
+  // Mantener las listas al día por si alguien las cambia desde el celular.
+  // Cada minuto si se están mirando; si no, cada 5 (para los números de la barra).
+  var minutosSinRecargar = 0;
+  setInterval(function () {
+    minutosSinRecargar++;
+    if (vistas[vistaActual] || minutosSinRecargar >= 5) {
+      minutosSinRecargar = 0;
+      listas.cargar();
+    }
+  }, 60000);
+
   fotos.iniciar();
   fotos.pausar();
   hoy.iniciar();
-  irA(params.get('vista') === 'fotos' ? 'fotos' : 'hoy');
+  irA(['fotos', 'tareas', 'compras'].indexOf(params.get('vista')) >= 0 ? params.get('vista') : 'hoy');
   actividad();
 })();

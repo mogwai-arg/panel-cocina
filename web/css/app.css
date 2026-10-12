@@ -221,3 +221,75 @@ html, body {
   font: 600 14px var(--texto); max-width: 900px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .aviso-config--suave { background: rgba(20, 20, 20, .75); }
+
+/* Números en la barra lateral */
+.nav button { position: relative; }
+.nav__num {
+  position: absolute; top: 8px; right: 18px;
+  min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px;
+  background: #c4453a; color: #fff; font: 800 12px/22px var(--rotulo); letter-spacing: 0; text-align: center;
+}
+
+/* Aviso abajo, con Deshacer */
+.aviso {
+  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 8;
+  background: var(--tinta); color: #fff; border-radius: 12px; padding: 14px 18px;
+  display: flex; gap: 20px; align-items: center; font: 600 16px var(--texto);
+  max-width: 900px; box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+}
+.aviso button { all: unset; cursor: pointer; font: 800 13px var(--rotulo); letter-spacing: .1em; padding: 6px 8px; }
+
+/* ===== TAREAS y COMPRAS ===== */
+.tareas, .compras { padding: 24px 30px; }
+.listas__cab { display: flex; justify-content: space-between; align-items: end; margin-bottom: 18px; }
+.listas__titulo { margin: 0; font: 400 58px/1 var(--serif); display: flex; align-items: baseline; gap: 14px; }
+.listas__titulo small { font: 800 22px var(--rotulo); font-stretch: 85%; }
+.listas__vacio { font: italic 400 22px var(--serif); color: var(--suave); }
+.seg { display: flex; gap: 4px; }
+.seg button { all: unset; cursor: pointer; font: 800 14px var(--rotulo); letter-spacing: .1em; padding: 12px 20px; border-radius: 99px; }
+.seg button[aria-pressed="true"] { background: var(--tinta); color: #fff; }
+
+.caja { width: 40px; height: 40px; border-radius: 10px; border: 2px solid #cfccc3; display: grid; place-items: center; flex: none; background: var(--tarjeta); }
+.caja svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 3; opacity: 0; }
+
+.personas { display: grid; gap: 14px; height: 640px; }
+.persona { background: var(--tarjeta); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.persona header { color: #fff; padding: 14px; display: flex; align-items: center; gap: 10px; }
+.persona__av { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #fff; font: 800 17px var(--rotulo); flex: none; }
+.persona header b { display: block; font: 800 17px var(--rotulo); letter-spacing: .06em; text-transform: uppercase; }
+.persona header small { font: 600 13px var(--rotulo); opacity: .9; }
+.persona__items { padding: 14px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.tarea { all: unset; cursor: pointer; display: flex; gap: 12px; align-items: center; font: 600 18px/1.25 var(--texto); }
+.tarea small { display: block; font: 600 12px var(--rotulo); color: var(--ambar); }
+.tarea--hecha .caja { background: var(--c); border-color: var(--c); }
+.tarea--hecha .caja svg { opacity: 1; }
+.tarea--hecha .tarea__txt { text-decoration: line-through; color: var(--suave); }
+.persona__listo { margin: auto 0 16px; text-align: center; font: italic 400 36px var(--serif); color: var(--c); }
+
+.compras { display: grid; grid-template-columns: 1fr 360px; grid-template-rows: minmax(0, 1fr); gap: 30px; }
+.compras__lista { min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.compras__grupos { overflow-y: auto; padding-right: 8px; margin-top: 4px; }
+.categoria { margin-top: 16px; border-bottom: 2px solid var(--tinta); padding-bottom: 4px; }
+.fila { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--linea); padding: 6px 0; }
+.fila__marcar { all: unset; cursor: pointer; display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; padding: 4px 0; font: 600 20px var(--texto); }
+.fila__item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fila--hecha .caja { background: var(--tinta); border-color: var(--tinta); }
+.fila--hecha .caja svg { opacity: 1; }
+.fila--hecha .fila__item { text-decoration: line-through; color: var(--suave); }
+.cantidad { display: flex; align-items: center; gap: 4px; flex: none; }
+.cantidad b { min-width: 28px; text-align: center; font: 800 18px var(--rotulo); font-variant-numeric: tabular-nums; }
+.cantidad button { all: unset; cursor: pointer; width: 40px; height: 40px; border-radius: 10px; text-align: center; font: 600 22px/40px var(--texto); color: var(--tinta); }
+.cantidad button:disabled { opacity: .25; cursor: default; }
+
+.compras__lado { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.agregar { display: flex; border: 4px solid var(--tinta); border-radius: 14px; overflow: hidden; background: var(--tarjeta); }
+.agregar input { all: unset; flex: 1; min-width: 0; padding: 16px; font: 400 20px var(--texto); }
+.agregar input::placeholder { color: var(--suave); }
+.agregar button { all: unset; cursor: pointer; padding: 0 16px; background: var(--tinta); color: #fff; font: 800 13px var(--rotulo); letter-spacing: .1em; text-transform: uppercase; }
+.habituales { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; overflow-y: auto; }
+.habitual { all: unset; cursor: pointer; height: 84px; box-sizing: border-box; border-radius: 10px; padding: 10px; background: var(--tarjeta);
+  display: flex; flex-direction: column; justify-content: space-between; }
+.habitual b { font: 800 13px var(--rotulo); letter-spacing: .04em; text-transform: uppercase; }
+.habitual small { font: 600 11px var(--rotulo); color: var(--suave); }
+.habitual--en-lista { background: var(--tinta); color: #fff; }
+.habitual--en-lista small { color: #fff; }

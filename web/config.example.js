@@ -20,5 +20,7 @@ window.CONFIG = {
   },
   // Partidos de básquet (el equipo se configura en las propiedades del Apps Script).
   // Los partidos por jugar también aparecen en la agenda, en la columna `calendario`.
-  BASQUET: { calendario: 'Thiago', color: '#d39b1e' }
+  BASQUET: { calendario: 'Thiago', color: '#d39b1e' },
+  // Color de cada persona en Tareas (el nombre como figura en la columna "persona" de la planilla)
+  PERSONAS: { Thiago: '#d39b1e', Javi: '#2f5fd0' }
 };

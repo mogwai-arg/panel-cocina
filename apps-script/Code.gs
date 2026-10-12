@@ -18,6 +18,7 @@
  *                                          lugar, calendario, color }] }
  *   ?action=basquet&token=...          → { equipo, actualizado, partidos: [{ fecha, cancha,
  *                                          local: { nombre, escudo, puntos }, visitante }] }
+ *   ?action=listas | compra | tarea     → ver Listas.gs
  */
 
 var MINUTOS_CACHE_LISTA = 30;
@@ -30,6 +31,9 @@ function doGet(e) {
     if (p.action === 'img') return json_(imagen_(p.id, Number(p.ancho) || 1600));
     if (p.action === 'agenda') return json_({ eventos: agenda_(Number(p.dias) || 7) });
     if (p.action === 'basquet') return json_(basquet_());
+    if (p.action === 'listas') return json_(listas_());     // Listas.gs
+    if (p.action === 'compra') return json_(compra_(p));
+    if (p.action === 'tarea') return json_(tarea_(p));
     return json_({ error: 'Acción desconocida: ' + p.action });
   } catch (err) {
     return json_({ error: String(err && err.message || err) });
