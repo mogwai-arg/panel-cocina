@@ -298,6 +298,23 @@ function explorarBasquet2() {
   });
 }
 
+/** Diagnóstico temporal (tercera parte): los scripts escritos dentro de la página. */
+function explorarBasquet3() {
+  var base = 'https://www.febamba.com';
+  var html = UrlFetchApp.fetch(base + '/detalle-torneo/2015/formativas-2026', { muteHttpExceptions: true }).getContentText();
+  var scripts = (html.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/gi) || [])
+    .map(function (s) { return s.replace(/<\/?script[^>]*>/gi, '').trim(); })
+    .filter(function (s) { return s.length > 0; });
+  Logger.log('Scripts dentro de la página: ' + scripts.length);
+  scripts.forEach(function (s, n) {
+    Logger.log('==== Script ' + (n + 1) + ' (' + s.length + ' caracteres)');
+    for (var i = 0; i < s.length && i < 12000; i += 3000) Logger.log(s.slice(i, i + 3000));
+  });
+  var js = UrlFetchApp.fetch(base + '/js/funciones.min.js', { muteHttpExceptions: true }).getContentText();
+  Logger.log('==== funciones.min.js');
+  for (var j = 0; j < js.length; j += 3000) Logger.log(js.slice(j, j + 3000));
+}
+
 /** "2024:07:15 18:22:01" (EXIF) → "2024-07-15T18:22:01" */
 function fechaExif_(t) {
   if (!t) return null;
