@@ -21,6 +21,18 @@
     : Fuentes.demo();
 
   var pantalla = document.getElementById('pantalla');
+
+  // Avisar en pantalla si se está usando el modo demo y por qué.
+  var aviso = document.getElementById('aviso-config');
+  if (window.ERROR_CONFIG || window.CONFIG === undefined) {
+    aviso.textContent = 'Modo demo: config.js tiene un error y no se pudo leer — ' +
+      (window.ERROR_CONFIG || 'revisá que esté bien escrito');
+    aviso.hidden = false;
+  } else if (!usarDrive) {
+    aviso.textContent = window.CONFIG ? 'Modo demo (?demo=1)' : 'Modo demo: no hay config.js';
+    aviso.className += ' aviso-config--suave';
+    aviso.hidden = false;
+  }
   var reloj = document.getElementById('reloj-lateral');
 
   // Escalar la pantalla de 1280x800 para que entre en la ventana (en el marco es 1:1).

@@ -20,6 +20,8 @@
       <div class="nav__reloj" id="reloj-lateral"></div>
     </nav>
 
+    <div class="aviso-config" id="aviso-config" hidden></div>
+
     <section class="vista hoy" id="vista-hoy" data-vista-panel="hoy" aria-label="Hoy"></section>
 
     <section class="vista vista--fotos" id="vista-fotos" data-vista-panel="fotos" aria-label="Fotos" hidden>
@@ -28,6 +30,12 @@
   </div>
 
   <!-- config.js es opcional: si no existe, se usa el modo demo. -->
+  <script>
+    // Si config.js tiene un error de escritura, se anota para mostrarlo en pantalla.
+    window.addEventListener('error', function (e) {
+      if (e.filename && /config\.js/.test(e.filename)) window.ERROR_CONFIG = e.message + ' (línea ' + e.lineno + ')';
+    });
+  </script>
   <script src="config.js" onerror="window.CONFIG = null"></script>
   <script src="js/layout.js"></script>
   <script src="js/agenda.js"></script>

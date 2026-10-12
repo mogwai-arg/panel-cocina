@@ -213,3 +213,11 @@ html, body {
 .dia b { font: 800 13px var(--rotulo); letter-spacing: .04em; }
 .dia span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dias__vacio { margin: 0; font: italic 400 17px var(--serif); color: var(--suave); }
+
+/* Aviso de modo demo / error de configuración */
+.aviso-config {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 10;
+  background: #c4453a; color: #fff; border-radius: 99px; padding: 8px 18px;
+  font: 600 14px var(--texto); max-width: 900px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.aviso-config--suave { background: rgba(20, 20, 20, .75); }
