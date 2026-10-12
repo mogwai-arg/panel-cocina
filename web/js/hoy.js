@@ -51,7 +51,6 @@
       '<button class="recuerdo" data-r="recuerdo" aria-label="Ver fotos"></button>' +
       '<div class="proximo" data-r="proximo"></div>' +
       '<div class="columnas" data-r="columnas"></div>' +
-      '<div class="donde" data-r="donde" hidden></div>' +
       '<div class="lateral"><div class="basquet" data-r="basquet" hidden></div>' +
       '<div class="dias" data-r="dias"></div></div>';
 
@@ -137,6 +136,7 @@
       }
       cols.forEach(function (c) {
         var col = el('div', 'col');
+        col.setAttribute('data-quien', String(c.calendario).toLowerCase());
         col.style.borderTopColor = color(c.color);
         var titulo = el('h3');
         var av = el('span', 'av', inicial(c.calendario));
@@ -153,6 +153,7 @@
         if (c.mas) col.appendChild(el('span', 'mas', '+' + c.mas + ' más'));
         caja.appendChild(col);
       });
+      ponerUbicaciones(caja);
     }
 
     function pintarDias() {
@@ -211,30 +212,52 @@
       });
     }
 
-    function pintarDonde() {
-      var caja = parte('donde');
+    /*
+     * La ubicación de cada persona va arriba de su columna en la agenda (la de "Thi").
+     * Si esa persona no tiene columna hoy, se agrega una solo con la ubicación.
+     */
+    function ponerUbicaciones(caja) {
       var personas = (ubicaciones && ubicaciones.personas) || [];
-      caja.hidden = !personas.length || !root.Ubicacion;
-      if (caja.hidden) return;
-      avisarCambiosDeLugar(personas);
-      caja.innerHTML = '';
+      if (!personas.length || !root.Ubicacion) return;
+      var vacio = caja.querySelector('.columnas__vacio');
+      if (vacio) vacio.remove();
       var ahora = new Date();
       personas.forEach(function (p) {
         var d = root.Ubicacion.describir(p, ahora);
-        var fila = el('div', 'donde__fila' + (d.viejo ? ' donde__fila--viejo' : ''));
-        fila.appendChild(mapita(p));
+        var tarjeta = el('div', 'donde' + (d.viejo ? ' donde--viejo' : ''));
+        tarjeta.appendChild(mapita(p));
         var txt = el('div', 'donde__txt');
-        txt.appendChild(el('span', 'lbl', 'Dónde está ' + p.quien));
         txt.appendChild(el('b', 'donde__titulo', d.titulo));
         txt.appendChild(el('small', 'donde__detalle' + (d.bateriaBaja ? ' donde__detalle--alerta' : ''), d.detalle));
-        fila.appendChild(txt);
-        caja.appendChild(fila);
+        tarjeta.appendChild(txt);
+        var col = null;
+        caja.querySelectorAll('.col').forEach(function (c) {
+          if (c.getAttribute('data-quien') === String(p.quien).toLowerCase()) col = c;
+        });
+        if (!col) {
+          col = el('div', 'col');
+          col.style.borderTopColor = color(classroomConfig.color || '#d39b1e');
+          var titulo = el('h3');
+          var av = el('span', 'av', inicial(p.quien));
+          av.style.background = color(classroomConfig.color || '#d39b1e');
+          titulo.appendChild(av);
+          titulo.appendChild(document.createTextNode(p.quien));
+          col.appendChild(titulo);
+          caja.appendChild(col);
+        }
+        col.insertBefore(tarjeta, col.children[1] || null);
       });
+    }
+
+    function pintarDonde() {
+      var personas = (ubicaciones && ubicaciones.personas) || [];
+      avisarCambiosDeLugar(personas);
+      pintarColumnas();
     }
 
     // Mapa chiquito de OpenStreetMap centrado en el punto (3x3 mosaicos recortados).
     function mapita(p) {
-      var LADO = 64;
+      var LADO = 46;
       var m = root.Ubicacion.mosaico(p.lat, p.lon, 15);
       var caja = el('div', 'donde__mapa');
       var capa = el('div', 'donde__capa');
