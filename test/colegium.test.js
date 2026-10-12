@@ -115,3 +115,57 @@ test('Colegium.gs: guarda en trozos y lee lo mismo', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(ctx.leerColegium_().datos)), datos);
   assert.throws(() => ctx.guardarColegium_(null), /No llegaron datos/);
 });
+
+// Estructura real de /alumno/obtenerDetalleCalificaciones (recortada)
+function nota(extra) {
+  return Object.assign({ abreviatura: 'Ev', materia_id: '127141', nota_capturada: '', nota_oficial: '', nota_publicada: '',
+    nota_promeditable: '', observaciones: '', parent_id: '3804841', tipo: '1', updated_at: '1784813915' }, extra);
+}
+const CALIFICACIONES = { data: { calificacionPeriodos: {
+  _definitiva_: '', final: '',
+  j5: [{ periodo_nombre: '1er cuatrimestre', notasInscriptos: [{ inscripto_id: 'x', notasEvaluaciones: {
+    a: nota({ nombre: 'Inecuaciones', observaciones: 'EXC' }),
+    b: nota({ nombre: 'Trabajo en clase', abreviatura: 'TC', observaciones: 'R', updated_at: '1784900000' }),
+    c: nota({ nombre: 'Primer cuatrimestre', abreviatura: 'NF', observaciones: '<br>', parent_id: null, tipo: '0' }),
+  } }] }, { periodo_nombre: '1er cuatrimestre', notasInscriptos: [] }],
+  jV: [{ periodo_nombre: '2do cuatrimestre', notasInscriptos: [{ notasEvaluaciones: {
+    d: nota({ nombre: 'Polinomios', abreviatura: 'TP', observaciones: '<p>MB</p>' }),
+    e: nota({ nombre: 'Segundo cuatrimestre', abreviatura: 'NF', nota_publicada: '8', parent_id: null, tipo: '0' }),
+  } }] }],
+} } };
+
+test('calificaciones: reconoce el POST y lee materia, períodos, conceptos y nota final', () => {
+  assert.equal(C.reconocer('/alumno/obtenerDetalleCalificaciones', 'POST'), 'calificaciones');
+  assert.equal(C.reconocer('/alumno/obtenerDetalleCalificaciones', 'GET'), null);
+  const r = C.normalizar('calificaciones', CALIFICACIONES,
+    { cuerpo: 'csrf_gs_token=undefined&inscriptoId=rsxJ&relId=OtU5&target=asignatura', titulo: 'Matemática' });
+  assert.equal(r.relId, 'OtU5');
+  assert.equal(r.materiaId, '127141');
+  assert.equal(r.titulo, 'Matemática');
+  assert.deepEqual(r.periodos.map((p) => p.nombre), ['1er cuatrimestre', '2do cuatrimestre']);
+  const [p1, p2] = r.periodos;
+  assert.deepEqual(p1.evaluaciones.map((e) => e.nombre + ':' + e.concepto), ['Trabajo en clase:R', 'Inecuaciones:EXC']);
+  assert.equal(p1.final, null); // la nota final vacía ("<br>") no cuenta
+  assert.equal(p2.evaluaciones[0].concepto, 'MB');
+  assert.deepEqual([p2.final.tipo, p2.final.nota], ['NF', '8']);
+});
+
+test('calificaciones: el cuerpo del pedido puede venir en JSON', () => {
+  assert.equal(C.normalizar('calificaciones', CALIFICACIONES, { cuerpo: '{"relId":"AbC1"}' }).relId, 'AbC1');
+});
+
+test('horario: arma un índice de materias por id', () => {
+  const h = C.normalizar('horario', { result: { dias: { lun: [{ inicio: '07:40', fin: '08:40',
+    asignaturas: [{ nombre: 'Matemática', materia_id: '127141', id: 'OtU5' }] }] } } });
+  assert.deepEqual({ ...h._indice }, { 127141: 'Matemática', OtU5: 'Matemática' });
+  assert.deepEqual(h.lun[0].materias, ['Matemática']);
+});
+
+test('combinar: calificaciones por materia y códigos cortos sin marcar actualización', () => {
+  let e = C.combinar({}, 'calificaciones', C.normalizar('calificaciones', CALIFICACIONES, { cuerpo: 'relId=OtU5', titulo: 'Matemática' }));
+  e = C.combinar(e, 'calificaciones', C.normalizar('calificaciones', CALIFICACIONES, { cuerpo: 'relId=OtU5' }));
+  assert.equal(e.calificaciones.OtU5.titulo, 'Matemática'); // conserva el nombre visto antes
+  e = C.combinar(e, 'tiny', C.normalizar('tiny', { result: { valor: 'OtU5' } }, { ruta: '/api/generico/tiny/420879' }));
+  assert.equal(e.tiny['420879'], 'OtU5');
+  assert.equal(e.actualizado.tiny, undefined);
+});

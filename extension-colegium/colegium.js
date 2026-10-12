@@ -13,12 +13,42 @@
     { tipo: 'faltas', patron: /\/asistencia\/estudiante\/[^/]+\/lista$/ },
     { tipo: 'eventos', patron: /\/familias\/\d+\/eventos$/ },
     { tipo: 'archivos', patron: /\/familias\/\d+\/archivos$/ },
-    { tipo: 'colegio', patron: /\/api\/usuario\/rol\/\d+\/info$/ }
+    { tipo: 'colegio', patron: /\/api\/usuario\/rol\/\d+\/info$/ },
+    { tipo: 'calificaciones', patron: /\/alumno\/obtenerDetalleCalificaciones$/, metodo: 'POST' },
+    { tipo: 'tiny', patron: /\/api\/generico\/tiny\/\d+$/ }
   ];
 
-  function reconocer(ruta) {
-    for (var i = 0; i < TIPOS.length; i++) if (TIPOS[i].patron.test(ruta)) return TIPOS[i].tipo;
+  function reconocer(ruta, metodo) {
+    metodo = metodo || 'GET';
+    for (var i = 0; i < TIPOS.length; i++) {
+      if (TIPOS[i].patron.test(ruta) && (TIPOS[i].metodo || 'GET') === metodo) return TIPOS[i].tipo;
+    }
     return null;
+  }
+
+  /* Cuerpo de un pedido (JSON o formulario) → objeto. */
+  function leerCuerpo(cuerpo) {
+    if (!cuerpo) return {};
+    if (typeof cuerpo === 'object' && !(typeof URLSearchParams !== 'undefined' && cuerpo instanceof URLSearchParams)) return cuerpo;
+    var s = String(cuerpo);
+    try { return JSON.parse(s); } catch (e) { /* no es JSON */ }
+    var o = {};
+    s.split('&').forEach(function (par) {
+      var i = par.indexOf('=');
+      if (i > 0) o[decodeURIComponent(par.slice(0, i).replace(/\+/g, ' '))] = decodeURIComponent(par.slice(i + 1).replace(/\+/g, ' '));
+    });
+    return o;
+  }
+
+  /* Ids de un objeto (campos "id" o "..._id") para cruzar materias entre secciones. */
+  function idsDe(o) {
+    var r = [];
+    if (!o || typeof o !== 'object') return r;
+    Object.keys(o).forEach(function (k) {
+      var v = o[k];
+      if (/(^id$|_id$|^rel_?id$)/i.test(k) && (typeof v === 'string' || typeof v === 'number') && String(v)) r.push(String(v));
+    });
+    return r;
   }
 
   function texto(html, max) {
@@ -72,9 +102,14 @@
     },
     horario: function (r) {
       var dias = (r.result && r.result.dias) || {};
-      var out = {};
+      // _indice: id de materia → nombre, para ponerle nombre a las calificaciones.
+      var out = { _indice: {} };
       Object.keys(dias).forEach(function (d) {
         out[d] = dias[d].map(function (b) {
+          (b.asignaturas || []).forEach(function (a) {
+            var n = nombreMateria(a);
+            if (n) idsDe(a).forEach(function (id) { out._indice[id] = n; });
+          });
           return {
             inicio: b.inicio,
             fin: b.fin,
@@ -84,6 +119,52 @@
         });
       });
       return out;
+    },
+    calificaciones: function (r, extra) {
+      var cuerpo = leerCuerpo(extra && extra.cuerpo);
+      var periodos = (r.data && r.data.calificacionPeriodos) || {};
+      var materiaId = null;
+      var lista = [];
+      Object.keys(periodos).forEach(function (clave) {
+        var instancias = periodos[clave];
+        if (clave.charAt(0) === '_' || !Array.isArray(instancias)) return;
+        var periodo = { id: clave, nombre: '', final: null, evaluaciones: [] };
+        instancias.forEach(function (inst) {
+          periodo.nombre = periodo.nombre || inst.periodo_nombre || '';
+          (inst.notasInscriptos || []).forEach(function (ni) {
+            var notas = ni.notasEvaluaciones || {};
+            Object.keys(notas).forEach(function (k) {
+              var n = notas[k];
+              materiaId = materiaId || n.materia_id || null;
+              var nota = [n.nota_publicada, n.nota_oficial, n.nota_capturada, n.nota_promeditable]
+                .filter(function (x) { return x !== null && x !== undefined && String(x).trim() !== ''; })[0];
+              var ev = {
+                nombre: texto(n.nombre, 80),
+                tipo: n.abreviatura || '',
+                nota: nota !== undefined ? String(nota) : '',
+                concepto: texto(n.observaciones, 40),
+                fecha: fechaUnix(n.updated_at)
+              };
+              if (!ev.nota && !ev.concepto) return;
+              // La raíz (sin padre) es la nota final del período.
+              if (String(n.tipo) === '0' || n.parent_id === null) periodo.final = ev;
+              else periodo.evaluaciones.push(ev);
+            });
+          });
+        });
+        periodo.evaluaciones.sort(function (a, b) { return (b.fecha || '') < (a.fecha || '') ? -1 : 1; });
+        if (periodo.evaluaciones.length || periodo.final) lista.push(periodo);
+      });
+      return {
+        relId: String(cuerpo.relId || cuerpo.rel_id || ''),
+        materiaId: materiaId ? String(materiaId) : null,
+        titulo: (extra && extra.titulo) || '',
+        periodos: lista
+      };
+    },
+    tiny: function (r, extra) {
+      var numero = ((extra && extra.ruta) || '').split('/').pop();
+      return { numero: numero, valor: r.result && r.result.valor ? String(r.result.valor) : null };
     },
     asistencia: function (r) {
       var a = r.result || {};
@@ -129,8 +210,8 @@
     }
   };
 
-  function normalizar(tipo, respuesta) {
-    return NORMALIZAR[tipo] ? NORMALIZAR[tipo](respuesta || {}) : null;
+  function normalizar(tipo, respuesta, extra) {
+    return NORMALIZAR[tipo] ? NORMALIZAR[tipo](respuesta || {}, extra || {}) : null;
   }
 
   /*
@@ -151,6 +232,19 @@
       detalles.unshift(datos);
       e.detalles = detalles.slice(0, 20);
       (e.comunicados || []).forEach(function (c) { if (c.id === datos.id) c.leido = true; });
+    } else if (tipo === 'calificaciones') {
+      if (!datos.relId) return estado;
+      e.calificaciones = e.calificaciones || {};
+      var previo = e.calificaciones[datos.relId];
+      if (!datos.titulo && previo) datos.titulo = previo.titulo; // no perder el nombre ya visto
+      e.calificaciones[datos.relId] = datos;
+    } else if (tipo === 'tiny') {
+      if (!datos.valor) return estado;
+      e.tiny = e.tiny || {};
+      e.tiny[datos.numero] = datos.valor;
+      var claves = Object.keys(e.tiny);
+      if (claves.length > 300) delete e.tiny[claves[0]];
+      return e; // no cuenta como actualización visible
     } else {
       e[tipo] = datos;
     }
@@ -159,7 +253,7 @@
     return e;
   }
 
-  var api = { reconocer: reconocer, normalizar: normalizar, combinar: combinar, texto: texto };
+  var api = { reconocer: reconocer, normalizar: normalizar, combinar: combinar, texto: texto, leerCuerpo: leerCuerpo };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.__panelColegium = api;
 })(typeof window !== 'undefined' ? window : this);

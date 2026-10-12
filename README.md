@@ -115,13 +115,18 @@ sesión, el panel lo avisa. Con varias pestañas o compus, actualiza una sola po
 | Asistencia y faltas sin justificar | sí | Asistencia |
 | Archivos compartidos | sí | Archivos |
 | Eventos | sí | Calendario |
-| Horario de la semana | no (cambia poco) | Horario |
+| Calificaciones (por materia: evaluaciones, conceptos, nota final) | sí | cada materia → Calificaciones, una vez |
+| Horario de la semana (y nombres de las materias para las notas) | no (cambia poco) | Horario |
 | Adjuntos de un comunicado | no: abrirlo lo marca como leído en Colegium | ese comunicado |
 
 La URL y el TOKEN y lo aprendido de cada sección se guardan en tu cuenta de Chrome:
 en otra compu con la misma cuenta solo hay que instalar la extensión.
 
-El panel muestra todo en la pantalla **Cole** y un número con los comunicados sin leer.
+El panel muestra todo en la pantalla **Cole**, con dos pestañas: **Comunicados** y
+**Notas** (por materia, el período actual con sus últimas evaluaciones; las que
+tienen notas bajas —R, M o menos de 4— van primero). La barra lateral muestra los
+comunicados sin leer. Mesas de examen y boletines todavía no tienen datos para
+saber cómo vienen.
 
 **Instalación**
 

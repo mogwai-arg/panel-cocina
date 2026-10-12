@@ -65,7 +65,67 @@
     return ((datos && datos.archivos) || []).filter(function (a) { return !a.leido; });
   }
 
+  // Conceptos y notas que conviene mirar (regular, malo, insuficiente o menos de 4).
+  var CONCEPTOS_BAJOS = /^(R|M|I|D|INS|NS|TED|DESAPROBADO|INSUFICIENTE|REGULAR)$/i;
+
+  function esBaja(ev) {
+    if (!ev) return false;
+    var n = parseFloat(String(ev.nota).replace(',', '.'));
+    if (!isNaN(n)) return n < 4;
+    return CONCEPTOS_BAJOS.test(String(ev.concepto || '').trim());
+  }
+
+  function esAlta(ev) {
+    var n = parseFloat(String(ev && ev.nota || '').replace(',', '.'));
+    if (!isNaN(n)) return n >= 8;
+    return /^(EXC|EX|MB|S|SOBRESALIENTE|EXCELENTE)$/i.test(String(ev && ev.concepto || '').trim());
+  }
+
+  /* Nombre de una materia: del horario (cruzando ids), del título visto, o genérico. */
+  function nombreMateria(datos, cal) {
+    var indice = (datos && datos.horario && datos.horario._indice) || {};
+    if (indice[cal.relId]) return indice[cal.relId];
+    if (cal.materiaId && indice[cal.materiaId]) return indice[cal.materiaId];
+    var tiny = (datos && datos.tiny) || {};
+    for (var numero in tiny) {
+      if (tiny[numero] === cal.relId && indice[numero]) return indice[numero];
+    }
+    return cal.titulo || 'Materia';
+  }
+
+  /*
+   * Resumen de notas por materia: el período más reciente con notas, sus últimas
+   * evaluaciones y si hay alguna baja. Las materias con notas bajas van primero.
+   */
+  function resumenNotas(datos, cuantas) {
+    cuantas = cuantas || 4;
+    var cals = (datos && datos.calificaciones) || {};
+    return Object.keys(cals).map(function (relId) {
+      var cal = cals[relId];
+      var periodos = cal.periodos || [];
+      var actual = periodos[periodos.length - 1] || null;
+      var evals = actual ? actual.evaluaciones : [];
+      var ultima = evals[0] && evals[0].fecha || '';
+      return {
+        relId: relId,
+        nombre: nombreMateria(datos, cal),
+        periodo: actual ? actual.nombre : '',
+        final: actual ? actual.final : null,
+        ultimas: evals.slice(0, cuantas),
+        alerta: evals.some(esBaja) || esBaja(actual && actual.final),
+        ultimaFecha: ultima
+      };
+    }).sort(function (a, b) {
+      if (a.alerta !== b.alerta) return a.alerta ? -1 : 1;
+      return a.ultimaFecha < b.ultimaFecha ? 1 : -1;
+    });
+  }
+
   var api = {
+    esBaja: esBaja,
+    esAlta: esAlta,
+    nombreMateria: nombreMateria,
+    resumenNotas: resumenNotas,
     fechaCorta: fechaCorta,
     horarioParaMostrar: horarioParaMostrar,
     sinLeer: sinLeer,

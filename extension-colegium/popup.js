@@ -26,6 +26,7 @@
   }
 
   function aprendido(plantillas, tipo, datos, texto) {
+    // Compatibilidad: las versiones anteriores guardaban solo la URL.
     if (!plantillas[tipo]) return 'entrá una vez a ' + texto;
     return datos;
   }
@@ -38,6 +39,8 @@
     fila('Asistencia', aprendido(plantillas, 'asistencia', e.asistencia ? e.asistencia.presente + '% · ' + hace(act.asistencia) : '–', 'Asistencia'));
     fila('Archivos', aprendido(plantillas, 'archivos', e.archivos ? e.archivos.length + ' · ' + hace(act.archivos) : '–', 'Archivos'));
     fila('Eventos', aprendido(plantillas, 'eventos', e.eventos ? e.eventos.length + ' · ' + hace(act.eventos) : '–', 'Calendario'));
+    var materias = Object.keys(plantillas).filter(function (k) { return /^calificaciones:/.test(k); }).length;
+    fila('Calificaciones', materias ? materias + (materias === 1 ? ' materia' : ' materias') + ' · ' + hace(act.calificaciones) : 'entrá a cada materia una vez');
     fila('Horario', e.horario ? hace(act.horario) + ' (no automático)' : 'entrá a Horario si lo querés');
     fila('Automático', r.ultimaAuto ? 'última vez ' + hace(new Date(r.ultimaAuto).toISOString()) : 'en un minuto, con Colegium abierto');
     if (e.sesion && e.sesion.vencida) fila('Sesión', 'Colegium cerró la sesión: entrá de nuevo');

@@ -16,6 +16,7 @@
   var fetchOriginal = window.fetch;
   var cabeceras = {}; // por host, solo en memoria de esta pestaña
   var credenciales = {}; // por host: cómo manda la página las cookies (para repetirlo igual)
+  var automatico = false; // true mientras se repiten pedidos (no hay pantalla de la que tomar títulos)
 
   function aObjeto(h) {
     var o = {};
@@ -54,10 +55,26 @@
     return '(' + (cuerpo.constructor && cuerpo.constructor.name || typeof cuerpo) + ')';
   }
 
+  /* Título visible de la página (para ponerle nombre a una materia si no se sabe). */
+  function tituloVisible() {
+    var candidatos = document.querySelectorAll('h1, h2, h3, [class*="titulo"], [class*="title"]');
+    for (var i = 0; i < candidatos.length; i++) {
+      var t = (candidatos[i].textContent || '').replace(/\s+/g, ' ').trim();
+      if (t.length >= 3 && t.length <= 60 && !/calificaci|colegium|inicio|men[uú]/i.test(t)) return t;
+    }
+    return '';
+  }
+
+  function cuerpoTexto(cuerpo) {
+    if (typeof cuerpo === 'string') return cuerpo;
+    if (typeof URLSearchParams !== 'undefined' && cuerpo instanceof URLSearchParams) return cuerpo.toString();
+    return null; // FormData u otros: no se pueden repetir
+  }
+
   function avisar(metodo, url, estado, texto, cuerpo) {
     var u;
     try { u = new URL(url, location.href); } catch (e) { return; }
-    var tipo = metodo === 'GET' ? C.reconocer(u.pathname) : null;
+    var tipo = C.reconocer(u.pathname, metodo);
 
     if (tipo && (estado === 401 || estado === 403)) {
       window.postMessage({ fuente: 'panel-colegium-sesion', vencida: true }, location.origin);
@@ -67,10 +84,18 @@
     try { datos = JSON.parse(texto); } catch (e) { return; } // solo JSON
 
     if (tipo && estado === 200) {
-      try {
-        window.postMessage({ fuente: 'panel-colegium-datos', tipo: tipo, datos: C.normalizar(tipo, datos) }, location.origin);
-        window.postMessage({ fuente: 'panel-colegium-plantilla', tipo: tipo, url: u.href }, location.origin);
-      } catch (e) { /* si Colegium cambió el formato, no rompe la página */ }
+      var mandar = function (titulo) {
+        try {
+          var normal = C.normalizar(tipo, datos, { cuerpo: cuerpoTexto(cuerpo), ruta: u.pathname, titulo: titulo });
+          window.postMessage({ fuente: 'panel-colegium-datos', tipo: tipo, datos: normal }, location.origin);
+          var clave = tipo === 'calificaciones' ? 'calificaciones:' + normal.relId : tipo;
+          window.postMessage({ fuente: 'panel-colegium-plantilla', clave: clave,
+            pedido: { url: u.href, metodo: metodo, cuerpo: cuerpoTexto(cuerpo) } }, location.origin);
+        } catch (e) { /* si Colegium cambió el formato, no rompe la página */ }
+      };
+      // En calificaciones, el nombre de la materia se toma de la pantalla cuando termina de dibujarse.
+      if (tipo === 'calificaciones' && !automatico) setTimeout(function () { mandar(tituloVisible()); }, 1500);
+      else mandar('');
     }
 
     var params = {};
@@ -132,17 +157,23 @@
   // Modo automático: repetir los pedidos aprendidos, de a uno y espaciados.
   window.addEventListener('message', function (e) {
     if (e.source !== window || !e.data || e.data.fuente !== 'panel-colegium-actualizar') return;
-    (e.data.urls || []).forEach(function (url, i) {
+    var pedidos = (e.data.pedidos || []).map(function (p) { return typeof p === 'string' ? { url: p, metodo: 'GET' } : p; });
+    pedidos.forEach(function (p, i) {
       setTimeout(function () {
-        var host;
-        try { host = new URL(url).host; } catch (err) { return; }
-        if (!/colegium\.cloud$/.test(host)) return;
-        if (C.reconocer(new URL(url).pathname) === 'comunicado') return; // nunca marcar como leído
-        var opciones = { headers: cabeceras[host] || {} };
-        if (credenciales[host]) opciones.credentials = credenciales[host];
-        fetchOriginal(url, opciones).then(function (resp) {
-          return resp.text().then(function (t) { avisar('GET', url, resp.status, t); });
-        }).catch(function () { /* sin conexión: se reintenta en el próximo ciclo */ });
+        var u;
+        try { u = new URL(p.url); } catch (err) { return; }
+        if (!/colegium\.cloud$/.test(u.host)) return;
+        var metodo = (p.metodo || 'GET').toUpperCase();
+        var tipo = C.reconocer(u.pathname, metodo);
+        if (!tipo || tipo === 'comunicado') return; // solo lo conocido, y nunca marcar como leído
+        var opciones = { method: metodo, headers: cabeceras[u.host] || {} };
+        if (metodo !== 'GET' && p.cuerpo) opciones.body = p.cuerpo;
+        if (credenciales[u.host]) opciones.credentials = credenciales[u.host];
+        automatico = true;
+        fetchOriginal(p.url, opciones).then(function (resp) {
+          return resp.text().then(function (t) { avisar(metodo, p.url, resp.status, t, p.cuerpo); });
+        }).catch(function () { /* sin conexión: se reintenta en el próximo ciclo */ })
+          .then(function () { automatico = false; });
       }, i * 2500);
     });
   });

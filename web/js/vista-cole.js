@@ -32,11 +32,14 @@
     var respuesta = null;
     var abierto = null;
     var error = null;
+    var pestana = 'comunicados';
 
     contenedor.innerHTML =
       '<div class="cole__principal">' +
-      '  <div class="listas__cab"><div><span class="lbl" data-r="colegio">Colegio</span><h2 class="listas__titulo">Comunicados <small data-r="sinleer"></small></h2></div></div>' +
+      '  <div class="listas__cab"><div><span class="lbl" data-r="colegio">Colegio</span><h2 class="listas__titulo"><span data-r="titulo">Comunicados</span> <small data-r="sinleer"></small></h2></div>' +
+      '    <div class="seg" role="group" aria-label="Sección"><button data-tab="comunicados" aria-pressed="true">COMUNICADOS</button><button data-tab="notas" aria-pressed="false">NOTAS</button></div></div>' +
       '  <div class="comunicados" data-r="comunicados"></div>' +
+      '  <div class="notas" data-r="notas" hidden></div>' +
       '</div>' +
       '<div class="cole__lado">' +
       '  <div class="box" data-r="horario"></div>' +
@@ -81,6 +84,57 @@
         caja.appendChild(item);
       });
     }
+
+    function claseConcepto(ev) {
+      if (Cole.esBaja(ev)) return ' nota--baja';
+      if (Cole.esAlta(ev)) return ' nota--alta';
+      return '';
+    }
+
+    function chipNota(ev, esFinal) {
+      var chip = el('span', 'nota' + claseConcepto(ev) + (esFinal ? ' nota--final' : ''));
+      chip.appendChild(el('b', null, ev.nota || ev.concepto || '–'));
+      chip.appendChild(el('span', null, (esFinal ? 'Nota final' : (ev.tipo ? ev.tipo + ' · ' : '') + ev.nombre)));
+      return chip;
+    }
+
+    function pintarNotas(d) {
+      var caja = parte('notas');
+      caja.innerHTML = '';
+      var materias = Cole.resumenNotas(d, 4);
+      if (!materias.length) {
+        caja.appendChild(el('p', 'listas__vacio',
+          'Todavía no hay notas. Entrá una vez a cada materia en Colegium (Asignaturas → la materia → Calificaciones) y después se actualizan solas.'));
+        return;
+      }
+      materias.forEach(function (m) {
+        var fila = el('div', 'materia' + (m.alerta ? ' materia--alerta' : ''));
+        var cab = el('div', 'materia__cab');
+        cab.appendChild(el('b', 'materia__nombre', m.nombre));
+        cab.appendChild(el('span', 'materia__periodo', m.periodo));
+        fila.appendChild(cab);
+        var chips = el('div', 'materia__notas');
+        if (m.final) chips.appendChild(chipNota(m.final, true));
+        m.ultimas.forEach(function (ev) { chips.appendChild(chipNota(ev, false)); });
+        if (!m.final && !m.ultimas.length) chips.appendChild(el('span', 'cole__vacio', 'Sin notas en este período'));
+        fila.appendChild(chips);
+        caja.appendChild(fila);
+      });
+    }
+
+    function pintarPestana() {
+      contenedor.querySelectorAll('[data-tab]').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b.getAttribute('data-tab') === pestana));
+      });
+      parte('comunicados').hidden = pestana !== 'comunicados';
+      parte('notas').hidden = pestana !== 'notas';
+      parte('titulo').textContent = pestana === 'notas' ? 'Notas' : 'Comunicados';
+      parte('sinleer').hidden = pestana !== 'comunicados';
+    }
+
+    contenedor.querySelectorAll('[data-tab]').forEach(function (b) {
+      b.addEventListener('click', function () { pestana = b.getAttribute('data-tab'); pintarPestana(); });
+    });
 
     function pintarHorario(d) {
       var caja = parte('horario');
@@ -153,6 +207,8 @@
       } else {
         pintarComunicados(d);
       }
+      pintarNotas(d);
+      pintarPestana();
       pintarHorario(d);
       pintarAsistencia(d);
       pintarArchivos(d);

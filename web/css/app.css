@@ -327,3 +327,20 @@ html, body {
 .cole .box { background: var(--tarjeta); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
 .cole__ok { margin: 0; font-size: 14px; color: #2e7d4f; }
 .cole__pie--alerta { color: #a3501d; font-weight: 600; }
+
+/* Notas */
+.cole .listas__cab { margin-bottom: 14px; }
+.notas { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 8px; }
+.materia { background: var(--tarjeta); border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; border-left: 5px solid transparent; }
+.materia--alerta { border-left-color: #c4453a; }
+.materia__cab { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.materia__nombre { font: 700 19px var(--texto); }
+.materia__periodo { font: 600 13px var(--rotulo); color: var(--suave); }
+.materia__notas { display: flex; flex-wrap: wrap; gap: 8px; }
+.nota { display: inline-flex; align-items: center; gap: 8px; border-radius: 99px; padding: 5px 12px 5px 6px; background: var(--papel); font-size: 14px; max-width: 100%; }
+.nota b { min-width: 30px; height: 26px; border-radius: 99px; display: grid; place-items: center; padding: 0 6px; background: #e6e3db; font: 800 13px var(--rotulo); }
+.nota span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nota--alta b { background: #2e7d4f; color: #fff; }
+.nota--baja b { background: #c4453a; color: #fff; }
+.nota--final { background: var(--tinta); color: #fff; }
+.nota--final b { background: #fff; color: var(--tinta); }

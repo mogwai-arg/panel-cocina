@@ -97,7 +97,23 @@
           { nombre: 'Pausa de hidratación.pdf', autor: 'Daiana A.', fecha: hace(200), leido: false },
           { nombre: 'Cronograma de evaluaciones.pdf', autor: 'Preceptoría', fecha: hace(400), leido: true }
         ],
-        actualizado: { comunicados: hace(2), horario: hace(50), asistencia: hace(50), archivos: hace(50) }
+        calificaciones: (function () {
+          function ev(nombre, tipo, concepto, dias, nota) {
+            return { nombre: nombre, tipo: tipo, nota: nota || '', concepto: concepto, fecha: hace(dias * 24) };
+          }
+          function materia(relId, titulo, finalPrimero, evals) {
+            return { relId: relId, materiaId: null, titulo: titulo, periodos: [
+              { id: 'j5', nombre: '1er cuatrimestre', final: { nombre: 'Nota final', tipo: 'NF', nota: finalPrimero, concepto: '' }, evaluaciones: [] },
+              { id: 'jV', nombre: '2do cuatrimestre', final: null, evaluaciones: evals }] };
+          }
+          return {
+            m1: materia('m1', 'Matemática', '8', [ev('Polinomios', 'TP', 'MB', 4), ev('Calificación parcial', 'CP', 'EXC', 20)]),
+            m2: materia('m2', 'Química', '6', [ev('Tabla periódica', 'Ev', 'R', 6), ev('Laboratorio', 'TP', 'B', 15)]),
+            m3: materia('m3', 'Lengua y Literatura', '9', [ev('Análisis de cuento', 'TP', 'EXC', 3)]),
+            m4: materia('m4', 'Inglés', '7', [ev('Reading', 'Ev', 'B', 9), ev('Vocabulary', 'TC', 'MB', 25)])
+          };
+        })(),
+        actualizado: { comunicados: hace(2), horario: hace(50), asistencia: hace(50), archivos: hace(50), calificaciones: hace(3) }
       }
     };
   }

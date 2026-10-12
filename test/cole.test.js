@@ -51,3 +51,32 @@ test('pendientes: sin leer, faltas por justificar y archivos nuevos', () => {
   assert.equal(Cole.detalleDe(d, '1'), null);
   assert.equal(Cole.sinLeer(null), 0);
 });
+
+test('notas: bajas y altas, numéricas o conceptuales', () => {
+  assert.equal(Cole.esBaja({ concepto: 'R' }), true);
+  assert.equal(Cole.esBaja({ concepto: 'MB' }), false);
+  assert.equal(Cole.esBaja({ nota: '3', concepto: '' }), true);
+  assert.equal(Cole.esBaja({ nota: '7', concepto: 'R' }), false); // manda la nota
+  assert.equal(Cole.esAlta({ concepto: 'EXC' }), true);
+  assert.equal(Cole.esAlta({ nota: '9' }), true);
+});
+
+test('notas: nombre de la materia desde el horario o el título visto', () => {
+  const datos = { horario: { _indice: { 127141: 'Matemática', 420909: 'Historia' } }, tiny: { 420909: 'OtUB' } };
+  assert.equal(Cole.nombreMateria(datos, { relId: 'X', materiaId: '127141' }), 'Matemática');
+  assert.equal(Cole.nombreMateria(datos, { relId: 'OtUB', materiaId: null }), 'Historia'); // vía código corto
+  assert.equal(Cole.nombreMateria(datos, { relId: 'Z', titulo: 'Química' }), 'Química');
+  assert.equal(Cole.nombreMateria({}, { relId: 'Z' }), 'Materia');
+});
+
+test('notas: resumen por materia con las bajas primero', () => {
+  const ev = (nombre, concepto, fecha) => ({ nombre, tipo: 'TP', nota: '', concepto, fecha });
+  const r = Cole.resumenNotas({ calificaciones: {
+    A: { relId: 'A', titulo: 'Lengua', periodos: [{ nombre: '2do cuatrimestre', final: null,
+      evaluaciones: [ev('Cuento', 'MB', '2026-10-01'), ev('Lectura', 'B', '2026-09-01')] }] },
+    B: { relId: 'B', titulo: 'Química', periodos: [{ nombre: '2do cuatrimestre', final: null,
+      evaluaciones: [ev('Tabla periódica', 'R', '2026-09-20')] }] },
+  } });
+  assert.deepEqual(r.map((m) => m.nombre + ':' + m.alerta), ['Química:true', 'Lengua:false']);
+  assert.equal(r[1].ultimas.length, 2);
+});
