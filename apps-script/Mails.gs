@@ -26,7 +26,7 @@ var MINUTOS_CACHE_MAILS = 10;
  * como "consultas" o "reserva", y se cuela publicidad). cuenta: Javi, Thi o Ambas.
  */
 var REGLAS_MAILS_ = [
-  ['Salud', 'subject:(turno OR turnos OR "recordatorio de turno" OR "confirmación de turno" OR "orden médica" OR laboratorio OR resultados OR vacuna OR autorización OR receta OR consulta)', 'Ambas'],
+  ['Salud', 'subject:(turno OR turnos OR "recordatorio de turno" OR "confirmación de turno" OR "orden médica" OR laboratorio OR resultados OR vacuna OR autorización OR receta OR "consulta médica")', 'Ambas'],
   ['Cole', 'subject:(colegio OR escuela OR alberdi OR "reunión de padres" OR "cuota escolar" OR acto OR excursión OR "salida educativa") -from:classroom.google.com', 'Ambas'],
   ['Pagos', 'subject:(vencimiento OR vence OR VEP OR VEPS OR expensas OR "factura vencida" OR "aviso de deuda" OR "saldo total" OR "pagar tu tarjeta" OR monotributo)', 'Javi'],
   ['Viajes', 'subject:(reserva OR "check-in" OR "tarjeta de embarque" OR vuelo OR itinerario OR boarding)', 'Javi'],
@@ -38,10 +38,13 @@ var REGLAS_VIEJAS_ = {
   'osde OR turno OR turnos OR "recordatorio de turno" OR "confirmación de turno" OR consulta OR laboratorio OR "orden médica" OR receta OR vacuna': 'Salud',
   'colegio OR escuela OR alberdi OR colegium OR "reunión de padres" OR "cuota escolar"': 'Cole',
   'vencimiento OR "vence el" OR "fecha de vencimiento" OR "aviso de deuda" OR VEP OR ARCA OR AFIP OR expensas OR "tu factura"': 'Pagos',
-  'reserva OR "check-in" OR "tarjeta de embarque" OR vuelo OR boarding': 'Viajes'
+  'reserva OR "check-in" OR "tarjeta de embarque" OR vuelo OR boarding': 'Viajes',
+  'subject:(turno OR turnos OR "recordatorio de turno" OR "confirmación de turno" OR "orden médica" OR laboratorio OR resultados OR vacuna OR autorización OR receta OR consulta)': 'Salud'
 };
 
-var FILTRO_MAILS_ = ' newer_than:21d -category:promotions -category:social -in:spam -in:trash';
+// Siempre: últimas 3 semanas, sin promociones, redes sociales ni spam.
+var FILTRO_MAILS_ = ' newer_than:21d -category:promotions -category:social -in:spam -in:trash' +
+  ' -from:(instagram.com OR facebookmail.com OR tiktok.com OR twitter.com OR x.com OR linkedin.com OR pinterest.com OR snapchat.com)';
 
 function hojaMails_() {
   var libro = planilla_();
@@ -70,9 +73,20 @@ function prepararHojaMails_(hoja) {
     .requireValueInList(['Javi', 'Thi', 'Ambas'], true).setAllowInvalid(false).build());
 }
 
-/* La hoja de la primera versión: agrega la columna "cuenta" y mejora las búsquedas sin tocar. */
+/*
+ * Hojas de versiones anteriores: agrega la columna "cuenta" si falta y reemplaza
+ * las búsquedas por defecto que nadie modificó (las editadas a mano no se tocan).
+ */
 function actualizarHojaMails_(hoja) {
-  if (String(hoja.getRange(1, 4).getValue()) === 'cuenta') return;
+  if (String(hoja.getRange(1, 4).getValue()) === 'cuenta') {
+    // Búsquedas de una versión anterior que nadie tocó → la versión actual.
+    hoja.getDataRange().getValues().forEach(function (f, i) {
+      var vieja = i && REGLAS_VIEJAS_[String(f[1]).trim()];
+      var nueva = vieja && REGLAS_MAILS_.filter(function (r) { return r[0] === vieja; })[0];
+      if (nueva && nueva[1] !== String(f[1]).trim()) hoja.getRange(i + 1, 2).setValue(nueva[1]);
+    });
+    return;
+  }
   hoja.getRange(1, 4).setValue('cuenta').setFontWeight('bold');
   var filas = hoja.getDataRange().getValues();
   var categorias = {};
