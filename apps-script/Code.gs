@@ -301,6 +301,35 @@ function decodificarHtml_(s) {
     .replace(/&amp;/g, '&');
 }
 
+/**
+ * Diagnóstico temporal: busca a Thiago en las secciones de jugadores del torneo
+ * para ver si el sitio tiene una página por jugador. Copiá el registro y pasáselo a Claude.
+ */
+function explorarJugador() {
+  var sitio = 'https://www.febamba.com';
+  var buscado = 'THIAGO';
+  var fecha = function (dias) {
+    return Utilities.formatDate(new Date(Date.now() + dias * 86400000), 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd');
+  };
+  ['comparativa-jugador', 'lideres', 'jugadores', 'equipos'].forEach(function (seccion) {
+    var url = sitio + '/detalle-torneo?handler=CargarSubPagina&competicionId=2015&compCatId=5077' +
+      '&fechaIni=' + fecha(-300) + '&fechaFin=' + fecha(60) + '&faseId=0&grupoId=0&seccion=' + seccion;
+    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    var html = resp.getContentText();
+    Logger.log('==== ' + seccion + ': respuesta ' + resp.getResponseCode() + ', ' + html.length + ' caracteres');
+    var enlaces = {};
+    (html.match(/href="([^"#]+)"/g) || []).forEach(function (h) {
+      enlaces[h.replace(/href="|"/g, '').replace(/\d+/g, 'N')] = h;
+    });
+    Logger.log('Tipos de enlace (con un ejemplo): ' + JSON.stringify(enlaces).slice(0, 1500));
+    var filas = (html.match(/<tr[\s\S]*?<\/tr>/gi) || []).filter(function (f) {
+      return f.toUpperCase().indexOf(buscado) >= 0 && /castelar/i.test(f);
+    });
+    Logger.log('Filas con ' + buscado + ' y Castelar: ' + filas.length);
+    filas.slice(0, 3).forEach(function (f) { Logger.log(f.replace(/\s+/g, ' ').slice(0, 2500)); });
+  });
+}
+
 /** Para probar desde el editor: muestra los partidos encontrados. */
 function probarBasquet() {
   CacheService.getScriptCache().remove('basquet');
