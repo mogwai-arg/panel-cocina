@@ -22,12 +22,13 @@
  *                                          local: { nombre, escudo, puntos }, visitante }] }
  *   ?action=listas | compra | tarea     → ver Listas.gs
  *   ?action=colegium y POST colegium   → ver Colegium.gs
+ *   ?action=classroom y POST classroom → ver Colegium.gs y apps-script-classroom/
  */
 
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.5';
+var VERSION = '2026-10-12.6';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -43,6 +44,7 @@ function doGet(e) {
     if (p.action === 'compra') return json_(compra_(p));
     if (p.action === 'tarea') return json_(tarea_(p));
     if (p.action === 'colegium') return json_(leerColegium_()); // Colegium.gs
+    if (p.action === 'classroom') return json_(leerClassroom_());
     if (p.action === 'version') return json_({ version: VERSION });
     return json_({ error: 'Acción desconocida: ' + p.action + ' (versión publicada: ' + VERSION + ')' });
   } catch (err) {
@@ -56,6 +58,7 @@ function doPost(e) {
     var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (!body.token || body.token !== propiedad_('TOKEN')) return json_({ error: 'Token inválido' });
     if (body.action === 'colegium') return json_(guardarColegium_(body.datos));
+    if (body.action === 'classroom') return json_(guardarClassroom_(body.datos)); // desde la cuenta de Thi
     return json_({ error: 'Acción desconocida: ' + body.action + ' (versión publicada: ' + VERSION + ')' });
   } catch (err) {
     return json_({ error: String(err && err.message || err) });

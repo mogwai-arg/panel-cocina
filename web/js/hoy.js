@@ -59,6 +59,8 @@
     var eventos = [];
     var errorAgenda = null;
     var basquet = null; // datos crudos de los partidos
+    var aula = null;    // Classroom: las entregas van a la agenda
+    var classroomConfig = opciones.classroom || {};
 
     function pintarReloj() {
       var ahora = new Date();
@@ -176,9 +178,23 @@
         basquetConfig.calendario || 'Básquet', basquetConfig.color || '#d39b1e');
     }
 
+    function eventosDeClassroom() {
+      if (!aula || classroomConfig.enAgenda === false) return [];
+      return Classroom.comoEventos(aula, new Date(), classroomConfig.calendario || 'Thi', classroomConfig.color || '#d39b1e');
+    }
+
+    function cargarClassroom() {
+      if (!fuente.classroom) return Promise.resolve();
+      return fuente.classroom().then(function (r) {
+        aula = r && r.datos;
+      }).catch(function (err) {
+        console.error(err);
+      }).then(cargarAgenda);
+    }
+
     function cargarAgenda() {
       return fuente.agenda().then(function (lista) {
-        eventos = (lista || []).concat(eventosDeBasquet());
+        eventos = (lista || []).concat(eventosDeBasquet(), eventosDeClassroom());
         errorAgenda = null;
       }).catch(function (err) {
         console.error(err);
@@ -299,9 +315,11 @@
         cargarAgenda();
         cargarRecuerdo();
         cargarBasquet();
+        cargarClassroom();
         cada(10000, pintarReloj);
         cada(30000, function () { pintarProximo(); pintarColumnas(); pintarDias(); pintarBasquet(); });
         cada(60 * 60000, cargarBasquet);
+        cada(30 * 60000, cargarClassroom);
         cada(5 * 60000, cargarAgenda);
         cada(30 * 60000, cargarClima);
         cada(10 * 60000, cargarRecuerdo);

@@ -15,6 +15,7 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 | Partidos de básquet de Thi (FeBAMBA) | ✅ primera versión |
 | Tareas y compras (Google Sheets) | ✅ primera versión |
 | Colegium (extensión de Chrome) | ✅ primera versión |
+| Classroom de Thi (tareas, entregas, avisos) | ✅ |
 | Avisos del cole leídos de Gmail con IA | pendiente |
 | Ubicación de Thiago (OwnTracks) | pendiente |
 | Instalación en el marco por ADB, con backup de Frameo | pendiente |
@@ -144,6 +145,27 @@ saber cómo vienen.
    mandó al panel.
 
 Los datos quedan en la hoja **Colegium** de la planilla de listas.
+
+## Classroom (tareas de Thi)
+
+Una pestaña **Classroom** en Cole con lo que Thi tiene que entregar (lo vencido en rojo,
+lo de hoy en naranja), lo entregado esta semana (con la nota si ya lo corrigieron) y los
+avisos de los profes. Las entregas de la semana también aparecen en la agenda de **Hoy**
+("Entregar: …"), y el número de la barra lateral suma lo que vence hoy o mañana.
+
+Como Classroom está en la cuenta de Gmail de Thi, hay un segundo Apps Script que corre
+**en su cuenta**, solo lee, y le manda los datos al panel cada hora:
+
+1. Entrá a [script.google.com](https://script.google.com) **con la cuenta de Thi** →
+   Nuevo proyecto → llamalo "Panel · Classroom".
+2. Pegá `apps-script-classroom/Classroom.gs`. En ⚙️ Configuración del proyecto tildá
+   "Mostrar el archivo de manifiesto appsscript.json" y pegá `apps-script-classroom/appsscript.json`.
+3. ⚙️ → Propiedades del script: `PANEL_URL` (la URL /exec del panel, la de config.js) y
+   `TOKEN` (el mismo del panel).
+4. Ejecutá `probarClassroom`: pide permisos (de solo lectura) y muestra materias y tareas.
+5. Ejecutá `activarClassroom`: desde ahí se manda solo cada hora.
+
+En el Apps Script del panel no hay que configurar nada más que publicar la versión nueva.
 
 ## Fotos
 

@@ -30,6 +30,8 @@
     opciones = opciones || {};
     var alCambiar = opciones.alCambiar || function () {};
     var respuesta = null;
+    var aula = null; // { datos, recibido } de Classroom
+    var errorAula = null;
     var abierto = null;
     var error = null;
     var pestana = 'comunicados';
@@ -38,9 +40,10 @@
       '<div class="cole__principal">' +
       '  <div class="listas__cab"><div><span class="lbl" data-r="colegio">Colegio</span><h2 class="listas__titulo"><span data-r="titulo">Comunicados</span> <small data-r="sinleer"></small></h2>' +
       '    <button class="cole__vistos" data-r="vistos" hidden>Marcar todos como vistos</button></div>' +
-      '    <div class="seg" role="group" aria-label="Sección"><button data-tab="comunicados" aria-pressed="true">COMUNICADOS</button><button data-tab="notas" aria-pressed="false">NOTAS</button></div></div>' +
+      '    <div class="seg" role="group" aria-label="Sección"><button data-tab="comunicados" aria-pressed="true">COMUNICADOS</button><button data-tab="notas" aria-pressed="false">NOTAS</button><button data-tab="classroom" aria-pressed="false">CLASSROOM <span class="seg__num" data-r="urgentes" hidden></span></button></div></div>' +
       '  <div class="comunicados" data-r="comunicados"></div>' +
       '  <div class="notas" data-r="notas" hidden></div>' +
+      '  <div class="aula" data-r="classroom" hidden></div>' +
       '</div>' +
       '<div class="cole__lado">' +
       '  <div class="box" data-r="horario"></div>' +
@@ -83,7 +86,7 @@
           if (abierto && Cole.esNuevo(c)) {
             Cole.marcarVisto(c.id);
             pintarSinLeer(d);
-            alCambiar(d);
+            avisarCambio(d);
           }
           pintarComunicados(d);
         });
@@ -134,13 +137,68 @@
       });
     }
 
+    function pintarClassroom() {
+      var caja = parte('classroom');
+      caja.innerHTML = '';
+      var ahora = new Date();
+      var d = aula && aula.datos;
+      var n = d ? Classroom.urgentes(d, ahora) : 0;
+      parte('urgentes').textContent = n;
+      parte('urgentes').hidden = !n;
+      if (!d) {
+        caja.appendChild(el('p', 'listas__vacio', errorAula
+          ? 'No se pudo leer Classroom: ' + errorAula
+          : 'Classroom todavía no está conectado. Los pasos están en el README (sección Classroom).'));
+        return;
+      }
+      var r = Classroom.resumen(d, ahora);
+      var faltan = r.atrasadas.concat(r.pendientes);
+      caja.appendChild(el('span', 'lbl aula__lbl', faltan.length ? 'Para entregar · ' + faltan.length : 'Para entregar'));
+      if (!faltan.length) caja.appendChild(el('p', 'aula__aldia', '¡Al día! No hay nada pendiente 🙌'));
+      faltan.forEach(function (t) {
+        var c = Classroom.cuando(t.vence, ahora);
+        var fila = el('div', 'entrega entrega--' + c.urgencia);
+        var txt = el('div', 'entrega__txt');
+        txt.appendChild(el('b', 'entrega__titulo', t.titulo));
+        txt.appendChild(el('span', 'entrega__curso', t.curso));
+        fila.appendChild(txt);
+        fila.appendChild(el('span', 'entrega__cuando', c.texto));
+        caja.appendChild(fila);
+      });
+      if (r.hechas.length) {
+        caja.appendChild(el('span', 'lbl aula__lbl', 'Entregadas esta semana'));
+        r.hechas.slice(0, 4).forEach(function (t) {
+          var fila = el('div', 'entrega entrega--hecha');
+          var txt = el('div', 'entrega__txt');
+          txt.appendChild(el('b', 'entrega__titulo', '✓ ' + t.titulo));
+          txt.appendChild(el('span', 'entrega__curso', t.curso + (t.estado === 'devuelta' ? ' · corregida' : '')));
+          fila.appendChild(txt);
+          if (t.nota !== null && t.nota !== undefined) {
+            fila.appendChild(el('span', 'entrega__nota', t.nota + (t.notaMax ? '/' + t.notaMax : '')));
+          }
+          caja.appendChild(fila);
+        });
+      }
+      if (r.avisos.length) {
+        caja.appendChild(el('span', 'lbl aula__lbl', 'Avisos de los profes'));
+        r.avisos.slice(0, 3).forEach(function (a) {
+          var av = el('div', 'aviso-profe');
+          av.appendChild(el('b', null, a.curso + ' · ' + Cole.fechaCorta(a.fecha, ahora)));
+          av.appendChild(el('p', null, a.texto));
+          caja.appendChild(av);
+        });
+      }
+      caja.appendChild(el('p', 'aula__pie', 'Classroom actualizado ' + hace(aula.recibido) + '. Se actualiza solo cada hora.'));
+    }
+
     function pintarPestana() {
       contenedor.querySelectorAll('[data-tab]').forEach(function (b) {
         b.setAttribute('aria-pressed', String(b.getAttribute('data-tab') === pestana));
       });
       parte('comunicados').hidden = pestana !== 'comunicados';
       parte('notas').hidden = pestana !== 'notas';
-      parte('titulo').textContent = pestana === 'notas' ? 'Notas' : 'Comunicados';
+      parte('classroom').hidden = pestana !== 'classroom';
+      parte('titulo').textContent = { notas: 'Notas', classroom: 'Classroom' }[pestana] || 'Comunicados';
       parte('sinleer').hidden = pestana !== 'comunicados';
       pintarSinLeer(respuesta && respuesta.datos);
     }
@@ -220,7 +278,7 @@
       ((d && d.comunicados) || []).forEach(function (c) { if (Cole.esNuevo(c)) Cole.marcarVisto(c.id); });
       pintarSinLeer(d);
       pintarComunicados(d);
-      alCambiar(d);
+      avisarCambio(d);
     });
 
     function pintar() {
@@ -234,6 +292,7 @@
         pintarComunicados(d);
       }
       pintarNotas(d);
+      pintarClassroom();
       pintarPestana();
       pintarHorario(d);
       pintarAsistencia(d);
@@ -252,16 +311,29 @@
 
     function cargar() {
       if (!fuente.colegium) return Promise.resolve();
-      return fuente.colegium().then(function (r) {
+      var cole = fuente.colegium().then(function (r) {
         respuesta = r;
         error = null;
       }).catch(function (err) {
         console.error(err);
         error = err.message;
-      }).then(function () {
-        pintar();
-        alCambiar(respuesta && respuesta.datos);
       });
+      var clase = (fuente.classroom ? fuente.classroom() : Promise.resolve(null)).then(function (r) {
+        aula = r && r.datos ? r : null;
+        errorAula = null;
+      }).catch(function (err) {
+        console.error(err);
+        errorAula = err.message;
+      });
+      return Promise.all([cole, clase]).then(function () {
+        pintar();
+        avisarCambio(respuesta && respuesta.datos);
+      });
+    }
+
+    // La barra lateral suma comunicados sin leer y entregas urgentes de Classroom.
+    function avisarCambio(d) {
+      alCambiar(d, aula && aula.datos ? Classroom.urgentes(aula.datos, new Date()) : 0);
     }
 
     return { cargar: cargar, alMostrar: function () { abierto = null; cargar(); } };

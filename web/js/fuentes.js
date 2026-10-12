@@ -13,6 +13,7 @@
  *   basquet(): Promise<partidos>   ver js/basquet.js
  *   listas(), compra(op, datos), tarea(op, datos)   ver js/listas.js y apps-script/Listas.gs
  *   colegium(): Promise<{ datos, recibido }>         ver js/cole.js y extension-colegium/
+ *   classroom(): Promise<{ datos, recibido }>        ver js/classroom.js y apps-script-classroom/
  */
 (function (root) {
   'use strict';
@@ -53,7 +54,36 @@
       listas: function () { return Promise.resolve(listasDemo.copia()); },
       compra: function (op, datos) { return Promise.resolve(listasDemo.compra(op, datos)); },
       tarea: function (op, datos) { return Promise.resolve(listasDemo.tarea(op, datos)); },
-      colegium: function () { return Promise.resolve(coleEjemplo(new Date())); }
+      colegium: function () { return Promise.resolve(coleEjemplo(new Date())); },
+      classroom: function () { return Promise.resolve(classroomEjemplo(new Date())); }
+    };
+  }
+
+  // Classroom de ejemplo, con fechas relativas a hoy.
+  function classroomEjemplo(ahora) {
+    function dia(sumar, h, m) {
+      return new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + sumar, h === undefined ? 23 : h, m === undefined ? 59 : m).toISOString();
+    }
+    function t(id, titulo, curso, estado, vence, extra) {
+      return Object.assign({ id: id, titulo: titulo, curso: curso, estado: estado, vence: vence, descripcion: '', link: '' }, extra || {});
+    }
+    return {
+      recibido: new Date(ahora.getTime() - 40 * 60000).toISOString(),
+      datos: {
+        actualizado: new Date(ahora.getTime() - 40 * 60000).toISOString(),
+        cursos: [{ nombre: 'Matemática' }, { nombre: 'Geografía' }, { nombre: 'Literatura' }, { nombre: 'Inglés' }],
+        tareas: [
+          t('c1', 'Mapa de climas de Argentina', 'Geografía', 'atrasada', dia(-1)),
+          t('c2', 'Guía de ejercicios: funciones lineales', 'Matemática', 'pendiente', dia(1, 8, 0)),
+          t('c3', 'Leer capítulos 3 y 4 de "El Principito"', 'Literatura', 'pendiente', dia(3)),
+          t('c4', 'Vocabulary quiz practice', 'Inglés', 'pendiente', dia(9)),
+          t('c5', 'TP Polinomios', 'Matemática', 'devuelta', dia(-3), { nota: 9, notaMax: 10 }),
+          t('c6', 'Cuestionario de la unidad 2', 'Geografía', 'entregada', dia(-2))
+        ],
+        avisos: [
+          { curso: 'Matemática', texto: 'Recuerden traer la calculadora el jueves para la evaluación.', fecha: new Date(ahora.getTime() - 5 * 3600000).toISOString() }
+        ]
+      }
     };
   }
 
@@ -353,7 +383,8 @@
       tarea: function (op, datos) {
         return pedir(Object.assign({ action: 'tarea', op: op, token: token }, datos));
       },
-      colegium: function () { return pedir({ action: 'colegium', token: token }); }
+      colegium: function () { return pedir({ action: 'colegium', token: token }); },
+      classroom: function () { return pedir({ action: 'classroom', token: token }); }
     };
   }
 

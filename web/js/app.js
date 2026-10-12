@@ -52,7 +52,9 @@
 
   var hoy = Hoy.crearHoy(document.getElementById('vista-hoy'), fuente, {
     alTocarRecuerdo: function () { irA('fotos'); },
-    basquet: config.BASQUET || { calendario: 'Thi', color: '#d39b1e' }
+    basquet: config.BASQUET || { calendario: 'Thi', color: '#d39b1e' },
+    // Las entregas de Classroom de la semana también van a la agenda
+    classroom: config.CLASSROOM || { calendario: 'Thi', color: '#d39b1e' }
   });
 
   // Aviso abajo de la pantalla, con "Deshacer" opcional.
@@ -83,11 +85,11 @@
     compras: VistasListas.crearCompras(document.getElementById('vista-compras'), listas, { avisar: avisar }),
     cole: VistaCole.crearCole(document.getElementById('vista-cole'), fuente, {
       apodo: config.APODO_ALUMNO || 'Thi',
-      alCambiar: function (d) {
+      alCambiar: function (d, entregas) {
         var n = document.querySelector('[data-num="cole"]');
-        var sinLeer = Cole.sinLeer(d);
-        n.textContent = sinLeer;
-        n.hidden = !sinLeer;
+        var total = Cole.sinLeer(d) + (entregas || 0);
+        n.textContent = total;
+        n.hidden = !total;
       }
     })
   };
