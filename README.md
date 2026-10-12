@@ -10,12 +10,31 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 
 | Módulo | Estado |
 |---|---|
-| Fotos desde Drive con diseño inteligente | ✅ primera versión |
-| Panel "Hoy" (reloj, clima, agenda, próximo evento) | pendiente |
+| Fotos desde Drive con diseño inteligente | ✅ funcionando con Drive |
+| Panel "Hoy" (reloj, clima, agenda, próximo evento) | ✅ primera versión |
 | Tareas y compras (Google Sheets) | pendiente |
 | Avisos del cole leídos de Gmail con IA | pendiente |
 | Ubicación de Thiago (OwnTracks) | pendiente |
-| Instalación en el marco por ADB | pendiente |
+| Instalación en el marco por ADB, con backup de Frameo | pendiente |
+| Videos de Drive (requiere probar qué reproduce el marco) | pendiente |
+
+## Cómo se usa
+
+- Al prender muestra el panel **Hoy**. Después de 3 minutos sin tocarlo pasa a las **fotos**.
+- En las fotos: tocar vuelve al panel; deslizar a los costados cambia de foto.
+- Tocar el recuadro del recuerdo (arriba a la derecha) abre las fotos.
+
+## Hoy
+
+- Reloj y fecha.
+- Clima de [Open-Meteo](https://open-meteo.com) (gratis, sin clave) con una frase
+  para las próximas horas: lluvia, si refresca o si hace calor.
+- **Próximo**: el siguiente evento con horario, con cuenta regresiva si falta menos
+  de hora y media.
+- Una columna por calendario de Google Calendar con lo de hoy y mañana
+  (las de más eventos primero, hasta 4).
+- **Próximos días**: lo que viene a partir de pasado mañana.
+- Un recuerdo: una foto de "un día como hoy" si hay, si no una al azar.
 
 ## Fotos
 
@@ -37,9 +56,14 @@ npm test          # tests del motor de diseño
 npm run serve     # abre http://localhost:8080
 ```
 
-Sin `config.js` usa imágenes de ejemplo de `web/demo/`.
-Agregá `?debug=1` a la URL para ver qué regla aplicó en cada diapositiva,
-y `?segundos=5` para que pasen más rápido.
+Sin `config.js` usa fotos, agenda y clima de ejemplo.
+
+Opciones en la URL, útiles para probar:
+- `?demo=1` usa los datos de ejemplo aunque haya `config.js`
+- `?vista=fotos` arranca en las fotos
+- `?debug=1` muestra qué regla de diseño se aplicó en cada foto
+- `?segundos=5` cambia de foto cada 5 segundos
+- `?inactividad=1` vuelve a las fotos después de 1 minuto sin tocar
 
 ## Conectarlo a tu Drive
 
@@ -66,7 +90,13 @@ Hacelo con la cuenta de Google **dueña de las fotos**.
 "Cualquier persona" significa que cualquiera con la URL **y** el TOKEN puede ver
 las fotos. Sin el TOKEN, el script no devuelve nada. No compartas ninguno de los dos.
 
-Cada vez que cambies `Code.gs` hay que hacer **Implementar → Gestionar
+Para el calendario, ejecutá también `probarAgenda`: Google va a pedir permiso
+para leer tu calendario. Por defecto se usan todos los calendarios que tenés
+visibles en Google Calendar; si querés solo algunos, agregá la propiedad
+`CALENDARIOS` con sus IDs separados por coma (el ID está en Google Calendar →
+configuración del calendario → *Integrar el calendario*).
+
+Cada vez que cambies `Code.gs` o `appsscript.json` hay que hacer **Implementar → Gestionar
 implementaciones → Editar → Nueva versión** para que el cambio llegue al marco.
 
 ## Estructura
@@ -77,6 +107,10 @@ web/           lo que muestra el marco (HTML/CSS/JS sin dependencias, compatible
   js/layout.js   motor de diseño de diapositivas (función pura)
   js/fuentes.js  de dónde salen las fotos: demo o Drive
   js/fotos.js    slideshow
+  js/agenda.js   lógica de la agenda (función pura)
+  js/clima.js    clima de Open-Meteo
+  js/hoy.js      vista "Hoy"
+  js/app.js      arranque, barra lateral, inactividad
 test/          tests (`node --test`)
 scripts/       generador de imágenes de ejemplo
 ```

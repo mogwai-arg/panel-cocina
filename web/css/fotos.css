@@ -1,4 +1,4 @@
-/* Pantalla de fotos. Pensada para 1280x800 pero se adapta a cualquier tamaño. */
+/* Vista de fotos (pantalla completa dentro de la pantalla de 1280x800). */
 :root {
   --negro: #0d0d0d;
   --blanco: #ffffff;
@@ -8,19 +8,8 @@
   --separacion: 8px;
 }
 
-html, body {
-  margin: 0;
-  height: 100%;
-  background: var(--negro);
-  color: var(--blanco);
-  overflow: hidden;
-  cursor: none;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
 .fotos {
-  position: fixed;
+  position: absolute;
   inset: 0;
   background: var(--negro);
 }

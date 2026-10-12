@@ -32,6 +32,12 @@
     var actual = null;
     var temporizador = null;
     var ultimaLista = 0;
+    var pausado = false;
+
+    function programar(ms) {
+      clearTimeout(temporizador);
+      temporizador = setTimeout(function () { if (!pausado) mostrar(1); }, ms);
+    }
 
     function proporcionPantalla() {
       return contenedor.clientWidth / Math.max(1, contenedor.clientHeight);
@@ -104,7 +110,7 @@
       return listo.then(function () {
         if (!secuencia.length) {
           contenedor.setAttribute('data-estado', 'vacio');
-          temporizador = setTimeout(function () { mostrar(1); }, 60000);
+          programar(60000);
           return;
         }
         posicion = (posicion + paso + secuencia.length) % secuencia.length;
@@ -121,7 +127,7 @@
           var vieja = actual;
           actual = nueva;
           if (vieja) setTimeout(function () { vieja.remove(); }, 1200);
-          temporizador = setTimeout(function () { mostrar(1); }, segundos * 1000);
+          programar(segundos * 1000);
           // Precargar la siguiente mientras se ve esta.
           var sig = secuencia[(posicion + 1) % secuencia.length];
           sig.fotos.forEach(function (f) { fuente.url(f).then(precargar); });
@@ -130,14 +136,23 @@
         console.error(err);
         contenedor.setAttribute('data-estado', 'error');
         contenedor.setAttribute('data-error', err.message);
-        temporizador = setTimeout(function () { mostrar(1); }, 60000);
+        programar(60000);
       });
     }
 
     return {
-      iniciar: function () { return mostrar(1); },
+      iniciar: function () { pausado = false; return mostrar(1); },
       siguiente: function () { return mostrar(1); },
-      anterior: function () { return mostrar(-1); }
+      anterior: function () { return mostrar(-1); },
+      // Mientras está pausado no cambia de foto ni descarga nada.
+      pausar: function () { pausado = true; clearTimeout(temporizador); },
+      reanudar: function () {
+        if (!pausado) return;
+        pausado = false;
+        if (actual) programar(segundos * 1000); else mostrar(1);
+      },
+      // Para el recuadro de recuerdos del panel "Hoy".
+      fuente: fuente
     };
   }
 

@@ -3,42 +3,38 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Panel de Cocina · Fotos</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&family=Archivo:wght@800&display=swap">
+  <title>Panel de Cocina</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&family=Archivo:wdth,wght@62..125,600;62..125,800&family=Figtree:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/fotos.css">
 </head>
 <body>
-  <main class="fotos" id="fotos" aria-label="Fotos de la familia"></main>
+  <div class="pantalla" id="pantalla">
+    <nav class="nav" aria-label="Secciones">
+      <button data-ir="hoy">
+        <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Hoy
+      </button>
+      <button data-ir="fotos">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l6-5 4 3 3-2 4 3"/></svg>Fotos
+      </button>
+      <div class="nav__reloj" id="reloj-lateral"></div>
+    </nav>
+
+    <section class="vista hoy" id="vista-hoy" data-vista-panel="hoy" aria-label="Hoy"></section>
+
+    <section class="vista vista--fotos" id="vista-fotos" data-vista-panel="fotos" aria-label="Fotos" hidden>
+      <main class="fotos" id="fotos"></main>
+    </section>
+  </div>
 
   <!-- config.js es opcional: si no existe, se usa el modo demo. -->
   <script src="config.js" onerror="window.CONFIG = null"></script>
   <script src="js/layout.js"></script>
+  <script src="js/agenda.js"></script>
+  <script src="js/clima.js"></script>
   <script src="js/fuentes.js"></script>
   <script src="js/fotos.js"></script>
-  <script>
-    (function () {
-      var params = new URLSearchParams(location.search);
-      var config = window.CONFIG || {};
-      var usarDrive = config.APPS_SCRIPT_URL && params.get('demo') !== '1';
-      var fuente = usarDrive
-        ? Fuentes.drive(config.APPS_SCRIPT_URL, config.TOKEN, { ancho: config.ANCHO_FOTO })
-        : Fuentes.demo();
-
-      var show = Fotos.crearSlideshow(document.getElementById('fotos'), fuente, {
-        segundos: Number(params.get('segundos')) || config.SEGUNDOS_POR_FOTO || 15,
-        debug: params.get('debug') === '1'
-      });
-      show.iniciar();
-
-      // Tocar la mitad derecha avanza, la izquierda retrocede. Flechas del teclado también.
-      document.addEventListener('click', function (e) {
-        if (e.clientX > window.innerWidth / 2) show.siguiente(); else show.anterior();
-      });
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'ArrowRight') show.siguiente();
-        if (e.key === 'ArrowLeft') show.anterior();
-      });
-    })();
-  </script>
+  <script src="js/hoy.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

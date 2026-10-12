@@ -5,8 +5,10 @@
  *   Fuentes.drive(url, tk)  → tu carpeta de Drive, a través del Apps Script
  *
  * Las dos devuelven el mismo formato:
- *   { listar(): Promise<foto[]>, url(foto): Promise<string> }
- * con foto = { id, ancho, alto, fecha }.
+ *   listar(): Promise<foto[]>      foto = { id, ancho, alto, fecha }
+ *   url(foto): Promise<string>
+ *   agenda(): Promise<evento[]>    ver js/agenda.js
+ *   clima(): Promise<clima>        ver js/clima.js
  */
 (function (root) {
   'use strict';
@@ -37,12 +39,46 @@
     ];
     return {
       listar: function () { return Promise.resolve(fotos); },
-      url: function (foto) { return Promise.resolve('demo/' + foto.id + '.svg'); }
+      url: function (foto) { return Promise.resolve('demo/' + foto.id + '.svg'); },
+      agenda: function () { return Promise.resolve(agendaEjemplo(new Date())); },
+      clima: function () { return Promise.resolve(Clima.ejemplo(new Date())); }
     };
+  }
+
+  // Eventos de ejemplo relativos a ahora, para que la demo siempre tenga algo que mostrar.
+  function agendaEjemplo(ahora) {
+    var CAL = {
+      javi: ['Javi', '#2f5fd0'],
+      thiago: ['Thiago', '#d39b1e'],
+      familia: ['Familia', '#2e7d4f'],
+      cumples: ['Cumpleaños', '#c2306b']
+    };
+    function en(min) { return new Date(ahora.getTime() + min * 60000).toISOString(); }
+    function dia(sumar, h, m) {
+      return new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + sumar, h, m || 0).toISOString();
+    }
+    function ev(titulo, inicio, fin, cal, extra) {
+      return Object.assign({ titulo: titulo, inicio: inicio, fin: fin, todoElDia: false, lugar: '',
+        calendario: CAL[cal][0], color: CAL[cal][1] }, extra || {});
+    }
+    return [
+      ev('Fútbol', en(26), en(116), 'thiago', { lugar: 'Club Arquitectura' }),
+      ev('Llamada con el contador', en(140), en(170), 'javi'),
+      ev('Inglés', en(200), en(260), 'thiago'),
+      ev('Cena con los abuelos', en(330), en(450), 'familia', { lugar: 'Casa de los abuelos' }),
+      ev('Acto del colegio · ir de blanco', dia(1, 8), dia(1, 9, 30), 'thiago'),
+      ev('Dentista', dia(1, 18, 30), dia(1, 19, 15), 'javi'),
+      ev('Pagar expensas', dia(1, 0), dia(2, 0), 'familia', { todoElDia: true }),
+      ev('Prueba de matemática', dia(2, 8), dia(2, 9), 'thiago'),
+      ev('Cumple de la abuela Marta', dia(3, 0), dia(4, 0), 'cumples', { todoElDia: true }),
+      ev('Reunión de padres', dia(4, 19), dia(4, 20), 'familia'),
+      ev('Partido de fútbol', dia(5, 10), dia(5, 12), 'thiago')
+    ];
   }
 
   function drive(urlScript, token, opciones) {
     opciones = opciones || {};
+    var latitud = opciones.latitud, longitud = opciones.longitud;
     var ancho = opciones.ancho || 1600;
     var maxCache = opciones.maxCache || 40;
     var cache = new Map(); // id → blob URL, en orden de uso
@@ -96,7 +132,11 @@
           guardar(foto.id, url);
           return url;
         });
-      }
+      },
+      agenda: function () {
+        return pedir({ action: 'agenda', dias: 7, token: token }).then(function (d) { return d.eventos; });
+      },
+      clima: function () { return Clima.obtener(latitud, longitud); }
     };
   }
 

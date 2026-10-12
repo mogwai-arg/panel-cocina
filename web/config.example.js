@@ -6,5 +6,11 @@ window.CONFIG = {
   TOKEN: 'una-clave-larga-y-secreta',
   SEGUNDOS_POR_FOTO: 15,
   // Ancho en píxeles con el que se piden las fotos a Drive (el marco es de 1280)
-  ANCHO_FOTO: 1600
+  ANCHO_FOTO: 1600,
+  // Ubicación para el clima (por defecto, Buenos Aires). Se saca de Google Maps:
+  // clic derecho sobre tu casa → el primer número es la latitud, el segundo la longitud.
+  LATITUD: -34.6037,
+  LONGITUD: -58.3816,
+  // Minutos sin tocar la pantalla hasta que vuelve a las fotos
+  MINUTOS_INACTIVIDAD: 3
 };

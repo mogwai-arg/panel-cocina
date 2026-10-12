@@ -8,9 +8,14 @@
  *   CARPETAS  IDs de carpetas de Drive separados por coma (se incluyen subcarpetas)
  *   TOKEN     clave secreta; el marco la manda en cada pedido
  *
+ *   CALENDARIOS  (opcional) IDs de calendarios separados por coma. Si no está,
+ *                se usan todos los calendarios visibles de tu Google Calendar.
+ *
  * Pedidos:
  *   ?action=lista&token=...            → { fotos: [{ id, ancho, alto, fecha }] }
  *   ?action=img&id=...&ancho=1600&token=...  → { mime, data (base64) }
+ *   ?action=agenda&dias=7&token=...    → { eventos: [{ titulo, inicio, fin, todoElDia,
+ *                                          lugar, calendario, color }] }
  */
 
 var MINUTOS_CACHE_LISTA = 30;
@@ -21,6 +26,7 @@ function doGet(e) {
     if (!p.token || p.token !== propiedad_('TOKEN')) return json_({ error: 'Token inválido' });
     if (p.action === 'lista') return json_({ fotos: listarFotos_() });
     if (p.action === 'img') return json_(imagen_(p.id, Number(p.ancho) || 1600));
+    if (p.action === 'agenda') return json_({ eventos: agenda_(Number(p.dias) || 7) });
     return json_({ error: 'Acción desconocida: ' + p.action });
   } catch (err) {
     return json_({ error: String(err && err.message || err) });
@@ -153,6 +159,54 @@ function tamanoImagen_(bytes) {
     i += 2 + largo;
   }
   return null;
+}
+
+/** Eventos desde el comienzo de hoy hasta dentro de `dias` días. */
+function agenda_(dias) {
+  dias = Math.max(1, Math.min(dias, 31));
+  var cache = CacheService.getScriptCache();
+  var clave = 'agenda_' + dias;
+  var guardada = cache.get(clave);
+  if (guardada) return JSON.parse(guardada);
+
+  var ids = PropertiesService.getScriptProperties().getProperty('CALENDARIOS');
+  var calendarios = ids
+    ? ids.split(',').map(function (s) { return CalendarApp.getCalendarById(s.trim()); })
+        .filter(function (c) { return c; })
+    : CalendarApp.getAllCalendars().filter(function (c) { return c.isSelected() && !c.isHidden(); });
+
+  var desde = new Date();
+  desde.setHours(0, 0, 0, 0);
+  var hasta = new Date(desde.getTime() + dias * 86400000);
+
+  var eventos = [];
+  calendarios.forEach(function (cal) {
+    cal.getEvents(desde, hasta).forEach(function (e) {
+      eventos.push({
+        titulo: e.getTitle(),
+        inicio: e.getStartTime().toISOString(),
+        fin: e.getEndTime().toISOString(),
+        todoElDia: e.isAllDayEvent(),
+        lugar: e.getLocation(),
+        calendario: cal.getName(),
+        color: cal.getColor()
+      });
+    });
+  });
+  eventos.sort(function (a, b) { return a.inicio < b.inicio ? -1 : 1; });
+  cache.put(clave, JSON.stringify(eventos), 300);
+  return eventos;
+}
+
+/** Para probar desde el editor: muestra los calendarios y los próximos eventos. */
+function probarAgenda() {
+  CacheService.getScriptCache().remove('agenda_7');
+  var eventos = agenda_(7);
+  var porCalendario = {};
+  eventos.forEach(function (e) { porCalendario[e.calendario] = (porCalendario[e.calendario] || 0) + 1; });
+  Logger.log('Eventos en los próximos 7 días: ' + eventos.length);
+  Logger.log('Por calendario: ' + JSON.stringify(porCalendario));
+  Logger.log('Próximos: ' + JSON.stringify(eventos.slice(0, 3), null, 2));
 }
 
 /** "2024:07:15 18:22:01" (EXIF) → "2024-07-15T18:22:01" */
