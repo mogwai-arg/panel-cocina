@@ -194,8 +194,12 @@
 
     function cargarAgenda() {
       return fuente.agenda().then(function (lista) {
-        var propios = aula && classroomConfig.enAgenda !== false ? Classroom.sinRepetidos(lista || [], aula) : (lista || []);
-        eventos = propios.concat(eventosDeBasquet(), eventosDeClassroom());
+        lista = lista || [];
+        var deThi = aula ? Classroom.eventosDeSuCuenta(aula, lista, classroomConfig.calendario || 'Thi',
+          classroomConfig.color || '#d39b1e', opciones.nombresCortos) : [];
+        var todos = lista.concat(deThi);
+        if (aula && classroomConfig.enAgenda !== false) todos = Classroom.sinRepetidos(todos, aula);
+        eventos = todos.concat(eventosDeBasquet(), eventosDeClassroom());
         errorAgenda = null;
       }).catch(function (err) {
         console.error(err);

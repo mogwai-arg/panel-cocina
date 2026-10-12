@@ -4,6 +4,8 @@
  * Este proyecto va en la CUENTA DE GMAIL DE THI (la que usa para Classroom), no en
  * la tuya. Lee sus materias, tareas (con fecha de entrega y si las entregó) y
  * avisos de los profes, y se los manda al Apps Script del panel cada hora.
+ * También manda los eventos de sus calendarios (el suyo y el del curso de Classroom,
+ * que no es público: solo lo ven los alumnos).
  * Solo lee: no entrega, no comenta, no marca nada.
  *
  * Propiedades del script (Configuración del proyecto → Propiedades del script):
@@ -17,6 +19,7 @@
 var DIAS_ATRAS = 45;          // tareas entregadas/vencidas que se muestran
 var TAREAS_POR_MATERIA = 25;
 var AVISOS_POR_MATERIA = 5;
+var DIAS_DE_AGENDA = 14;
 
 function leerClassroom_() {
   var ahora = new Date();
@@ -58,7 +61,33 @@ function leerClassroom_() {
         });
     } catch (e) { Logger.log('No se pudieron leer los avisos de ' + c.name + ': ' + e.message); }
   });
+  datos.eventos = eventosDeCalendarios_(ahora);
   return datos;
+}
+
+/** Eventos de los calendarios que Thi tiene a la vista, de hoy a DIAS_DE_AGENDA. */
+function eventosDeCalendarios_(ahora) {
+  var desde = new Date(ahora.getTime());
+  desde.setHours(0, 0, 0, 0);
+  var hasta = new Date(desde.getTime() + DIAS_DE_AGENDA * 86400000);
+  var eventos = [];
+  CalendarApp.getAllCalendars().forEach(function (cal) {
+    if (!cal.isSelected() || cal.isHidden()) return;
+    try {
+      cal.getEvents(desde, hasta).forEach(function (e) {
+        eventos.push({
+          titulo: e.getTitle(),
+          inicio: e.getStartTime().toISOString(),
+          fin: e.getEndTime().toISOString(),
+          todoElDia: e.isAllDayEvent(),
+          lugar: e.getLocation(),
+          calendario: cal.getName(),
+          calendarioId: cal.getId()
+        });
+      });
+    } catch (err) { Logger.log('No se pudo leer el calendario ' + cal.getName() + ': ' + err.message); }
+  });
+  return eventos.slice(0, 200);
 }
 
 /*
@@ -139,6 +168,10 @@ function probarClassroom() {
   var cuenta = {};
   datos.tareas.forEach(function (t) { cuenta[t.estado] = (cuenta[t.estado] || 0) + 1; });
   Logger.log('Tareas: ' + JSON.stringify(cuenta) + ' · avisos: ' + datos.avisos.length);
+  var porCal = {};
+  datos.eventos.forEach(function (e) { porCal[e.calendario] = (porCal[e.calendario] || 0) + 1; });
+  Logger.log('Calendarios de Thi: ' + CalendarApp.getAllCalendars().map(function (c) { return c.getName(); }).join(', '));
+  Logger.log('Eventos de los próximos ' + DIAS_DE_AGENDA + ' días por calendario: ' + JSON.stringify(porCal));
   datos.tareas.filter(function (t) { return t.estado === 'pendiente' || t.estado === 'atrasada'; })
     .slice(0, 10).forEach(function (t) {
       Logger.log('  ' + t.estado + ' · ' + t.curso + ' · ' + t.titulo + ' · vence ' + (t.vence || 'sin fecha'));

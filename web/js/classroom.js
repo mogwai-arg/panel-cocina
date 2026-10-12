@@ -112,7 +112,28 @@
       .replace(/[^a-z0-9ñ ]/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  var api = { sinRepetidos: sinRepetidos, cuando: cuando, resumen: resumen, urgentes: urgentes, comoEventos: comoEventos };
+  /*
+   * Eventos de los calendarios de Thi (los manda el script de su cuenta). Los que ya
+   * están en la agenda (calendarios compartidos con vos) no se repiten. Los calendarios
+   * sin nombre corto en config.js van a la columna de Thi.
+   */
+  function eventosDeSuCuenta(datos, yaEstan, calendario, color, nombresCortos) {
+    var vistos = {};
+    (yaEstan || []).forEach(function (e) { vistos[normal(e.titulo) + '|' + e.inicio] = true; });
+    var cortos = {};
+    (nombresCortos || []).forEach(function (n) { cortos[n] = true; });
+    return ((datos && datos.eventos) || []).filter(function (e) {
+      return !vistos[normal(e.titulo) + '|' + e.inicio];
+    }).map(function (e) {
+      var copia = {};
+      Object.keys(e).forEach(function (k) { copia[k] = e[k]; });
+      if (!cortos[copia.calendario]) copia.calendario = calendario;
+      if (!copia.color) copia.color = color;
+      return copia;
+    });
+  }
+
+  var api = { eventosDeSuCuenta: eventosDeSuCuenta, sinRepetidos: sinRepetidos, cuando: cuando, resumen: resumen, urgentes: urgentes, comoEventos: comoEventos };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Classroom = api;
 })(typeof window !== 'undefined' ? window : this);

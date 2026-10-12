@@ -28,7 +28,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.7';
+var VERSION = '2026-10-12.8';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -527,6 +527,9 @@ function probarAgenda() {
   eventos.forEach(function (e) { porCalendario[e.calendario] = (porCalendario[e.calendario] || 0) + 1; });
   Logger.log('Eventos en los próximos 7 días: ' + eventos.length);
   Logger.log('Por calendario: ' + JSON.stringify(porCalendario));
+  Logger.log('Calendarios que ve tu cuenta: ' + CalendarApp.getAllCalendars().map(function (c) {
+    return c.getName() + (c.isSelected() && !c.isHidden() ? '' : ' (destildado: no se usa)');
+  }).join(' · '));
   Logger.log('Próximos: ' + JSON.stringify(eventos.slice(0, 3), null, 2));
 }
 

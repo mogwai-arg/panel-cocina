@@ -165,6 +165,11 @@ Como Classroom está en la cuenta de Gmail de Thi, hay un segundo Apps Script qu
 4. Ejecutá `probarClassroom`: pide permisos (de solo lectura) y muestra materias y tareas.
 5. Ejecutá `activarClassroom`: desde ahí se manda solo cada hora.
 
+El mismo script manda los **eventos de los calendarios de Thi** (el suyo y el del curso de
+Classroom, que no es público: solo lo ven los alumnos). Van a su columna en Hoy; los que ya
+ves porque te compartió el calendario no se repiten, y las entregas del calendario del curso
+tampoco (ya están como "Entregar: …").
+
 En el Apps Script del panel no hay que configurar nada más que publicar la versión nueva.
 
 ## Fotos

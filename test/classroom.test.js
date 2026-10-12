@@ -74,3 +74,15 @@ test('del calendario de Classroom se sacan las entregas repetidas, el resto qued
   assert.deepEqual(C.sinRepetidos(ev, datos).map((e) => e.titulo + '@' + e.calendarioId.slice(0, 4)),
     ['Prueba de Historia@clas', 'TP Polinomios@javi']);
 });
+
+test('eventos de la cuenta de Thi: sin repetir y a su columna si no tienen nombre corto', () => {
+  const suyos = { eventos: [
+    { titulo: 'Prueba de Historia', inicio: 'A', calendario: '4°B ALBERDI', calendarioId: 'classroom1@group' },
+    { titulo: 'Feriado', inicio: 'B', calendario: 'Feriados' },
+    { titulo: 'Cumple de Juan', inicio: 'C', calendario: 'Thi' }
+  ] };
+  const yaEstan = [{ titulo: 'Feriado', inicio: 'B' }];
+  const r = C.eventosDeSuCuenta(suyos, yaEstan, 'Thi', '#d39b1e', ['Javi', 'Thi', 'Feriados']);
+  assert.deepEqual(r.map((e) => e.titulo + ':' + e.calendario), ['Prueba de Historia:Thi', 'Cumple de Juan:Thi']);
+  assert.equal(r[0].color, '#d39b1e');
+});

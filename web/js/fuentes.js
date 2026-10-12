@@ -384,7 +384,15 @@
         return pedir(Object.assign({ action: 'tarea', op: op, token: token }, datos));
       },
       colegium: function () { return pedir({ action: 'colegium', token: token }); },
-      classroom: function () { return pedir({ action: 'classroom', token: token }); }
+      classroom: function () {
+        var nombres = opciones.nombresCalendarios || {};
+        return pedir({ action: 'classroom', token: token }).then(function (r) {
+          ((r.datos && r.datos.eventos) || []).forEach(function (e) {
+            if (nombres[e.calendario]) e.calendario = nombres[e.calendario];
+          });
+          return r;
+        });
+      }
     };
   }
 

@@ -54,7 +54,9 @@
     alTocarRecuerdo: function () { irA('fotos'); },
     basquet: config.BASQUET || { calendario: 'Thi', color: '#d39b1e' },
     // Las entregas de Classroom de la semana también van a la agenda
-    classroom: config.CLASSROOM || { calendario: 'Thi', color: '#d39b1e' }
+    classroom: config.CLASSROOM || { calendario: 'Thi', color: '#d39b1e' },
+    // Nombres cortos de calendarios: los de la cuenta de Thi que no estén acá van a su columna
+    nombresCortos: Object.keys(config.NOMBRES_CALENDARIOS || {}).map(function (k) { return config.NOMBRES_CALENDARIOS[k]; })
   });
 
   // Aviso abajo de la pantalla, con "Deshacer" opcional.
