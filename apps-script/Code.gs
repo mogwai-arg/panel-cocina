@@ -24,12 +24,13 @@
  *   ?action=colegium y POST colegium   → ver Colegium.gs
  *   ?action=classroom y POST classroom → ver Colegium.gs y apps-script-classroom/
  *   ?action=mails                      → ver Mails.gs
+ *   ?action=ubicacion (GET y POST)     → ver Ubicacion.gs (OwnTracks)
  */
 
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.10';
+var VERSION = '2026-10-12.11';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -47,6 +48,7 @@ function doGet(e) {
     if (p.action === 'colegium') return json_(leerColegium_()); // Colegium.gs
     if (p.action === 'classroom') return json_(leerClassroom_());
     if (p.action === 'mails') return json_(mails_()); // Mails.gs
+    if (p.action === 'ubicacion') return json_(ubicaciones_()); // Ubicacion.gs
     if (p.action === 'reglasMails') return json_(reglasMailsPara_(p.cuenta));
     if (p.action === 'version') return json_({ version: VERSION });
     return json_({ error: 'Acción desconocida: ' + p.action + ' (versión publicada: ' + VERSION + ')' });
@@ -58,6 +60,12 @@ function doGet(e) {
 /** Pedidos POST: por ahora, los datos de Colegium que manda la extensión de Chrome. */
 function doPost(e) {
   try {
+    // OwnTracks: el token y la acción van en la URL (la app no deja agregar campos al cuerpo).
+    var q = (e && e.parameter) || {};
+    if (q.action === 'ubicacion') {
+      if (!q.token || q.token !== propiedad_('TOKEN')) return json_({ error: 'Token inválido' });
+      return json_(recibirUbicacion_(q.quien, JSON.parse((e.postData && e.postData.contents) || '{}')));
+    }
     var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (!body.token || body.token !== propiedad_('TOKEN')) return json_({ error: 'Token inválido' });
     if (body.action === 'colegium') return json_(guardarColegium_(body.datos));

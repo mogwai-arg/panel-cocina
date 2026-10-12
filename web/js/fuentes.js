@@ -15,6 +15,7 @@
  *   colegium(): Promise<{ datos, recibido }>         ver js/cole.js y extension-colegium/
  *   classroom(): Promise<{ datos, recibido }>        ver js/classroom.js y apps-script-classroom/
  *   mails(): Promise<{ mails, actualizado }>          ver js/mails.js y apps-script/Mails.gs
+ *   ubicacion(): Promise<{ personas }>               ver js/ubicacion.js y apps-script/Ubicacion.gs
  */
 (function (root) {
   'use strict';
@@ -57,7 +58,16 @@
       tarea: function (op, datos) { return Promise.resolve(listasDemo.tarea(op, datos)); },
       colegium: function () { return Promise.resolve(coleEjemplo(new Date())); },
       classroom: function () { return Promise.resolve(classroomEjemplo(new Date())); },
-      mails: function () { return Promise.resolve(mailsEjemplo(new Date())); }
+      mails: function () { return Promise.resolve(mailsEjemplo(new Date())); },
+      ubicacion: function () {
+        var ahora = new Date();
+        return Promise.resolve({ personas: [{
+          quien: 'Thi', lat: -34.6480, lon: -58.6200, precision: 15, bateria: 64,
+          cuando: new Date(ahora.getTime() - 12 * 60000).toISOString(),
+          lugar: 'Colegio', desde: new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 7, 42).toISOString(),
+          cercano: { nombre: 'Colegio', metros: 20 }, historial: []
+        }] });
+      }
     };
   }
 
@@ -414,6 +424,7 @@
       },
       colegium: function () { return pedir({ action: 'colegium', token: token }); },
       mails: function () { return pedir({ action: 'mails', token: token }); },
+      ubicacion: function () { return pedir({ action: 'ubicacion', token: token }); },
       classroom: function () {
         var nombres = opciones.nombresCalendarios || {};
         return pedir({ action: 'classroom', token: token }).then(function (r) {

@@ -51,6 +51,7 @@
       '<button class="recuerdo" data-r="recuerdo" aria-label="Ver fotos"></button>' +
       '<div class="proximo" data-r="proximo"></div>' +
       '<div class="columnas" data-r="columnas"></div>' +
+      '<div class="donde" data-r="donde" hidden></div>' +
       '<div class="lateral"><div class="basquet" data-r="basquet" hidden></div>' +
       '<div class="dias" data-r="dias"></div></div>';
 
@@ -197,6 +198,58 @@
       }).then(cargarAgenda);
     }
 
+    // Dónde está cada persona que manda su ubicación (OwnTracks).
+    var ubicaciones = null;
+    function pintarDonde() {
+      var caja = parte('donde');
+      var personas = (ubicaciones && ubicaciones.personas) || [];
+      caja.hidden = !personas.length || !root.Ubicacion;
+      if (caja.hidden) return;
+      caja.innerHTML = '';
+      var ahora = new Date();
+      personas.forEach(function (p) {
+        var d = root.Ubicacion.describir(p, ahora);
+        var fila = el('div', 'donde__fila' + (d.viejo ? ' donde__fila--viejo' : ''));
+        fila.appendChild(mapita(p));
+        var txt = el('div', 'donde__txt');
+        txt.appendChild(el('span', 'lbl', 'Dónde está ' + p.quien));
+        txt.appendChild(el('b', 'donde__titulo', d.titulo));
+        txt.appendChild(el('small', 'donde__detalle' + (d.bateriaBaja ? ' donde__detalle--alerta' : ''), d.detalle));
+        fila.appendChild(txt);
+        caja.appendChild(fila);
+      });
+    }
+
+    // Mapa chiquito de OpenStreetMap centrado en el punto (3x3 mosaicos recortados).
+    function mapita(p) {
+      var LADO = 64;
+      var m = root.Ubicacion.mosaico(p.lat, p.lon, 15);
+      var caja = el('div', 'donde__mapa');
+      var capa = el('div', 'donde__capa');
+      capa.style.left = (LADO / 2 - 256 - m.px) + 'px';
+      capa.style.top = (LADO / 2 - 256 - m.py) + 'px';
+      for (var dy = -1; dy <= 1; dy++) {
+        for (var dx = -1; dx <= 1; dx++) {
+          var img = document.createElement('img');
+          img.alt = '';
+          img.src = 'https://tile.openstreetmap.org/15/' + (m.x + dx) + '/' + (m.y + dy) + '.png';
+          img.style.left = (dx + 1) * 256 + 'px';
+          img.style.top = (dy + 1) * 256 + 'px';
+          capa.appendChild(img);
+        }
+      }
+      caja.appendChild(capa);
+      caja.appendChild(el('i', 'donde__punto'));
+      return caja;
+    }
+
+    function cargarUbicacion() {
+      if (!fuente.ubicacion) return Promise.resolve();
+      return fuente.ubicacion().then(function (d) { ubicaciones = d; }).catch(function (err) {
+        console.error(err);
+      }).then(pintarDonde);
+    }
+
     function cargarClassroom() {
       if (!fuente.classroom) return Promise.resolve();
       return fuente.classroom().then(function (r) {
@@ -336,11 +389,13 @@
         cargarBasquet();
         cargarClassroom();
         cargarMails();
+        cargarUbicacion();
         cada(10000, pintarReloj);
         cada(30000, function () { pintarProximo(); pintarColumnas(); pintarDias(); pintarBasquet(); });
         cada(60 * 60000, cargarBasquet);
         cada(30 * 60000, cargarClassroom);
         cada(15 * 60000, cargarMails);
+        cada(2 * 60000, cargarUbicacion);
         cada(5 * 60000, cargarAgenda);
         cada(30 * 60000, cargarClima);
         cada(10 * 60000, cargarRecuerdo);

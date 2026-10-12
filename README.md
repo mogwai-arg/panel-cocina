@@ -17,7 +17,7 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 | Colegium (extensión de Chrome) | ✅ primera versión |
 | Classroom de Thi (tareas, entregas, avisos) | ✅ |
 | Avisos: mails importantes (turnos, cole, vencimientos) | ✅ con búsquedas de Gmail, sin IA |
-| Ubicación de Thiago (OwnTracks) | pendiente |
+| Ubicación de Thi (OwnTracks) con avisos de llegada | ✅ |
 | Instalación en el marco por ADB, con backup de Frameo | pendiente |
 | Videos de Drive | ✅ en la compu · falta probar qué formatos reproduce el marco |
 
@@ -187,6 +187,30 @@ en todo el mail se cuela publicidad que tiene esas palabras en el pie. La column
 **cuenta** dice en qué Gmail se busca: **Javi**, **Thi** o **Ambas**. Los de Thi los busca
 el script de su cuenta (el de Classroom) cada hora, y en el panel dicen "para Thi". Para probarlas: `probarMails` en el editor (la primera vez pide permiso para
 leer Gmail).
+
+## Ubicación de Thi (OwnTracks)
+
+En **Hoy**, arriba de la foto: dónde está Thi ("En Colegio · desde las 07:42", o "A 1,2 km
+de Casa"), cuándo fue el último dato y la batería, con un mapita. Y si querés, **te llega
+un mail cuando llega o se va** de un lugar (como Findmykid, pero gratis).
+
+1. En tu Apps Script: agregá `Ubicacion.gs`, reemplazá `Code.gs` y `appsscript.json`
+   (pide permiso para mandarte mails), publicá **Nueva versión** y ejecutá `probarUbicacion`
+   (crea la hoja **Lugares** y muestra la URL para OwnTracks).
+2. Hoja **Lugares**: en Google Maps, clic derecho sobre el lugar → clic en las coordenadas
+   (se copian) → pegalas en la columna `coordenadas`. `radio_m` = qué tan cerca cuenta como
+   "estar ahí" (150 m va bien). Tildá `avisar` donde quieras el mail de llegada/salida.
+3. En el iPhone de Thi, OwnTracks → ⚙️ (Settings):
+   - **Mode**: `HTTP`
+   - **URL**: `<URL /exec>?action=ubicacion&quien=Thi&token=<TOKEN>`
+   - Autenticación: apagada (el token va en la URL).
+   - En Ajustes del iPhone → OwnTracks → Ubicación: **Siempre** y **Ubicación exacta**
+     activada; y "Actualización en segundo plano" activada.
+   - En el mapa de OwnTracks, el botón de arriba elige el modo: **Significant** (gasta poca
+     batería: manda cuando se mueve unos cientos de metros) o **Move** (más preciso, gasta más).
+
+Con el teléfono quieto OwnTracks puede pasar horas sin mandar nada: el panel muestra el
+último dato y "hace cuánto".
 
 ## Fotos
 
