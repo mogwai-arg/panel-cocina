@@ -252,6 +252,52 @@ function explorarBasquet() {
   });
 }
 
+/**
+ * Diagnóstico temporal (segunda parte): el formulario de la página de FeBAMBA
+ * y las direcciones a las que su JavaScript pide los partidos.
+ */
+function explorarBasquet2() {
+  var base = 'https://www.febamba.com';
+  var html = UrlFetchApp.fetch(base + '/detalle-torneo/2015/formativas-2026', { muteHttpExceptions: true }).getContentText();
+
+  var formularios = html.match(/<form[\s\S]*?<\/form>/gi) || [];
+  Logger.log('Formularios: ' + formularios.length);
+  formularios.forEach(function (f, n) {
+    var apertura = (f.match(/<form[^>]*>/i) || [''])[0];
+    Logger.log('--- Formulario ' + (n + 1) + ': ' + apertura);
+    (f.match(/<select[\s\S]*?<\/select>/gi) || []).forEach(function (s) {
+      var nombre = (s.match(/name="([^"]+)"/) || [])[1];
+      var opciones = (s.match(/<option[^>]*value="([^"]*)"[^>]*>([^<]*)/gi) || []).slice(0, 12).map(function (o) {
+        var m = o.match(/value="([^"]*)"[^>]*>([^<]*)/);
+        return m[1] + '=' + m[2].trim();
+      });
+      Logger.log('  select ' + nombre + ': ' + opciones.join(' | '));
+    });
+    (f.match(/<input[^>]*>/gi) || []).forEach(function (i) { Logger.log('  ' + i); });
+  });
+
+  // Atributos data-* y ids que el JavaScript puede usar
+  var datos = {};
+  (html.match(/data-[a-z-]+="[^"]{1,80}"/gi) || []).forEach(function (d) { datos[d] = true; });
+  Logger.log('Atributos data-*: ' + Object.keys(datos).slice(0, 40).join('  '));
+
+  ['/js/funciones.min.js', '/js/min/funciones-clasificaciones.min.js?a=1', '/js/site.js'].forEach(function (ruta) {
+    var js = UrlFetchApp.fetch(base + ruta, { muteHttpExceptions: true }).getContentText();
+    Logger.log('==== ' + ruta + ' (' + js.length + ' caracteres)');
+    var vistos = {};
+    var patron = /(url\s*:\s*[^,}]{1,160}|\$\.(?:get|post|ajax|getJSON)\s*\([^;]{0,200}|\.load\s*\([^;]{0,160}|fetch\s*\([^;]{0,160}|["'`]\/[A-Za-z]+\/[A-Za-z]+[^"'`]{0,60}["'`])/g;
+    var m;
+    var cuenta = 0;
+    while ((m = patron.exec(js)) && cuenta < 50) {
+      var t = m[1].replace(/\s+/g, ' ');
+      if (vistos[t]) continue;
+      vistos[t] = true;
+      cuenta++;
+      Logger.log(t);
+    }
+  });
+}
+
 /** "2024:07:15 18:22:01" (EXIF) → "2024-07-15T18:22:01" */
 function fechaExif_(t) {
   if (!t) return null;
