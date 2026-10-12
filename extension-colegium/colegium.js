@@ -235,6 +235,12 @@
    * Junta un dato nuevo con lo que ya se tenía. Los comunicados se acumulan
    * (los últimos 60); los detalles abiertos se guardan aparte (los últimos 20).
    */
+  function cantidadDeNotas(cal) {
+    return (cal.periodos || []).reduce(function (n, p) {
+      return n + (p.evaluaciones || []).length + (p.final ? 1 : 0);
+    }, 0);
+  }
+
   function combinar(estado, tipo, datos, ahora) {
     estado = estado || {};
     var e = JSON.parse(JSON.stringify(estado));
@@ -254,6 +260,9 @@
       e.calificaciones = e.calificaciones || {};
       var previo = e.calificaciones[datos.relId];
       if (!datos.titulo && previo) datos.titulo = previo.titulo; // no perder el nombre ya visto
+      // Una respuesta sin ninguna nota no reemplaza a una que tenía notas
+      // (si Colegium contesta vacío por un error, no se pierde lo que ya estaba).
+      if (previo && cantidadDeNotas(previo) && !cantidadDeNotas(datos)) return estado;
       e.calificaciones[datos.relId] = datos;
     } else if (tipo === 'tiny') {
       if (!datos.valor) return estado;

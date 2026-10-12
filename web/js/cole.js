@@ -43,8 +43,28 @@
     return null;
   }
 
-  function sinLeer(datos) {
-    return ((datos && datos.comunicados) || []).filter(function (c) { return !c.leido; }).length;
+  /*
+   * Comunicados abiertos en el panel. Colegium no se entera (abrirlos desde acá no
+   * los marca como leídos allá), pero en el panel dejan de contar como pendientes.
+   */
+  var CLAVE_VISTOS = 'panel-cole-vistos';
+  function vistos() {
+    try { return JSON.parse(root.localStorage.getItem(CLAVE_VISTOS) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function marcarVisto(id) {
+    var v = vistos();
+    v[id] = Date.now();
+    var ids = Object.keys(v).sort(function (a, b) { return v[b] - v[a]; }).slice(0, 200);
+    var corto = {};
+    ids.forEach(function (k) { corto[k] = v[k]; });
+    try { root.localStorage.setItem(CLAVE_VISTOS, JSON.stringify(corto)); } catch (e) { /* sin almacenamiento */ }
+  }
+  function esNuevo(c, vistosYa) {
+    return !c.leido && !(vistosYa || vistos())[c.id];
+  }
+  function sinLeer(datos, vistosYa) {
+    vistosYa = vistosYa || vistos();
+    return ((datos && datos.comunicados) || []).filter(function (c) { return esNuevo(c, vistosYa); }).length;
   }
 
   function detalleDe(datos, id) {
@@ -300,6 +320,8 @@
     fechaCorta: fechaCorta,
     horarioParaMostrar: horarioParaMostrar,
     sinLeer: sinLeer,
+    esNuevo: esNuevo,
+    marcarVisto: marcarVisto,
     detalleDe: detalleDe,
     faltasPorJustificar: faltasPorJustificar,
     archivosNuevos: archivosNuevos

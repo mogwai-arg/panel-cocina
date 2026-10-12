@@ -124,7 +124,8 @@
       if (debug) {
         var etiqueta = document.createElement('div');
         etiqueta.className = 'diapo__debug';
-        etiqueta.textContent = NOMBRES_TIPO[diapo.tipo];
+        var giros = diapo.fotos.map(function (f) { return (f.rotacion || 0) * 90 + '°'; });
+        etiqueta.textContent = NOMBRES_TIPO[diapo.tipo] + ' · giro ' + giros.join(' / ');
         el.appendChild(etiqueta);
       }
       return el;

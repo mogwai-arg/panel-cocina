@@ -59,7 +59,7 @@
         return;
       }
       lista.forEach(function (c) {
-        var item = el('button', 'comunicado' + (c.leido ? '' : ' comunicado--nuevo') + (abierto === c.id ? ' comunicado--abierto' : ''));
+        var item = el('button', 'comunicado' + (Cole.esNuevo(c) ? ' comunicado--nuevo' : '') + (abierto === c.id ? ' comunicado--abierto' : ''));
         var cab = el('div', 'comunicado__cab');
         cab.appendChild(el('b', 'comunicado__titulo', c.titulo));
         cab.appendChild(el('span', 'comunicado__fecha', Cole.fechaCorta(c.fecha, new Date())));
@@ -79,6 +79,11 @@
         }
         item.addEventListener('click', function () {
           abierto = abierto === c.id ? null : c.id;
+          if (abierto && Cole.esNuevo(c)) {
+            Cole.marcarVisto(c.id);
+            pintarSinLeer(d);
+            alCambiar(d);
+          }
           pintarComunicados(d);
         });
         caja.appendChild(item);
@@ -202,10 +207,14 @@
       });
     }
 
+    function pintarSinLeer(d) {
+      var n = Cole.sinLeer(d);
+      parte('sinleer').textContent = n ? n + ' sin leer' : '';
+    }
+
     function pintar() {
       var d = respuesta && respuesta.datos;
-      var n = Cole.sinLeer(d);
-      parte('sinleer').textContent = n ? n + (n === 1 ? ' sin leer' : ' sin leer') : '';
+      pintarSinLeer(d);
       parte('colegio').textContent = (d && d.colegio && d.colegio.colegio) || 'Colegio';
       if (error) {
         parte('comunicados').innerHTML = '';

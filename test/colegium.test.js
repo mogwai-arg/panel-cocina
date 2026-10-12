@@ -187,3 +187,14 @@ test('períodos del ciclo lectivo', () => {
   [{ id: 'j5', nombre: '1er cuatrimestre', inicio: '2026-03-02', fin: '2026-07-17', actual: false },
    { id: 'jV', nombre: '2do cuatrimestre', inicio: '2026-07-27', fin: '2026-12-18', actual: true }]);
 });
+
+test('calificaciones: una respuesta vacía no borra las notas que ya estaban', () => {
+  const C = require('../extension-colegium/colegium.js');
+  const conNotas = { relId: 'A', titulo: 'Matemática', periodos: [{ id: '1', nombre: '2do', final: null, evaluaciones: [{ nombre: 'TP', concepto: 'MB' }] }] };
+  const vacia = { relId: 'A', titulo: '', periodos: [] };
+  const e1 = C.combinar({}, 'calificaciones', conNotas, new Date());
+  const e2 = C.combinar(e1, 'calificaciones', vacia, new Date());
+  assert.equal(e2.calificaciones.A.periodos[0].evaluaciones.length, 1);
+  // Sin notas previas, sí se guarda (el período puede estar vacío de verdad).
+  assert.deepEqual(C.combinar({}, 'calificaciones', vacia, new Date()).calificaciones.A.periodos, []);
+});

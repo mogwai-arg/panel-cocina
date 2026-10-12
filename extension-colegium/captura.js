@@ -38,6 +38,21 @@
     } catch (e) { /* nada */ }
   }
 
+  /*
+   * Las cabeceras guardadas son las del último pedido de la página (casi siempre un GET).
+   * Para repetir un POST hay que decir de qué tipo es el cuerpo: sin eso Colegium
+   * no lo entiende y responde vacío (así se "borraban" las notas).
+   */
+  function conTipo(h, cuerpo) {
+    var o = {};
+    Object.keys(h || {}).forEach(function (k) { if (k.toLowerCase() !== 'content-type') o[k] = h[k]; });
+    if (typeof cuerpo === 'string' && cuerpo) {
+      var json = /^\s*[\[{]/.test(cuerpo);
+      o['Content-Type'] = json ? 'application/json' : 'application/x-www-form-urlencoded; charset=UTF-8';
+    }
+    return o;
+  }
+
   /* Forma del cuerpo de un pedido (JSON o formulario), para el diagnóstico. */
   function formaCuerpo(cuerpo) {
     if (cuerpo === undefined || cuerpo === null || cuerpo === '') return null;
@@ -166,7 +181,7 @@
         var metodo = (p.metodo || 'GET').toUpperCase();
         var tipo = C.reconocer(u.pathname, metodo);
         if (!tipo || tipo === 'comunicado') return; // solo lo conocido, y nunca marcar como leído
-        var opciones = { method: metodo, headers: cabeceras[u.host] || {} };
+        var opciones = { method: metodo, headers: conTipo(cabeceras[u.host], metodo !== 'GET' ? p.cuerpo : null) };
         if (metodo !== 'GET' && p.cuerpo) opciones.body = p.cuerpo;
         if (credenciales[u.host]) opciones.credentials = credenciales[u.host];
         automatico = true;

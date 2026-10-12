@@ -130,3 +130,10 @@ test('mensaje general de aliento', () => {
   assert.match(Cole.mensajeGeneral([m('Matemática', 'mejora'), m('Física', 'mejora'), m('Inglés', 'mejora')]).texto, /Matemática, Física y Inglés/);
   assert.equal(Cole.mensajeGeneral([]), null);
 });
+
+test('comunicados: un comunicado ya leído o visto en el panel no cuenta', () => {
+  const d = { comunicados: [{ id: '1', leido: false }, { id: '2', leido: false }, { id: '3', leido: true }] };
+  assert.equal(Cole.sinLeer(d, { 1: Date.now() }), 1);
+  assert.equal(Cole.esNuevo(d.comunicados[1], {}), true);
+  assert.equal(Cole.esNuevo(d.comunicados[2], {}), false);
+});

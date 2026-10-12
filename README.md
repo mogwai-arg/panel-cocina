@@ -128,7 +128,8 @@ sus últimas evaluaciones; las que tienen notas bajas —R, M o menos de 4— va
 Cada materia dice cómo viene comparada con el período anterior (mejora, pareja o
 baja) y arriba hay un mensaje general de aliento. Para comparar, los conceptos se
 llevan a números: EXC 10, MB 8,5, B 7, R 5, M 3. La barra lateral muestra los
-comunicados sin leer. Mesas de examen y boletines todavía no tienen datos para
+comunicados sin leer: cuentan los que no se leyeron en Colegium ni se abrieron en
+el panel (abrirlos en el panel no los marca como leídos en Colegium). Mesas de examen y boletines todavía no tienen datos para
 saber cómo vienen.
 
 **Instalación**

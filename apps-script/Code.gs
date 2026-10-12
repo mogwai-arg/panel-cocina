@@ -26,7 +26,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.2';
+var VERSION = '2026-10-12.3';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -119,6 +119,7 @@ function listarFotos_() {
           var girada = m.rotation === 1 || m.rotation === 3;
           foto.ancho = girada ? m.height : m.width;
           foto.alto = girada ? m.width : m.height;
+          if (m.rotation) foto.rotacion = m.rotation; // para diagnosticar fotos giradas
           fotos.push(foto);
         } else {
           sinTamano.push(foto);
@@ -684,6 +685,9 @@ function probar() {
   Logger.log('Sin tamaño informado por Drive: ' + r.sinTamano +
              ' (recuperadas midiendo la miniatura: ' + r.recuperadas + ')');
   if (r.descartadas.length) Logger.log('No se pudieron mostrar: ' + r.descartadas.join(', '));
+  var giros = {};
+  fotos.forEach(function (f) { if (!f.video) giros[f.rotacion || 0] = (giros[f.rotacion || 0] || 0) + 1; });
+  Logger.log('Fotos por giro (0 = derecha, 1 = 90°, 2 = 180°, 3 = 270°): ' + JSON.stringify(giros));
   var videos = fotos.filter(function (f) { return f.video; });
   Logger.log('Videos: ' + videos.length + ' (salteados por cortos —Live Photos—, pesados o sin procesar: ' +
              r.videosSalteados + ')');
