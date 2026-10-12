@@ -56,6 +56,8 @@
     // Las entregas de Classroom de la semana también van a la agenda
     classroom: config.CLASSROOM || { calendario: 'Thi', color: '#d39b1e' },
     // Nombres cortos de calendarios: los de la cuenta de Thi que no estén acá van a su columna
+    // Los mails con fecha (turnos, vencimientos) también van a la agenda
+    mails: config.MAILS || { calendario: 'Avisos' },
     nombresCortos: Object.keys(config.NOMBRES_CALENDARIOS || {}).map(function (k) { return config.NOMBRES_CALENDARIOS[k]; })
   });
 
@@ -92,6 +94,14 @@
         var total = Cole.sinLeer(d) + (entregas || 0);
         n.textContent = total;
         n.hidden = !total;
+      }
+    }),
+    avisos: VistaAvisos.crearAvisos(document.getElementById('vista-avisos'), fuente, {
+      alCambiar: function (d) {
+        var n = document.querySelector('[data-num="avisos"]');
+        var nuevos = Mails.nuevos(d, new Date()).length;
+        n.textContent = nuevos;
+        n.hidden = !nuevos;
       }
     })
   };
@@ -170,6 +180,8 @@
 
   listas.cargar();
   vistas.cole.cargar();
+  vistas.avisos.cargar();
+  setInterval(function () { vistas.avisos.cargar(); }, 15 * 60000);
   // Mantener las listas al día por si alguien las cambia desde el celular.
   // Cada minuto si se están mirando; si no, cada 5 (para los números de la barra).
   var minutosSinRecargar = 0;
@@ -183,6 +195,6 @@
   fotos.iniciar();
   fotos.pausar();
   hoy.iniciar();
-  irA(['fotos', 'tareas', 'compras', 'cole'].indexOf(params.get('vista')) >= 0 ? params.get('vista') : 'hoy');
+  irA(['fotos', 'tareas', 'compras', 'cole', 'avisos'].indexOf(params.get('vista')) >= 0 ? params.get('vista') : 'hoy');
   actividad();
 })();

@@ -61,6 +61,8 @@
     var basquet = null; // datos crudos de los partidos
     var aula = null;    // Classroom: las entregas van a la agenda
     var classroomConfig = opciones.classroom || {};
+    var mails = null;   // mails importantes con fecha → agenda
+    var mailsConfig = opciones.mails || {};
 
     function pintarReloj() {
       var ahora = new Date();
@@ -183,6 +185,18 @@
       return Classroom.comoEventos(aula, new Date(), classroomConfig.calendario || 'Thi', classroomConfig.color || '#d39b1e');
     }
 
+    function eventosDeMails() {
+      if (!mails || mailsConfig.enAgenda === false || !root.Mails) return [];
+      return root.Mails.comoEventos(mails, new Date(), mailsConfig.calendario || 'Avisos');
+    }
+
+    function cargarMails() {
+      if (!fuente.mails) return Promise.resolve();
+      return fuente.mails().then(function (d) { mails = d; }).catch(function (err) {
+        console.error(err);
+      }).then(cargarAgenda);
+    }
+
     function cargarClassroom() {
       if (!fuente.classroom) return Promise.resolve();
       return fuente.classroom().then(function (r) {
@@ -199,7 +213,7 @@
           classroomConfig.color || '#d39b1e', opciones.nombresCortos) : [];
         var todos = lista.concat(deThi);
         if (aula && classroomConfig.enAgenda !== false) todos = Classroom.sinRepetidos(todos, aula);
-        eventos = todos.concat(eventosDeBasquet(), eventosDeClassroom());
+        eventos = todos.concat(eventosDeBasquet(), eventosDeClassroom(), eventosDeMails());
         errorAgenda = null;
       }).catch(function (err) {
         console.error(err);
@@ -321,10 +335,12 @@
         cargarRecuerdo();
         cargarBasquet();
         cargarClassroom();
+        cargarMails();
         cada(10000, pintarReloj);
         cada(30000, function () { pintarProximo(); pintarColumnas(); pintarDias(); pintarBasquet(); });
         cada(60 * 60000, cargarBasquet);
         cada(30 * 60000, cargarClassroom);
+        cada(15 * 60000, cargarMails);
         cada(5 * 60000, cargarAgenda);
         cada(30 * 60000, cargarClima);
         cada(10 * 60000, cargarRecuerdo);

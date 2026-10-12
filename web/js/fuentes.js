@@ -14,6 +14,7 @@
  *   listas(), compra(op, datos), tarea(op, datos)   ver js/listas.js y apps-script/Listas.gs
  *   colegium(): Promise<{ datos, recibido }>         ver js/cole.js y extension-colegium/
  *   classroom(): Promise<{ datos, recibido }>        ver js/classroom.js y apps-script-classroom/
+ *   mails(): Promise<{ mails, actualizado }>          ver js/mails.js y apps-script/Mails.gs
  */
 (function (root) {
   'use strict';
@@ -55,7 +56,32 @@
       compra: function (op, datos) { return Promise.resolve(listasDemo.compra(op, datos)); },
       tarea: function (op, datos) { return Promise.resolve(listasDemo.tarea(op, datos)); },
       colegium: function () { return Promise.resolve(coleEjemplo(new Date())); },
-      classroom: function () { return Promise.resolve(classroomEjemplo(new Date())); }
+      classroom: function () { return Promise.resolve(classroomEjemplo(new Date())); },
+      mails: function () { return Promise.resolve(mailsEjemplo(new Date())); }
+    };
+  }
+
+  // Mails de ejemplo (remitentes inventados), con fechas relativas a hoy.
+  function mailsEjemplo(ahora) {
+    function dia(sumar, h, m) { return new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + sumar, h || 0, m || 0).toISOString(); }
+    function mail(id, categoria, asunto, de, recibido, resumen, cuando) {
+      return { id: id, categoria: categoria, asunto: asunto, de: de, recibido: recibido, resumen: resumen, link: '', cuando: cuando, sinLeer: false };
+    }
+    return {
+      actualizado: new Date(ahora.getTime() - 6 * 60000).toISOString(),
+      mails: [
+        mail('m1', 'Salud', 'Recordatorio de turno – Clínica Pediátrica', 'Turnos Online', dia(0, 8, 12),
+          'Le recordamos su turno con la Dra. Gómez (Pediatría) el próximo martes. Por favor presentarse 15 minutos antes con la credencial.',
+          { fecha: dia(8, 10, 30), conHora: true }),
+        mail('m2', 'Pagos', 'Tu factura de luz ya está disponible', 'Empresa de energía', dia(-1, 19, 40),
+          'El total a pagar es $ 48.230. La fecha de vencimiento es el 22 de este mes.', { fecha: dia(10), conHora: false }),
+        mail('m3', 'Cole', 'Reunión de padres 4° B', 'Secretaría del colegio', dia(-2, 11, 5),
+          'Los esperamos el jueves a las 19 h en el SUM para conversar sobre el viaje de fin de año.', { fecha: dia(3, 19, 0), conHora: true }),
+        mail('m4', 'Salud', 'Resultados de laboratorio disponibles', 'Laboratorio', dia(-4, 10, 0),
+          'Ya puede descargar los resultados de los estudios realizados.', null),
+        mail('m5', 'Viajes', 'Confirmación de reserva', 'Hotel Costa', dia(-6, 21, 30),
+          'Reserva confirmada para 3 personas. Check-in desde las 14 h.', { fecha: dia(40), conHora: false })
+      ]
     };
   }
 
@@ -384,6 +410,7 @@
         return pedir(Object.assign({ action: 'tarea', op: op, token: token }, datos));
       },
       colegium: function () { return pedir({ action: 'colegium', token: token }); },
+      mails: function () { return pedir({ action: 'mails', token: token }); },
       classroom: function () {
         var nombres = opciones.nombresCalendarios || {};
         return pedir({ action: 'classroom', token: token }).then(function (r) {

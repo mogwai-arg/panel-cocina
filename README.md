@@ -16,7 +16,7 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 | Tareas y compras (Google Sheets) | ✅ primera versión |
 | Colegium (extensión de Chrome) | ✅ primera versión |
 | Classroom de Thi (tareas, entregas, avisos) | ✅ |
-| Avisos del cole leídos de Gmail con IA | pendiente |
+| Avisos: mails importantes (turnos, cole, vencimientos) | ✅ con búsquedas de Gmail, sin IA |
 | Ubicación de Thiago (OwnTracks) | pendiente |
 | Instalación en el marco por ADB, con backup de Frameo | pendiente |
 | Videos de Drive | ✅ en la compu · falta probar qué formatos reproduce el marco |
@@ -171,6 +171,20 @@ ves porque te compartió el calendario no se repiten, y las entregas del calenda
 tampoco (ya están como "Entregar: …").
 
 En el Apps Script del panel no hay que configurar nada más que publicar la versión nueva.
+
+## Avisos (mails importantes)
+
+La pantalla **Avisos** muestra los mails de las últimas 3 semanas que importan, por
+categoría: **Salud** (turnos, OSDE, laboratorio), **Cole**, **Pagos** (vencimientos, VEP,
+expensas) y **Viajes**. Si el mail menciona una fecha futura ("martes 20 de octubre a las
+10:30", "vence el 22/10") la muestra y la pone en la agenda de **Hoy**, para que un turno
+no se pierda. No usa IA ni paga nada: son búsquedas de Gmail. Solo lee (no marca nada).
+
+Las búsquedas están en la hoja **Mails** de la planilla (se crea sola): una fila por
+categoría, con lo mismo que escribirías en el buscador de Gmail, por ejemplo
+`from:osde.com.ar OR turno OR "orden médica"`. Agregá remitentes o palabras, o destildá una
+categoría. Para probarlas: `probarMails` en el editor (la primera vez pide permiso para
+leer Gmail).
 
 ## Fotos
 

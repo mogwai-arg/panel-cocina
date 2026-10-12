@@ -23,12 +23,13 @@
  *   ?action=listas | compra | tarea     → ver Listas.gs
  *   ?action=colegium y POST colegium   → ver Colegium.gs
  *   ?action=classroom y POST classroom → ver Colegium.gs y apps-script-classroom/
+ *   ?action=mails                      → ver Mails.gs
  */
 
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.8';
+var VERSION = '2026-10-12.9';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -45,6 +46,7 @@ function doGet(e) {
     if (p.action === 'tarea') return json_(tarea_(p));
     if (p.action === 'colegium') return json_(leerColegium_()); // Colegium.gs
     if (p.action === 'classroom') return json_(leerClassroom_());
+    if (p.action === 'mails') return json_(mails_()); // Mails.gs
     if (p.action === 'version') return json_({ version: VERSION });
     return json_({ error: 'Acción desconocida: ' + p.action + ' (versión publicada: ' + VERSION + ')' });
   } catch (err) {
