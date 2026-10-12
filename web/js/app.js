@@ -52,7 +52,7 @@
 
   var hoy = Hoy.crearHoy(document.getElementById('vista-hoy'), fuente, {
     alTocarRecuerdo: function () { irA('fotos'); },
-    basquet: config.BASQUET || { calendario: 'Thiago', color: '#d39b1e' }
+    basquet: config.BASQUET || { calendario: 'Thi', color: '#d39b1e' }
   });
 
   // Aviso abajo de la pantalla, con "Deshacer" opcional.
@@ -78,10 +78,11 @@
   var vistas = {
     tareas: VistasListas.crearTareas(document.getElementById('vista-tareas'), listas, {
       // Mismos colores que en la agenda
-      colores: config.PERSONAS || { Thiago: '#d39b1e', Javi: '#2f5fd0' }
+      colores: config.PERSONAS || { Thi: '#d39b1e', Javi: '#2f5fd0', Dan: '#7b4fc4' }
     }),
     compras: VistasListas.crearCompras(document.getElementById('vista-compras'), listas, { avisar: avisar }),
     cole: VistaCole.crearCole(document.getElementById('vista-cole'), fuente, {
+      apodo: config.APODO_ALUMNO || 'Thi',
       alCambiar: function (d) {
         var n = document.querySelector('[data-num="cole"]');
         var sinLeer = Cole.sinLeer(d);

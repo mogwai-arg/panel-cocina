@@ -12,7 +12,7 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 |---|---|
 | Fotos desde Drive con diseño inteligente | ✅ funcionando con Drive |
 | Panel "Hoy" (reloj, clima, agenda, próximo evento) | ✅ funcionando con Google Calendar |
-| Partidos de básquet de Thiago (FeBAMBA) | ✅ primera versión |
+| Partidos de básquet de Thi (FeBAMBA) | ✅ primera versión |
 | Tareas y compras (Google Sheets) | ✅ primera versión |
 | Colegium (extensión de Chrome) | ✅ primera versión |
 | Avisos del cole leídos de Gmail con IA | pendiente |

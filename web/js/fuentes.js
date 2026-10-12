@@ -146,19 +146,21 @@
         { item: 'Detergente', categoria: 'Limpieza' }
       ],
       tareas: [
-        { id: id(), tarea: 'Tender la cama', persona: 'Thiago', momento: 'Mañana', estrellas: 1, dias: '', hecha: true },
-        { id: id(), tarea: 'Desayunar y lavar la taza', persona: 'Thiago', momento: 'Mañana', estrellas: 1, dias: '', hecha: false },
-        { id: id(), tarea: 'Tarea del colegio', persona: 'Thiago', momento: 'Tarde', estrellas: 2, dias: '', hecha: false },
-        { id: id(), tarea: 'Preparar el bolso de básquet', persona: 'Thiago', momento: 'Tarde', estrellas: 1, dias: '', hecha: true },
-        { id: id(), tarea: 'Practicar tiros libres', persona: 'Thiago', momento: 'Tarde', estrellas: 2, dias: '', hecha: false },
+        { id: id(), tarea: 'Tender la cama', persona: 'Thi', momento: 'Mañana', estrellas: 1, dias: '', hecha: true },
+        { id: id(), tarea: 'Desayunar y lavar la taza', persona: 'Thi', momento: 'Mañana', estrellas: 1, dias: '', hecha: false },
+        { id: id(), tarea: 'Tarea del colegio', persona: 'Thi', momento: 'Tarde', estrellas: 2, dias: '', hecha: false },
+        { id: id(), tarea: 'Preparar el bolso de básquet', persona: 'Thi', momento: 'Tarde', estrellas: 1, dias: '', hecha: true },
+        { id: id(), tarea: 'Practicar tiros libres', persona: 'Thi', momento: 'Tarde', estrellas: 2, dias: '', hecha: false },
         { id: id(), tarea: 'Pagar expensas', persona: 'Javi', momento: 'Tarde', estrellas: 1, dias: '', hecha: true },
         { id: id(), tarea: 'Llamar al plomero', persona: 'Javi', momento: 'Tarde', estrellas: 1, dias: '', hecha: true },
         { id: id(), tarea: 'Sacar la basura', persona: 'Javi', momento: 'Noche', estrellas: 1, dias: '', hecha: false },
+        { id: id(), tarea: 'Hacer las compras', persona: 'Dan', momento: 'Tarde', estrellas: 2, dias: '', hecha: false },
+        { id: id(), tarea: 'Cocinar la cena', persona: 'Dan', momento: 'Noche', estrellas: 2, dias: '', hecha: false },
         { id: id(), tarea: 'Regar las plantas', persona: 'Cualquiera', momento: 'Tarde', estrellas: 2, dias: '', hecha: false },
         { id: id(), tarea: 'Vaciar el lavavajillas', persona: 'Cualquiera', momento: '', estrellas: 3, dias: '', hecha: false },
         { id: id(), tarea: 'Poner la mesa', persona: 'Cualquiera', momento: 'Noche', estrellas: 1, dias: '', hecha: false }
       ],
-      estrellas: { Thiago: 42, Javi: 9 }
+      estrellas: { Thi: 42, Javi: 9, Dan: 15 }
     };
     function copia() { return JSON.parse(JSON.stringify(estado)); }
     function buscar(lista, idBuscado) {
@@ -233,7 +235,8 @@
   function agendaEjemplo(ahora) {
     var CAL = {
       javi: ['Javi', '#2f5fd0'],
-      thiago: ['Thiago', '#d39b1e'],
+      thiago: ['Thi', '#d39b1e'],
+      dan: ['Dan', '#7b4fc4'],
       familia: ['Familia', '#2e7d4f'],
       cumples: ['Cumpleaños', '#c2306b']
     };

@@ -239,10 +239,11 @@ function crearPlanilla() {
       ['Detergente', 'Limpieza']
     ],
     Tareas: [
-      [nuevoId_(), 'Tender la cama', 'Thiago', 'Mañana', 1, '', ''],
-      [nuevoId_(), 'Preparar el bolso de básquet', 'Thiago', 'Mañana', 1, 'sáb', ''],
-      [nuevoId_(), 'Tarea del colegio', 'Thiago', 'Tarde', 2, 'lun,mar,mié,jue,vie', ''],
+      [nuevoId_(), 'Tender la cama', 'Thi', 'Mañana', 1, '', ''],
+      [nuevoId_(), 'Preparar el bolso de básquet', 'Thi', 'Mañana', 1, 'sáb', ''],
+      [nuevoId_(), 'Tarea del colegio', 'Thi', 'Tarde', 2, 'lun,mar,mié,jue,vie', ''],
       [nuevoId_(), 'Sacar la basura', 'Javi', 'Noche', 1, '', ''],
+      [nuevoId_(), 'Hacer las compras', 'Dan', 'Tarde', 2, '', ''],
       [nuevoId_(), 'Regar las plantas', 'Cualquiera', 'Tarde', 2, 'mié,sáb', '']
     ],
     Historial: []
