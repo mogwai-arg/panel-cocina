@@ -83,7 +83,7 @@ calendario y no los duplica.
 Viven en una planilla de Google Sheets (**Panel de Cocina · Listas**) que se puede
 editar a mano, también desde la app de Sheets del celular. Para crearla, agregá el
 archivo [`apps-script/Listas.gs`](apps-script/Listas.gs) al proyecto de Apps Script
-(**+ → Secuencia de comandos**, nombre `Listas`) y ejecutá `crearPlanilla` una vez.
+(**+ → Apps Script**, nombre `Listas`) y ejecutá `crearPlanilla` una vez.
 
 - **Compras**: agrupadas por categoría, con cantidad. Tocar tacha (con "Deshacer");
   lo tachado desaparece al día siguiente. "Agregar algo…" o los **habituales**
@@ -129,7 +129,6 @@ El panel muestra todo en la pantalla **Cole** y un número con los comunicados s
 
 Los datos quedan en la hoja **Colegium** de la planilla de listas.
 
-## Fotos
 ## Fotos
 
 - **Horizontal** → pantalla completa.
@@ -190,8 +189,10 @@ visibles en Google Calendar; si querés solo algunos, agregá la propiedad
 `CALENDARIOS` con sus IDs separados por coma (el ID está en Google Calendar →
 configuración del calendario → *Integrar el calendario*).
 
-Cada vez que cambies `Code.gs` o `appsscript.json` hay que hacer **Implementar → Gestionar
-implementaciones → Editar → Nueva versión** para que el cambio llegue al marco.
+Cada vez que cambies cualquier archivo del Apps Script hay que hacer **Implementar →
+Gestionar implementaciones → ✏️ → Versión: Nueva versión → Implementar**. Guardar no
+alcanza: la URL `/exec` sigue usando la última versión publicada (si el panel o la
+extensión responden "Acción desconocida", casi siempre es esto).
 
 ## Estructura
 
