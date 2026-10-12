@@ -14,6 +14,7 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 | Panel "Hoy" (reloj, clima, agenda, próximo evento) | ✅ funcionando con Google Calendar |
 | Partidos de básquet de Thiago (FeBAMBA) | ✅ primera versión |
 | Tareas y compras (Google Sheets) | ✅ primera versión |
+| Colegium (extensión de Chrome) | 🔬 diagnóstico |
 | Avisos del cole leídos de Gmail con IA | pendiente |
 | Ubicación de Thiago (OwnTracks) | pendiente |
 | Instalación en el marco por ADB, con backup de Frameo | pendiente |
@@ -93,6 +94,20 @@ archivo [`apps-script/Listas.gs`](apps-script/Listas.gs) al proyecto de Apps Scr
   y la cabecera muestra las de la semana (se cuentan desde la hoja Historial).
 - La barra lateral muestra cuántas compras y tareas de hoy quedan pendientes.
 
+## Colegium
+
+Colegium está detrás de una verificación de Cloudflare que bloquea el acceso
+automático, así que no se puede leer desde el Apps Script. En cambio, una extensión
+de Chrome propia lee los datos que la página recibe **mientras alguien la usa** en el
+navegador (después de pasar la verificación como cualquier persona) y los manda al
+panel. No guarda la contraseña ni esquiva ninguna protección.
+
+Por ahora la extensión (`extension-colegium/`) es solo un **diagnóstico**: anota qué
+pedidos hace la página y la forma de las respuestas (campos, tipos y un pedacito de
+cada texto; los mails se ocultan), sin mandar nada a ningún lado. Para instalarla:
+Chrome → `chrome://extensions` → activar **Modo de desarrollador** → **Cargar
+extensión sin empaquetar** → elegir la carpeta `extension-colegium`.
+
 ## Fotos
 
 - **Horizontal** → pantalla completa.
@@ -171,6 +186,7 @@ web/           lo que muestra el marco (HTML/CSS/JS sin dependencias, compatible
   js/vistas-listas.js  vistas Tareas y Compras
   js/hoy.js      vista "Hoy"
   js/app.js      arranque, barra lateral, inactividad
+extension-colegium/  extensión de Chrome para Colegium (diagnóstico)
 test/          tests (`node --test`)
 scripts/       generador de imágenes de ejemplo
 ```
