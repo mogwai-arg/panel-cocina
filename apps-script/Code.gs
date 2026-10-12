@@ -214,41 +214,258 @@ function probarAgenda() {
 
 /**
  * Partidos del equipo de básquet desde el sitio de la federación (sistema Gesdeportiva).
- * Lee el mismo fixture que muestra la página del torneo y se queda con los del equipo.
  *
- * Propiedades opcionales (los valores por defecto son los de Thiago):
+ * Sigue a Thiago aunque cambie de categoría: con su año de nacimiento calcula la
+ * categoría de cada temporada (Cadetes, Juveniles...), busca en el sitio el torneo
+ * del año (por ejemplo "formativas-2027") y dentro de esa categoría el equipo del club.
+ *
+ * Propiedades del script:
+ *   BASQUET_NACIMIENTO   año de nacimiento de Thiago (ej. 2011). Sin esto se usa
+ *                        la categoría fija de abajo.
+ *   BASQUET_CLUB         ARGENTINO DE CASTELAR
+ *   BASQUET_EQUIPO       ARGENTINO DE CASTELAR NORTE A  (si el club tiene varios
+ *                        equipos en la categoría, se usa este)
+ *   BASQUET_RAMA         MASCULINO
+ *   BASQUET_TORNEO       formativas  (como aparece en la URL del torneo)
  *   BASQUET_SITIO        https://www.febamba.com
- *   BASQUET_COMPETICION  2015  (Formativas 2026, sale de la URL del torneo)
- *   BASQUET_CATEGORIA    5077  (Cadetes Masculino)
- *   BASQUET_EQUIPO       ARGENTINO DE CASTELAR NORTE A
+ *   BASQUET_COMPETICION / BASQUET_CATEGORIA  para fijar torneo y categoría a mano
+ *                        (los números de la URL y del selector de la página).
  */
+var CATEGORIAS_POR_EDAD_ = [
+  { desde: 10, hasta: 11, nombre: 'MINI' },
+  { desde: 12, hasta: 13, nombre: 'INFANTILES' },
+  { desde: 14, hasta: 15, nombre: 'CADETES' },
+  { desde: 16, hasta: 17, nombre: 'JUVENILES' }
+];
+
+function configBasquet_() {
+  var p = PropertiesService.getScriptProperties();
+  return {
+    sitio: p.getProperty('BASQUET_SITIO') || 'https://www.febamba.com',
+    club: p.getProperty('BASQUET_CLUB') || 'ARGENTINO DE CASTELAR',
+    equipo: p.getProperty('BASQUET_EQUIPO') || 'ARGENTINO DE CASTELAR NORTE A',
+    rama: p.getProperty('BASQUET_RAMA') || 'MASCULINO',
+    torneo: p.getProperty('BASQUET_TORNEO') || 'formativas',
+    nacimiento: Number(p.getProperty('BASQUET_NACIMIENTO')) || null,
+    competicion: p.getProperty('BASQUET_COMPETICION'),
+    categoria: p.getProperty('BASQUET_CATEGORIA'),
+    calendarioId: p.getProperty('BASQUET_CALENDARIO_ID')
+  };
+}
+
+/** La categoría según la edad que cumple en el año de la temporada. */
+function categoriaPorEdad_(nacimiento, anio) {
+  var edad = anio - nacimiento;
+  for (var i = 0; i < CATEGORIAS_POR_EDAD_.length; i++) {
+    var c = CATEGORIAS_POR_EDAD_[i];
+    if (edad >= c.desde && edad <= c.hasta) return c.nombre;
+  }
+  return null;
+}
+
+function hoyMas_(dias) {
+  return Utilities.formatDate(new Date(Date.now() + dias * 86400000), 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd');
+}
+
+function bajar_(url) {
+  var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  if (resp.getResponseCode() !== 200) throw new Error('El sitio de la federación respondió ' + resp.getResponseCode());
+  return resp.getContentText();
+}
+
+function urlFixture_(sitio, competicion, categoria) {
+  return sitio + '/detalle-torneo?handler=CargarSubPagina&competicionId=' + competicion +
+    '&compCatId=' + categoria + '&fechaIni=' + hoyMas_(-45) + '&fechaFin=' + hoyMas_(45) +
+    '&faseId=0&grupoId=0&seccion=fixture';
+}
+
+/** IDs de los torneos cuyo enlace es /detalle-torneo/{id}/{torneo}-{anio}. */
+function competicionesDelAnio_(html, torneo, anio) {
+  var patron = new RegExp('/detalle-torneo/(\\d+)/' + torneo + '-' + anio + '(?=["/?])', 'gi');
+  var ids = {};
+  var m;
+  while ((m = patron.exec(html))) ids[m[1]] = true;
+  return Object.keys(ids);
+}
+
+/** Opciones del selector de categoría de la página de un torneo: [{ id, nombre }]. */
+function categoriasDeTorneo_(html) {
+  var select = (html.match(/<select[^>]*CompeticionHasCategoriaId[\s\S]*?<\/select>/i) || [''])[0];
+  return todas_(select, /<option value="(\d+)">\s*([^<]*?)\s*<\/option>/g, 2).map(function (m) {
+    return { id: m[0], nombre: decodificarHtml_(m[1]).trim() };
+  });
+}
+
+/** Nombres de los equipos del club que aparecen en un fixture. */
+function equiposDelClub_(html, club) {
+  var buscado = normalizarTexto_(club);
+  var vistos = {};
+  todas_(html, /<strong class="nombre-equipo">([^<]*)<\/strong>/g).forEach(function (n) {
+    var nombre = normalizarTexto_(n);
+    if (nombre.indexOf(buscado) >= 0) vistos[nombre] = true;
+  });
+  return Object.keys(vistos).sort();
+}
+
+/**
+ * Decide qué torneo, categoría y equipo mirar. Devuelve
+ * { competicion, categoria, categoriaNombre, equipo, aviso, html (del fixture) }.
+ */
+function resolverEquipo_(cfg) {
+  if (cfg.competicion && cfg.categoria) {
+    return { competicion: cfg.competicion, categoria: cfg.categoria, categoriaNombre: '',
+             equipo: cfg.equipo, aviso: null,
+             html: bajar_(urlFixture_(cfg.sitio, cfg.competicion, cfg.categoria)) };
+  }
+  if (!cfg.nacimiento) {
+    // Sin año de nacimiento: Cadetes Masculino de Formativas 2026, como al principio.
+    return { competicion: '2015', categoria: '5077', categoriaNombre: 'CADETES MASCULINO',
+             equipo: cfg.equipo, aviso: 'Falta el año de nacimiento (BASQUET_NACIMIENTO)',
+             html: bajar_(urlFixture_(cfg.sitio, '2015', '5077')) };
+  }
+
+  var portada = bajar_(cfg.sitio + '/');
+  var anio = Number(Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'yyyy'));
+  // Primero la temporada de este año; si todavía no empezó, la anterior.
+  for (var a = anio; a >= anio - 1; a--) {
+    var catNombre = categoriaPorEdad_(cfg.nacimiento, a);
+    if (!catNombre) continue;
+    var comps = competicionesDelAnio_(portada, cfg.torneo, a);
+    for (var i = 0; i < comps.length; i++) {
+      var pagina = bajar_(cfg.sitio + '/detalle-torneo/' + comps[i] + '/' + cfg.torneo + '-' + a);
+      var cat = categoriasDeTorneo_(pagina).filter(function (c) {
+        var n = normalizarTexto_(c.nombre);
+        return n.indexOf(catNombre) >= 0 && n.indexOf(normalizarTexto_(cfg.rama)) >= 0;
+      })[0];
+      if (!cat) continue;
+      var html = bajar_(urlFixture_(cfg.sitio, comps[i], cat.id));
+      var equipos = equiposDelClub_(html, cfg.club);
+      if (!equipos.length) continue;
+      var preferido = normalizarTexto_(cfg.equipo);
+      var elegido = equipos.indexOf(preferido) >= 0 ? preferido : equipos[0];
+      var aviso = null;
+      if (elegido !== preferido && equipos.length > 1) {
+        aviso = 'El club tiene varios equipos en ' + cat.nombre + ': ' + equipos.join(', ') +
+          '. Poné el de Thiago en BASQUET_EQUIPO.';
+      }
+      return { competicion: comps[i], categoria: cat.id, categoriaNombre: cat.nombre,
+               equipo: elegido, aviso: aviso, html: html };
+    }
+  }
+  return null;
+}
+
 function basquet_() {
   var cache = CacheService.getScriptCache();
   var guardada = cache.get('basquet');
   if (guardada) return JSON.parse(guardada);
 
-  var props = PropertiesService.getScriptProperties();
-  var sitio = props.getProperty('BASQUET_SITIO') || 'https://www.febamba.com';
-  var competicion = props.getProperty('BASQUET_COMPETICION') || '2015';
-  var categoria = props.getProperty('BASQUET_CATEGORIA') || '5077';
-  var equipo = props.getProperty('BASQUET_EQUIPO') || 'ARGENTINO DE CASTELAR NORTE A';
-
-  var fecha = function (dias) {
-    return Utilities.formatDate(new Date(Date.now() + dias * 86400000), 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd');
+  var cfg = configBasquet_();
+  var r = resolverEquipo_(cfg);
+  var datos = r ? {
+    equipo: r.equipo,
+    categoria: r.categoriaNombre,
+    aviso: r.aviso,
+    partidos: partidosDelEquipo_(r.html, r.equipo, cfg.sitio)
+  } : {
+    equipo: cfg.equipo,
+    categoria: '',
+    aviso: 'No encontré equipos de ' + cfg.club + ' en los torneos de este año.',
+    partidos: []
   };
-  var url = sitio + '/detalle-torneo?handler=CargarSubPagina&competicionId=' + competicion +
-    '&compCatId=' + categoria + '&fechaIni=' + fecha(-45) + '&fechaFin=' + fecha(45) +
-    '&faseId=0&grupoId=0&seccion=fixture';
-  var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-  if (resp.getResponseCode() !== 200) throw new Error('El sitio de la federación respondió ' + resp.getResponseCode());
-
-  var datos = {
-    equipo: equipo,
-    partidos: partidosDelEquipo_(resp.getContentText(), equipo, sitio),
-    actualizado: new Date().toISOString()
-  };
+  // Si los partidos se copian a Google Calendar, el panel no los agrega de nuevo.
+  datos.sincronizado = !!cfg.calendarioId;
+  datos.actualizado = new Date().toISOString();
   cache.put('basquet', JSON.stringify(datos), 3600);
   return datos;
+}
+
+/** "PEDRO ECHAGÜE AZUL" → "Pedro Echagüe Azul" */
+function nombreLindo_(s) {
+  var chicas = { DE: 'de', DEL: 'del', LA: 'la', LAS: 'las', LOS: 'los', Y: 'y', EL: 'el' };
+  return String(s || '').trim().split(/\s+/).map(function (p, i) {
+    var may = p.toUpperCase();
+    if (i > 0 && chicas[may]) return chicas[may];
+    if (p.length <= 2) return may;
+    return may.charAt(0) + may.slice(1).toLowerCase();
+  }).join(' ');
+}
+
+/** Título, descripción y lugar del evento de calendario de un partido. */
+function eventoDePartido_(p, equipo) {
+  var esLocal = normalizarTexto_(p.local.nombre) === normalizarTexto_(equipo);
+  var propio = esLocal ? p.local : p.visitante;
+  var rival = esLocal ? p.visitante : p.local;
+  var jugado = propio.puntos !== null && rival.puntos !== null;
+  var titulo = jugado
+    ? '🏀 ' + (propio.puntos > rival.puntos ? 'Ganaron ' : 'Perdieron ') + propio.puntos + '–' + rival.puntos +
+      ' vs ' + nombreLindo_(rival.nombre)
+    : '🏀 Básquet vs ' + nombreLindo_(rival.nombre);
+  return {
+    clave: normalizarTexto_(p.local.nombre) + ' | ' + normalizarTexto_(p.visitante.nombre),
+    titulo: titulo,
+    inicio: new Date(p.fecha),
+    fin: new Date(new Date(p.fecha).getTime() + 2 * 3600000),
+    lugar: p.cancha,
+    descripcion: nombreLindo_(p.local.nombre) + ' vs ' + nombreLindo_(p.visitante.nombre) +
+      (esLocal ? ' (de local)' : ' (de visitante)') + '\nActualizado automáticamente desde FeBAMBA.'
+  };
+}
+
+/**
+ * Copia los partidos a un calendario "Básquet Thiago" de tu Google Calendar y los
+ * mantiene al día (horario, cancha y resultado). Lo corre solo cada 3 horas
+ * una vez que ejecutás activarSincronizacionBasquet.
+ */
+function sincronizarCalendarioBasquet() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('BASQUET_CALENDARIO_ID');
+  var cal = id ? CalendarApp.getCalendarById(id) : null;
+  if (!cal) {
+    cal = CalendarApp.createCalendar('Básquet Thiago', { color: CalendarApp.Color.YELLOW });
+    props.setProperty('BASQUET_CALENDARIO_ID', cal.getId());
+  }
+  CacheService.getScriptCache().remove('basquet');
+  var datos = basquet_();
+
+  var existentes = {};
+  cal.getEvents(new Date(Date.now() - 60 * 86400000), new Date(Date.now() + 90 * 86400000)).forEach(function (e) {
+    var clave = e.getTag('basquet');
+    if (clave) existentes[clave] = e;
+  });
+
+  var usadas = {};
+  var creados = 0, actualizados = 0;
+  datos.partidos.forEach(function (p) {
+    var ev = eventoDePartido_(p, datos.equipo);
+    // Si se enfrentan dos veces con la misma localía, la segunda lleva " #2".
+    var clave = ev.clave, n = 2;
+    while (usadas[clave]) clave = ev.clave + ' #' + n++;
+    usadas[clave] = true;
+
+    var e = existentes[clave];
+    if (!e) {
+      e = cal.createEvent(ev.titulo, ev.inicio, ev.fin, { location: ev.lugar, description: ev.descripcion });
+      e.setTag('basquet', clave);
+      creados++;
+      return;
+    }
+    var cambio = false;
+    if (e.getTitle() !== ev.titulo) { e.setTitle(ev.titulo); cambio = true; }
+    if (e.getStartTime().getTime() !== ev.inicio.getTime()) { e.setTime(ev.inicio, ev.fin); cambio = true; }
+    if (e.getLocation() !== ev.lugar) { e.setLocation(ev.lugar); cambio = true; }
+    if (cambio) actualizados++;
+  });
+  Logger.log('Calendario "' + cal.getName() + '": ' + creados + ' partidos nuevos, ' + actualizados + ' actualizados.');
+}
+
+/** Ejecutalo una vez: crea el calendario, copia los partidos y deja la actualización automática. */
+function activarSincronizacionBasquet() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'sincronizarCalendarioBasquet') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('sincronizarCalendarioBasquet').timeBased().everyHours(3).create();
+  sincronizarCalendarioBasquet();
 }
 
 /** Lee las filas del fixture (HTML) y devuelve los partidos donde juega `equipo`. */
@@ -270,21 +487,25 @@ function partidosDelEquipo_(html, equipo, sitio) {
         puntos: /^\d+$/.test((puntos[i] || '').trim()) ? Number(puntos[i]) : null
       };
     };
+    var local = lado(0), visitante = lado(1);
+    // El sitio muestra "0 – 0" en los partidos que todavía no se jugaron.
+    if (local.puntos === 0 && visitante.puntos === 0) local.puntos = visitante.puntos = null;
     partidos.push({
       // Argentina no tiene horario de verano: siempre UTC-3.
       fecha: cuando[3] + '-' + cuando[2] + '-' + cuando[1] + 'T' + cuando[4] + ':' + cuando[5] + ':00-03:00',
       cancha: cuando[6] ? decodificarHtml_(cuando[6]).trim() : '',
-      local: lado(0),
-      visitante: lado(1)
+      local: local,
+      visitante: visitante
     });
   });
   partidos.sort(function (a, b) { return a.fecha < b.fecha ? -1 : 1; });
   return partidos;
 }
 
-function todas_(texto, patron) {
+/** Todas las coincidencias del primer grupo, o de los `grupos` primeros grupos como lista. */
+function todas_(texto, patron, grupos) {
   var res = [], m;
-  while ((m = patron.exec(texto))) res.push(m[1]);
+  while ((m = patron.exec(texto))) res.push(grupos ? m.slice(1, grupos + 1) : m[1]);
   return res;
 }
 
@@ -301,40 +522,12 @@ function decodificarHtml_(s) {
     .replace(/&amp;/g, '&');
 }
 
-/**
- * Diagnóstico temporal: busca a Thiago en las secciones de jugadores del torneo
- * para ver si el sitio tiene una página por jugador. Copiá el registro y pasáselo a Claude.
- */
-function explorarJugador() {
-  var sitio = 'https://www.febamba.com';
-  var buscado = 'THIAGO';
-  var fecha = function (dias) {
-    return Utilities.formatDate(new Date(Date.now() + dias * 86400000), 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd');
-  };
-  ['comparativa-jugador', 'lideres', 'jugadores', 'equipos'].forEach(function (seccion) {
-    var url = sitio + '/detalle-torneo?handler=CargarSubPagina&competicionId=2015&compCatId=5077' +
-      '&fechaIni=' + fecha(-300) + '&fechaFin=' + fecha(60) + '&faseId=0&grupoId=0&seccion=' + seccion;
-    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-    var html = resp.getContentText();
-    Logger.log('==== ' + seccion + ': respuesta ' + resp.getResponseCode() + ', ' + html.length + ' caracteres');
-    var enlaces = {};
-    (html.match(/href="([^"#]+)"/g) || []).forEach(function (h) {
-      enlaces[h.replace(/href="|"/g, '').replace(/\d+/g, 'N')] = h;
-    });
-    Logger.log('Tipos de enlace (con un ejemplo): ' + JSON.stringify(enlaces).slice(0, 1500));
-    var filas = (html.match(/<tr[\s\S]*?<\/tr>/gi) || []).filter(function (f) {
-      return f.toUpperCase().indexOf(buscado) >= 0 && /castelar/i.test(f);
-    });
-    Logger.log('Filas con ' + buscado + ' y Castelar: ' + filas.length);
-    filas.slice(0, 3).forEach(function (f) { Logger.log(f.replace(/\s+/g, ' ').slice(0, 2500)); });
-  });
-}
-
 /** Para probar desde el editor: muestra los partidos encontrados. */
 function probarBasquet() {
   CacheService.getScriptCache().remove('basquet');
   var d = basquet_();
-  Logger.log('Equipo: ' + d.equipo + ' · partidos encontrados: ' + d.partidos.length);
+  Logger.log('Equipo: ' + d.equipo + ' · ' + (d.categoria || '') + ' · partidos encontrados: ' + d.partidos.length);
+  if (d.aviso) Logger.log('Aviso: ' + d.aviso);
   d.partidos.forEach(function (p) {
     Logger.log(p.fecha.slice(0, 16) + '  ' + p.local.nombre + ' ' + (p.local.puntos === null ? '-' : p.local.puntos) +
       ' – ' + (p.visitante.puntos === null ? '-' : p.visitante.puntos) + ' ' + p.visitante.nombre + '  (' + p.cancha + ')');

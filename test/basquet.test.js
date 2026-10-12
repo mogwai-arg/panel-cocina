@@ -64,3 +64,19 @@ test('los partidos por jugar se convierten en eventos de la agenda', () => {
   assert.equal(ev[0].calendario, 'Thiago');
   assert.equal(new Date(ev[0].fin) - new Date(ev[0].inicio), 2 * 3600000);
 });
+
+test('"0 – 0" cuenta como partido sin jugar', () => {
+  const r = Basquet.resumen({ equipo: EQUIPO, partidos: [
+    partido('2026-10-24T11:00:00-03:00', EQUIPO, 0, 'PEDRO ECHAGÜE AZUL', 0)] }, AHORA);
+  assert.equal(r.ultimo, null);
+  assert.equal(r.proximo.rival.nombre, 'PEDRO ECHAGÜE AZUL');
+});
+
+test('si ya están en Google Calendar, no se agregan otra vez a la agenda', () => {
+  assert.deepEqual(Basquet.comoEventos({ ...DATOS, sincronizado: true }, AHORA, 'Thiago', '#000'), []);
+});
+
+test('categoría corta para la tarjeta', () => {
+  const r = Basquet.resumen({ ...DATOS, categoria: 'JUVENILES MASCULINO' }, AHORA);
+  assert.equal(r.categoria, 'Juveniles');
+});

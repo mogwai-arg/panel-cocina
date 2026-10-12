@@ -23,8 +23,16 @@
     return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
   }
 
+  // El sitio muestra "0 – 0" en los partidos que todavía no se jugaron.
   function jugado(p) {
-    return p.local.puntos !== null && p.visitante.puntos !== null;
+    var l = p.local.puntos, v = p.visitante.puntos;
+    return l !== null && v !== null && !(l === 0 && v === 0);
+  }
+
+  /* "CADETES MASCULINO" → "Cadetes" */
+  function categoriaCorta(c) {
+    var p = String(c || '').trim().split(/\s+/)[0];
+    return p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : '';
   }
 
   /* El partido visto desde nuestro equipo. */
@@ -61,6 +69,8 @@
     var ultimo = jugados[jugados.length - 1];
     return {
       equipo: equipo,
+      categoria: categoriaCorta(datos.categoria),
+      aviso: datos.aviso || null,
       proximo: proximo ? desdeEquipo(proximo, equipo) : null,
       ultimo: ultimo ? desdeEquipo(ultimo, equipo) : null,
       racha: jugados.slice(-5).map(function (p) { return desdeEquipo(p, equipo).gano; })
@@ -70,6 +80,7 @@
   /* Partidos por jugar como eventos de la agenda, para que aparezcan en "Próximo". */
   function comoEventos(datos, ahora, calendario, color) {
     var r = [];
+    if (datos.sincronizado) return r; // ya están en Google Calendar
     (datos.partidos || []).forEach(function (p) {
       if (jugado(p)) return;
       var v = desdeEquipo(p, datos.equipo);

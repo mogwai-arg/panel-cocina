@@ -218,7 +218,7 @@
       caja.innerHTML = '';
 
       var cab = el('div', 'basquet__cab');
-      cab.appendChild(el('span', 'lbl', r.proximo ? 'Básquet · próximo' : 'Básquet'));
+      cab.appendChild(el('span', 'lbl', 'Básquet' + (r.categoria ? ' · ' + r.categoria : '')));
       if (r.proximo) {
         cab.appendChild(el('b', 'basquet__dia',
           Agenda.etiquetaDia(r.proximo.fecha, new Date()) + ' · ' + Agenda.hora(r.proximo.fecha)));
@@ -251,6 +251,7 @@
         pie.appendChild(racha);
         caja.appendChild(pie);
       }
+      if (r.aviso) caja.appendChild(el('p', 'basquet__aviso', r.aviso));
     }
 
     function cargarBasquet() {

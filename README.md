@@ -39,23 +39,43 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 - **Básquet**: el próximo partido de Thiago con los dos escudos, día, hora y cancha;
   el último resultado y la racha de los últimos 5. Los partidos por jugar también
   entran en la agenda, así que el día del partido aparece en "Próximo" con cuenta regresiva.
+  Ver [Básquet](#básquet).
 
 ## Básquet
 
 Los partidos salen del sitio de la federación (FeBAMBA usa el sistema Gesdeportiva,
-el mismo de la app de CAB). El Apps Script lee el fixture del torneo una vez por hora
-y se queda con los partidos del equipo. Por defecto busca a **Argentino de Castelar
-Norte A** en **Cadetes Masculino, Formativas 2026**. Para otro equipo o temporada,
-cambiá estas propiedades del script:
+el mismo de la app de CAB). El Apps Script lee el fixture una vez por hora y se
+queda con los partidos del equipo de Thiago.
 
-| Propiedad | Por defecto | De dónde sale |
+**Sigue a Thiago aunque cambie de categoría.** Con su año de nacimiento calcula la
+categoría de cada temporada (14–15 años: Cadetes, 16–17: Juveniles), busca en el
+menú del sitio el torneo del año (por ejemplo `formativas-2027`) y, dentro de esa
+categoría, el equipo de su club. Si el club tiene varios equipos en la categoría
+(Norte A, Centro B...), usa el de `BASQUET_EQUIPO`; si ese nombre ya no existe,
+la tarjeta muestra un aviso con las opciones. Entre temporadas sigue mostrando la
+del año anterior.
+
+Propiedades del script:
+
+| Propiedad | Ejemplo | Para qué |
 |---|---|---|
-| `BASQUET_SITIO` | `https://www.febamba.com` | sitio de la federación |
-| `BASQUET_COMPETICION` | `2015` | el número en la URL del torneo (`/detalle-torneo/2015/...`) |
-| `BASQUET_CATEGORIA` | `5077` | el valor de la categoría en el selector de esa página |
-| `BASQUET_EQUIPO` | `ARGENTINO DE CASTELAR NORTE A` | el nombre como figura en el fixture |
+| `BASQUET_NACIMIENTO` | `2011` | año de nacimiento de Thiago (sin esto queda fijo en Cadetes 2026) |
+| `BASQUET_CLUB` | `ARGENTINO DE CASTELAR` | club, como figura en el fixture |
+| `BASQUET_EQUIPO` | `ARGENTINO DE CASTELAR NORTE A` | equipo preferido si el club tiene varios |
+| `BASQUET_RAMA` | `MASCULINO` | |
+| `BASQUET_TORNEO` | `formativas` | nombre del torneo en la URL del sitio |
+| `BASQUET_SITIO` | `https://www.febamba.com` | |
+| `BASQUET_COMPETICION` y `BASQUET_CATEGORIA` | `2015` y `5077` | para fijar torneo y categoría a mano |
 
 Para probarlo desde el editor: ejecutá `probarBasquet`.
+
+### Partidos en tu Google Calendar
+
+Ejecutá una vez `activarSincronizacionBasquet`: crea el calendario **Básquet Thiago**,
+copia los partidos y los mantiene al día cada 3 horas (cambios de horario o cancha, y
+el resultado en el título: "🏀 Ganaron 96–73 vs San Miguel Verde"). Así los ves también
+en el celular. Con la sincronización activa, el panel toma los partidos de ese
+calendario y no los duplica.
 
 ## Fotos
 

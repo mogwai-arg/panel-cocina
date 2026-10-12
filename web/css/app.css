@@ -203,6 +203,7 @@ html, body {
 .basquet__cancha { margin: 0; text-align: center; font-size: 13px; color: var(--suave); }
 .basquet__pie { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--linea); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .basquet__ultimo { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.basquet__aviso { margin: 4px 0 0; font-size: 12px; color: #a3501d; }
 .racha { display: flex; gap: 3px; flex: none; }
 .racha i { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font: 800 10px var(--rotulo); font-style: normal; color: #fff; }
 .racha .g { background: #2e7d4f; }

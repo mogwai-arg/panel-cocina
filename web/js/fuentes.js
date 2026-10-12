@@ -70,6 +70,7 @@
     };
     return {
       equipo: EQUIPO,
+      categoria: 'CADETES MASCULINO',
       partidos: [
         p(sabado(-3), equipo(EQUIPO, castelar, 73), equipo('LANUS A', escudoEjemplo('L', '#7a1f2b', '#fff'), 75), 'Argentino de Castelar'),
         p(sabado(-2), equipo('RIVER PLATE', escudoEjemplo('R', '#fff', '#d0302b'), 60), equipo(EQUIPO, castelar, 81), 'River Plate'),

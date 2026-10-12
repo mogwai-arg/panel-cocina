@@ -39,7 +39,7 @@ test('básquet: lee los partidos del equipo desde el fixture de FeBAMBA', () => 
   const html = fs.readFileSync(path.join(__dirname, 'fixtures', 'fixture-febamba.html'), 'utf8');
   const partidos = JSON.parse(JSON.stringify(
     contexto.partidosDelEquipo_(html, 'Argentino de Castelar Norte A', 'https://www.febamba.com')));
-  assert.equal(partidos.length, 2); // el de Centro B no es de Thiago
+  assert.equal(partidos.length, 3); // el de Centro B no es de Thiago
   assert.deepEqual(partidos[0], {
     fecha: '2026-09-26T11:00:00-03:00',
     cancha: 'Argentino de Castelar',
@@ -49,4 +49,52 @@ test('básquet: lee los partidos del equipo desde el fixture de FeBAMBA', () => 
   // Partido sin jugar: sin puntos, y el nombre con acento decodificado
   assert.equal(partidos[1].visitante.nombre, 'PEDRO ECHAGÜE AZUL');
   assert.equal(partidos[1].local.puntos, null);
+});
+
+test('básquet: "0 – 0" en un partido por jugar es "sin resultado"', () => {
+  const html = fs.readFileSync(path.join(__dirname, 'fixtures', 'fixture-febamba.html'), 'utf8');
+  const partidos = contexto.partidosDelEquipo_(html, 'ARGENTINO DE CASTELAR NORTE A', 'https://www.febamba.com');
+  const obras = partidos.find((p) => p.local.nombre === 'OBRAS BASKET');
+  assert.equal(obras.local.puntos, null);
+  assert.equal(obras.visitante.puntos, null);
+});
+
+test('básquet: categoría según la edad de la temporada', () => {
+  assert.equal(contexto.categoriaPorEdad_(2011, 2026), 'CADETES');
+  assert.equal(contexto.categoriaPorEdad_(2011, 2027), 'JUVENILES');
+  assert.equal(contexto.categoriaPorEdad_(2013, 2026), 'INFANTILES');
+  assert.equal(contexto.categoriaPorEdad_(2000, 2026), null);
+});
+
+test('básquet: encuentra los torneos del año en el menú del sitio', () => {
+  const menu = '<a href="/detalle-torneo/2015/formativas-2026">F</a> <a href="/detalle-torneo/2028/formativas-2026">F</a>' +
+    '<a href="/detalle-torneo/2013/superior-2026">S</a> <a href="/detalle-torneo/1900/formativas-2025">F</a>';
+  assert.deepEqual([...contexto.competicionesDelAnio_(menu, 'formativas', 2026)], ['2015', '2028']);
+  assert.deepEqual([...contexto.competicionesDelAnio_(menu, 'formativas', 2027)], []);
+});
+
+test('básquet: lee las categorías del selector del torneo', () => {
+  const html = '<select id="select-categoria" name="CompeticionHasCategoriaId" class="form-control">' +
+    '<option value="">-- Seleccione una Categoría --</option> <option value="5077"> CADETES MASCULINO </option>' +
+    '<option value="5076"> JUVENILES MASCULINO </option></select>';
+  assert.deepEqual(JSON.parse(JSON.stringify(contexto.categoriasDeTorneo_(html))), [
+    { id: '5077', nombre: 'CADETES MASCULINO' }, { id: '5076', nombre: 'JUVENILES MASCULINO' }]);
+});
+
+test('básquet: equipos del club en un fixture', () => {
+  const html = fs.readFileSync(path.join(__dirname, 'fixtures', 'fixture-febamba.html'), 'utf8');
+  assert.deepEqual([...contexto.equiposDelClub_(html, 'Argentino de Castelar')],
+    ['ARGENTINO DE CASTELAR CENTRO B', 'ARGENTINO DE CASTELAR NORTE A']);
+});
+
+test('básquet: evento de calendario de un partido', () => {
+  const html = fs.readFileSync(path.join(__dirname, 'fixtures', 'fixture-febamba.html'), 'utf8');
+  const [jugado, porJugar] = contexto.partidosDelEquipo_(html, 'ARGENTINO DE CASTELAR NORTE A', 'https://www.febamba.com');
+  const a = contexto.eventoDePartido_(jugado, 'ARGENTINO DE CASTELAR NORTE A');
+  assert.equal(a.titulo, '🏀 Perdieron 73–75 vs Lanus A');
+  assert.equal(a.clave, 'ARGENTINO DE CASTELAR NORTE A | LANUS A');
+  assert.equal(a.lugar, 'Argentino de Castelar');
+  assert.equal(a.fin - a.inicio, 2 * 3600000);
+  const b = contexto.eventoDePartido_(porJugar, 'ARGENTINO DE CASTELAR NORTE A');
+  assert.equal(b.titulo, '🏀 Básquet vs Pedro Echagüe Azul');
 });
