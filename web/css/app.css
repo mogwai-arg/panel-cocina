@@ -196,8 +196,9 @@ html, body {
 .basquet__dia { font: 800 14px var(--rotulo); letter-spacing: .06em; text-transform: uppercase; }
 .duelo { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 4px 0 2px; }
 .duelo__vs { font: italic 400 20px var(--serif); color: var(--suave); }
-.escudo { position: relative; width: 58px; height: 58px; border-radius: 50%; background: var(--papel); display: grid; place-items: center; overflow: hidden; }
-.escudo img { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); object-fit: contain; background: var(--tarjeta); border-radius: 50%; }
+.escudo { position: relative; width: 64px; height: 64px; box-sizing: border-box; border: 4px solid var(--papel); border-radius: 50%; background: var(--tarjeta); display: grid; place-items: center; overflow: hidden; }
+/* El escudo entra entero en el círculo (un cuadrado inscripto mide ~70% del diámetro). */
+.escudo img { position: absolute; inset: 9px; width: calc(100% - 18px); height: calc(100% - 18px); object-fit: contain; }
 .escudo__iniciales { font: 800 22px var(--rotulo); color: var(--suave); }
 .basquet__rival { margin: 0; text-align: center; font: 400 22px/1.1 var(--serif); }
 .basquet__cancha { margin: 0; text-align: center; font-size: 13px; color: var(--suave); }
