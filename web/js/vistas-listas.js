@@ -134,7 +134,8 @@
         cuerpo.appendChild(el('p', 'listas__vacio', 'No se pudieron leer las tareas: ' + d.error));
         return;
       }
-      var cols = Listas.columnasDeTareas(d.tareas, new Date(), momento);
+      // Cada persona de config.js tiene su columna siempre (aunque no tenga nada ahora).
+      var cols = Listas.columnasDeTareas(d.tareas, new Date(), momento, Object.keys(colores));
       if (!cols.length) {
         cuerpo.appendChild(el('p', 'listas__vacio', 'No hay tareas para este momento.'));
         return;
@@ -152,8 +153,10 @@
         var nombre = el('div');
         nombre.appendChild(el('b', null, c.persona));
         var estrellas = d.estrellas && d.estrellas[c.persona];
-        nombre.appendChild(el('small', null, c.hechas + ' de ' + c.total +
-          (estrellas ? ' · ★ ' + estrellas + ' esta semana' : '')));
+        var partes = [];
+        if (c.total) partes.push(c.hechas + ' de ' + c.total);
+        if (estrellas) partes.push('★ ' + estrellas + ' esta semana');
+        nombre.appendChild(el('small', null, partes.join(' · ')));
         cab.appendChild(nombre);
         col.appendChild(cab);
 
@@ -167,7 +170,8 @@
           items.appendChild(b);
         });
         col.appendChild(items);
-        if (c.hechas === c.total) col.appendChild(el('p', 'persona__listo', '¡Listo!'));
+        if (!c.total) items.appendChild(el('p', 'persona__nada', 'Nada ' + ({ 'Mañana': 'a la mañana', 'Tarde': 'a la tarde', 'Noche': 'a la noche' }[momento] || 'por ahora')));
+        else if (c.hechas === c.total) col.appendChild(el('p', 'persona__listo', '¡Listo!'));
         cuerpo.appendChild(col);
       });
     }

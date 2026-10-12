@@ -388,3 +388,4 @@ html, body {
 .aviso-profe b { font: 800 12px var(--rotulo); letter-spacing: .08em; text-transform: uppercase; color: var(--suave); }
 .aviso-profe p { margin: 4px 0 0; font-size: 15px; line-height: 1.35; }
 .aula__pie { margin: 6px 0 0; font-size: 12px; color: var(--suave); }
+.persona__nada { margin: 8px 4px; font: italic 400 18px var(--serif); color: var(--suave); }

@@ -37,14 +37,23 @@
   /*
    * Columnas de la vista Tareas: una por persona, con las tareas que tocan hoy
    * en ese momento del día. "Cualquiera" va última.
+   * `fijas` (opcional): personas que tienen columna siempre, aunque no tengan nada
+   * en ese momento. El nombre de la planilla se compara sin mayúsculas, acentos ni espacios.
    */
-  function columnasDeTareas(tareas, fecha, momento) {
+  function columnasDeTareas(tareas, fecha, momento, fijas) {
     var grupos = {};
     var orden = [];
+    var nombres = {};
+    (fijas || []).forEach(function (p) {
+      nombres[sinAcentos(p).trim()] = p;
+      grupos[p] = [];
+      orden.push(p);
+    });
     tareas.forEach(function (t) {
       if (!tocaHoy(t, fecha) || !delMomento(t, momento)) return;
-      if (!grupos[t.persona]) { grupos[t.persona] = []; orden.push(t.persona); }
-      grupos[t.persona].push(t);
+      var p = nombres[sinAcentos(String(t.persona)).trim()] || String(t.persona).trim();
+      if (!grupos[p]) { grupos[p] = []; orden.push(p); }
+      grupos[p].push(t);
     });
     orden.sort(function (a, b) {
       var ca = sinAcentos(a) === 'cualquiera', cb = sinAcentos(b) === 'cualquiera';

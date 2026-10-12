@@ -124,3 +124,8 @@ test('Listas.gs: agrega en la primera fila libre, no al final de las casillas', 
   const llena = hojaFalsa([['id', 'item'], ['a1', 'Leche']]);
   assert.equal(ctx.agregarFila_(llena, ['b2', 'Yerba']), 3);
 });
+
+test('las personas fijas tienen columna aunque no tengan nada, y el nombre se compara sin espacios ni mayúsculas', () => {
+  const cols = Listas.columnasDeTareas([t(1, 'dan ', 'Tarde', ''), t(2, 'Thi', 'Mañana', '')], LUNES, 'Tarde', ['Thi', 'Javi', 'Dan']);
+  assert.deepEqual(cols.map((c) => c.persona + ':' + c.total), ['Thi:0', 'Javi:0', 'Dan:1']);
+});
