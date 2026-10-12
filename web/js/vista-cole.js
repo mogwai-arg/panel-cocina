@@ -108,7 +108,7 @@
         return;
       }
       var alumno = d && d.colegio && d.colegio.alumno ? String(d.colegio.alumno).split(' ')[0] : '';
-      var general = Cole.mensajeGeneral(materias, alumno);
+      var general = Cole.mensajeGeneral(materias, alumno, new Date());
       if (general) caja.appendChild(el('p', 'aliento aliento--' + general.tono, general.texto));
       materias.forEach(function (m) {
         var fila = el('div', 'materia' + (m.alerta ? ' materia--alerta' : ''));

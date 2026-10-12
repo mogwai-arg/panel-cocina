@@ -115,7 +115,8 @@ test('tendencia: mejora, baja y mensajes', () => {
   const [p1, p2] = MATE.periodos;
   const t = Cole.tendencia(p2, p1); // 1er: final 6 → 2do: promedio (8,5 + 10)/2
   assert.equal(t.estado, 'mejora');
-  assert.match(t.mensaje, /mejorando respecto de 1er cuatrimestre/);
+  assert.match(t.mensaje, /1er cuatrimestre/);
+  assert.equal(Cole.tendencia(p2, p1, 'x').mensaje, Cole.tendencia(p2, p1, 'x').mensaje);
   const baja = Cole.tendencia({ evaluaciones: [ev('x', 'R', '2026-09-01')] }, { nombre: '1er cuatrimestre', final: null, evaluaciones: [ev('y', 'MB', '2026-05-01')] });
   assert.equal(baja.estado, 'baja');
   assert.equal(Cole.tendencia({ evaluaciones: [] }, null), null);
@@ -123,8 +124,9 @@ test('tendencia: mejora, baja y mensajes', () => {
 
 test('mensaje general de aliento', () => {
   const m = (nombre, estado) => ({ nombre, tendencia: { estado } });
-  assert.match(Cole.mensajeGeneral([m('Matemática', 'mejora'), m('Inglés', 'parejo')], 'Thiago').texto, /Muy bien, Thiago! Mejoraste en Matemática/);
-  assert.match(Cole.mensajeGeneral([m('Matemática', 'mejora'), m('Química', 'baja')]).texto, /darle una mano a Química/);
+  assert.match(Cole.mensajeGeneral([m('Matemática', 'mejora'), m('Inglés', 'parejo')], 'Thiago').texto, /Thiago.*Matemática/);
+  assert.match(Cole.mensajeGeneral([m('Matemática', 'mejora'), m('Química', 'baja')]).texto, /Matemática.*Química/);
   assert.equal(Cole.mensajeGeneral([m('Química', 'baja')]).tono, 'atencion');
+  assert.match(Cole.mensajeGeneral([m('Matemática', 'mejora'), m('Física', 'mejora'), m('Inglés', 'mejora')]).texto, /Matemática, Física y Inglés/);
   assert.equal(Cole.mensajeGeneral([]), null);
 });

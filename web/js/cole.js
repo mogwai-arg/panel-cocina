@@ -145,8 +145,23 @@
     return { actual: periodos[i], anterior: i > 0 ? periodos[i - 1] : null };
   }
 
+  /*
+   * Elige una variante del mensaje. Con la misma semilla siempre da la misma,
+   * así el panel no cambia de frase en cada recarga (pero sí de un día a otro).
+   */
+  function elegir(lista, semilla) {
+    var h = 0;
+    String(semilla || '').split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) % 100003; });
+    return lista[h % lista.length];
+  }
+
+  function diaDe(ahora) {
+    var d = ahora || new Date();
+    return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+  }
+
   /* Cómo viene una materia comparada con el período anterior (o dentro del período). */
-  function tendencia(actual, anterior) {
+  function tendencia(actual, anterior, semilla) {
     var evals = (actual && actual.evaluaciones) || [];
     var hoy = promedio(evals);
     if (hoy === null) return null;
@@ -165,14 +180,37 @@
     }
     var dif = antes === null ? 0 : hoy - antes;
     var estado = dif >= 1 ? 'mejora' : dif <= -1 ? 'baja' : hoy >= 8.5 ? 'excelente' : hoy < 6 ? 'atencion' : 'parejo';
+    var vs = contra || 'antes';
     var mensajes = {
-      mejora: '¡Viene mejorando respecto de ' + (contra || 'antes') + '! 💪',
-      baja: 'Bajó un poco respecto de ' + contra + ': ¡a meterle, que se puede!',
-      excelente: 'Sigue excelente 🌟',
-      atencion: 'Le está costando: un empujoncito y sale.',
-      parejo: 'Viene parejo 👍'
+      mejora: [
+        '¡Pegó el salto respecto de ' + vs + '! 🚀',
+        'Subió respecto de ' + vs + ': esto es triple sobre la chicharra 🏀',
+        '¡Viene mejorando respecto de ' + vs + '! Así se juega 💪',
+        'Respecto de ' + vs + ', modo remontada activado 📈'
+      ],
+      baja: [
+        'Bajó un toque respecto de ' + vs + ': tiempo muerto, ajustamos y volvemos 🏀',
+        'Un poco abajo de ' + vs + ', pero el partido se da vuelta. ¡A meterle! 💪',
+        'Respecto de ' + vs + ' aflojó un poco: nada que un par de pases no arreglen 🔁'
+      ],
+      excelente: [
+        'Imparable 🌟',
+        'Nivel MVP 🏆',
+        'Sigue on fire 🔥',
+        'Ni Manu en su mejor año 🏀✨'
+      ],
+      atencion: [
+        'Le está costando: un empujoncito y sale 💪',
+        'Esta pide un poco más de cancha. ¡Se puede! 🏀',
+        'A esta hay que defenderla un poco más, pero se gana 🛡️'
+      ],
+      parejo: [
+        'Viene parejo y firme 👍',
+        'Constante como tiro libre de práctica 🎯',
+        'Ritmo sostenido, bien ahí 👌'
+      ]
     };
-    return { estado: estado, promedio: hoy, anterior: antes, mensaje: mensajes[estado] };
+    return { estado: estado, promedio: hoy, anterior: antes, mensaje: elegir(mensajes[estado], semilla) };
   }
 
   /*
@@ -194,7 +232,7 @@
         final: p.actual ? p.actual.final : null,
         ultimas: evals.slice(0, cuantas),
         alerta: evals.some(esBaja) || esBaja(p.actual && p.actual.final),
-        tendencia: tendencia(p.actual, p.anterior),
+        tendencia: tendencia(p.actual, p.anterior, relId + diaDe(ahora)),
         ultimaFecha: (evals[0] && evals[0].fecha) || ''
       };
     }).sort(function (a, b) {
@@ -204,27 +242,51 @@
   }
 
   /* Mensaje general de aliento a partir del resumen por materia. */
-  function mensajeGeneral(materias, nombre) {
+  function mensajeGeneral(materias, nombre, ahora) {
     var con = materias.filter(function (m) { return m.tendencia; });
     if (!con.length) return null;
     var mejoran = con.filter(function (m) { return m.tendencia.estado === 'mejora'; });
     var bajan = con.filter(function (m) { return m.tendencia.estado === 'baja'; });
     var excelentes = con.filter(function (m) { return m.tendencia.estado === 'excelente'; });
     var quien = nombre ? ', ' + nombre : '';
-    var nombres = function (ms) { return ms.map(function (m) { return m.nombre; }).join(', '); };
+    var nombres = function (ms) {
+      var n = ms.map(function (m) { return m.nombre; });
+      return n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n[0];
+    };
+    var semilla = diaDe(ahora) + con.length;
     if (mejoran.length && !bajan.length) {
-      return { tono: 'bien', texto: '¡Muy bien' + quien + '! Mejoraste en ' + nombres(mejoran) + '. Seguí así 🚀' };
+      return { tono: 'bien', texto: elegir([
+        '¡Muy bien' + quien + '! Subiste en ' + nombres(mejoran) + '. Esto ya es highlight de la semana 🚀',
+        '¡Qué manera de crecer' + quien + '! Mejoraste en ' + nombres(mejoran) + '. Seguí así, crack 🏀',
+        '¡Golazo, perdón, triplazo' + quien + '! Mejoraste en ' + nombres(mejoran) + ' 🔥'
+      ], semilla) };
     }
     if (mejoran.length && bajan.length) {
-      return { tono: 'bien', texto: 'Mejoraste en ' + nombres(mejoran) + ' 💪. Ahora a darle una mano a ' + nombres(bajan) + '.' };
+      return { tono: 'bien', texto: elegir([
+        'Mejoraste en ' + nombres(mejoran) + ' 💪. Ahora a darle una mano a ' + nombres(bajan) + ' y ganamos el partido 🏀',
+        'En ' + nombres(mejoran) + ' venís volando 🚀. ' + nombres(bajan) + ' pide un poco de defensa: ¡vamos que se puede!',
+        'Buen parcial en ' + nombres(mejoran) + ' 👏. Falta cerrar el último cuarto con ' + nombres(bajan) + ' 💪'
+      ], semilla) };
     }
     if (bajan.length) {
-      return { tono: 'atencion', texto: 'Algunas materias bajaron un poco (' + nombres(bajan) + '). ¡Todavía hay tiempo para levantarlas' + quien + '!' };
+      return { tono: 'atencion', texto: elegir([
+        'Tiempo muerto' + quien + ': ' + nombres(bajan) + ' bajó un poco. Todavía queda partido, ¡a darlo vuelta! 🏀',
+        nombres(bajan) + ' viene un toque abajo' + quien + '. Nada que no se arregle con un poco de práctica 💪',
+        'Las remontadas son las mejores' + quien + ': ' + nombres(bajan) + ' te está esperando 🔁'
+      ], semilla) };
     }
     if (excelentes.length >= con.length / 2) {
-      return { tono: 'bien', texto: '¡Excelente cuatrimestre' + quien + '! 🌟' };
+      return { tono: 'bien', texto: elegir([
+        '¡Cuatrimestre de MVP' + quien + '! 🏆',
+        '¡Estás on fire' + quien + '! Excelente en casi todo 🔥',
+        '¡Para enmarcar' + quien + '! (literal, estás en el marco) 🌟'
+      ], semilla) };
     }
-    return { tono: 'neutro', texto: 'Viene parejo en todas las materias. ¡Bien' + quien + '!' };
+    return { tono: 'neutro', texto: elegir([
+      'Viene parejo en todas' + quien + '. Constancia de equipo grande 👌',
+      'Todo en orden' + quien + ': ritmo firme, sin pérdidas de pelota 🏀',
+      'Parejito en todas las materias. ¡Bien ahí' + quien + '! 👍'
+    ], semilla) };
   }
 
   var api = {
