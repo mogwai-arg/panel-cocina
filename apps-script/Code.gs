@@ -209,6 +209,49 @@ function probarAgenda() {
   Logger.log('Próximos: ' + JSON.stringify(eventos.slice(0, 3), null, 2));
 }
 
+/**
+ * Diagnóstico temporal: mira cómo están armadas las páginas de FeBAMBA y CAB
+ * para saber de dónde leer los partidos de Thiago. Copiá el registro y pasáselo a Claude.
+ */
+function explorarBasquet() {
+  var paginas = [
+    'https://www.febamba.com/detalle-torneo/2015/formativas-2026',
+    'https://argentina.basketball/detalle-torneo/liga-federal-masculina/5594/liga-federal-formativa-cadetes-masculina'
+  ];
+  paginas.forEach(function (url) {
+    Logger.log('==== ' + url);
+    var resp;
+    try {
+      resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+    } catch (e) {
+      Logger.log('No se pudo abrir: ' + e.message);
+      return;
+    }
+    var html = resp.getContentText();
+    Logger.log('Respuesta: ' + resp.getResponseCode() + ' · ' + html.length + ' caracteres');
+    var titulo = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    Logger.log('Título: ' + (titulo ? titulo[1].trim() : '(sin título)'));
+
+    // Direcciones que suelen delatar de dónde salen los datos.
+    var urls = {};
+    (html.match(/https?:\/\/[^"'\s<>)]+/g) || []).forEach(function (u) {
+      if (/api|json|ajax|gesdeportiva|indalweb|partido|calendario|competici|torneo|jornada|fixture/i.test(u) &&
+          !/\.(png|jpe?g|svg|gif|webp|css|woff2?)(\?|$)/i.test(u)) urls[u] = true;
+    });
+    (html.match(/(?:src|href|url)\s*[:=]\s*["'](\/[^"']+)["']/gi) || []).forEach(function (u) {
+      var ruta = u.replace(/^[^"']+["']/, '').replace(/["']$/, '');
+      if (/api|json|ajax|partido|calendario|competici|torneo|jornada|fixture|\.js/i.test(ruta)) urls[ruta] = true;
+    });
+    Logger.log('Direcciones interesantes:\n' + Object.keys(urls).slice(0, 40).join('\n'));
+
+    ['Castelar', 'Echague', 'CADETES', 'Cadetes'].forEach(function (palabra) {
+      var i = html.indexOf(palabra);
+      Logger.log('"' + palabra + '": ' + (i < 0 ? 'no aparece' :
+        'aparece. Contexto: ' + html.slice(Math.max(0, i - 300), i + 300).replace(/\s+/g, ' ')));
+    });
+  });
+}
+
 /** "2024:07:15 18:22:01" (EXIF) → "2024-07-15T18:22:01" */
 function fechaExif_(t) {
   if (!t) return null;

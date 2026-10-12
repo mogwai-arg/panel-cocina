@@ -134,7 +134,13 @@
         });
       },
       agenda: function () {
-        return pedir({ action: 'agenda', dias: 7, token: token }).then(function (d) { return d.eventos; });
+        var nombres = opciones.nombresCalendarios || {};
+        return pedir({ action: 'agenda', dias: 7, token: token }).then(function (d) {
+          return d.eventos.map(function (e) {
+            if (nombres[e.calendario]) e.calendario = nombres[e.calendario];
+            return e;
+          });
+        });
       },
       clima: function () { return Clima.obtener(latitud, longitud); }
     };

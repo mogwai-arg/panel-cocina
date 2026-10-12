@@ -12,5 +12,10 @@ window.CONFIG = {
   LATITUD: -34.6037,
   LONGITUD: -58.3816,
   // Minutos sin tocar la pantalla hasta que vuelve a las fotos
-  MINUTOS_INACTIVIDAD: 3
+  MINUTOS_INACTIVIDAD: 3,
+  // Nombres cortos para los calendarios (a la izquierda, el nombre como figura en Google Calendar)
+  NOMBRES_CALENDARIOS: {
+    'tu-mail@gmail.com': 'Javi',
+    'Festivos en Argentina': 'Feriados'
+  }
 };

@@ -14,6 +14,7 @@
   var fuente = usarDrive
     ? Fuentes.drive(config.APPS_SCRIPT_URL, config.TOKEN, {
         ancho: config.ANCHO_FOTO,
+        nombresCalendarios: config.NOMBRES_CALENDARIOS,
         latitud: config.LATITUD || -34.6037,
         longitud: config.LONGITUD || -58.3816
       })
