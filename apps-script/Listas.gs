@@ -40,6 +40,41 @@ function planilla_() {
   return SpreadsheetApp.openById(id);
 }
 
+/*
+ * La hoja pedida; si no existe (la borraron o la planilla se creó incompleta),
+ * la crea con sus columnas. A Tareas además le pone ejemplos para arrancar.
+ */
+function hoja_(libro, nombre) {
+  var hoja = libro.getSheetByName(nombre);
+  if (hoja) return hoja;
+  hoja = libro.insertSheet(nombre);
+  var columnas = HOJAS_[nombre];
+  hoja.getRange(1, 1, 1, columnas.length).setValues([columnas]).setFontWeight('bold');
+  hoja.setFrozenRows(1);
+  if (nombre === 'Tareas') {
+    var ejemplos = [
+      [nuevoId_(), 'Tender la cama', 'Thi', 'Mañana', 1, '', ''],
+      [nuevoId_(), 'Tarea del colegio', 'Thi', 'Tarde', 2, 'lun,mar,mié,jue,vie', ''],
+      [nuevoId_(), 'Sacar la basura', 'Javi', 'Noche', 1, '', ''],
+      [nuevoId_(), 'Hacer las compras', 'Dan', 'Tarde', 2, '', '']
+    ];
+    hoja.getRange(2, 1, ejemplos.length, columnas.length).setValues(ejemplos);
+    hoja.getRange('D2:D').setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Mañana', 'Tarde', 'Noche'], true).setAllowInvalid(true).build());
+    hoja.getRange(1, 6).setNote('Días en que toca, separados por coma: lun,mar,mié,jue,vie,sáb,dom. Vacío = todos los días.');
+  }
+  return hoja;
+}
+
+/** Para correr desde el editor: crea las hojas que falten en la planilla. */
+function repararPlanilla() {
+  var libro = planilla_();
+  var faltaban = Object.keys(HOJAS_).filter(function (n) { return !libro.getSheetByName(n); });
+  faltaban.forEach(function (n) { hoja_(libro, n); });
+  Logger.log((faltaban.length ? 'Creé las hojas: ' + faltaban.join(', ') : 'No faltaba ninguna hoja') +
+    ' · ' + libro.getUrl());
+}
+
 /* Una celda vacía o una casilla sin tildar no cuentan como datos. */
 function vacia_(v) {
   return v === '' || v === null || v === undefined || v === false;
@@ -54,7 +89,7 @@ function filaVacia_(fila) {
  * A las filas cargadas a mano sin id les asigna uno.
  */
 function leerHoja_(libro, nombre) {
-  var hoja = libro.getSheetByName(nombre);
+  var hoja = hoja_(libro, nombre);
   var valores = hoja.getDataRange().getValues();
   var columnas = valores.shift();
   var colId = columnas.indexOf('id');
@@ -148,7 +183,7 @@ function conLock_(fn) {
 function compra_(p) {
   return conLock_(function () {
     var libro = planilla_();
-    var hoja = libro.getSheetByName('Compras');
+    var hoja = hoja_(libro, 'Compras');
     if (p.op === 'agregar') {
       var item = String(p.item || '').trim();
       if (!item) throw new Error('Falta el nombre de lo que hay que comprar');
@@ -203,9 +238,9 @@ function tarea_(p) {
     var hoy = hoyIso_();
     var hecha = p.valor === '1';
     var yaEstaba = fechaIso_(t.hecha_el) === hoy;
-    libro.getSheetByName('Tareas').getRange(t._fila, columna_('Tareas', 'hecha_el')).setValue(hecha ? hoy : '');
+    hoja_(libro, 'Tareas').getRange(t._fila, columna_('Tareas', 'hecha_el')).setValue(hecha ? hoy : '');
 
-    var historial = libro.getSheetByName('Historial');
+    var historial = hoja_(libro, 'Historial');
     if (hecha && !yaEstaba) {
       agregarFila_(historial, [hoy, t.persona, t.tarea, Number(t.estrellas) || 0]);
     } else if (!hecha && yaEstaba) {
