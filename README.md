@@ -123,8 +123,11 @@ La URL y el TOKEN y lo aprendido de cada sección se guardan en tu cuenta de Chr
 en otra compu con la misma cuenta solo hay que instalar la extensión.
 
 El panel muestra todo en la pantalla **Cole**, con dos pestañas: **Comunicados** y
-**Notas** (por materia, el período actual con sus últimas evaluaciones; las que
-tienen notas bajas —R, M o menos de 4— van primero). La barra lateral muestra los
+**Notas** (por materia, el **período actual** —el que Colegium marca como actual— con
+sus últimas evaluaciones; las que tienen notas bajas —R, M o menos de 4— van primero).
+Cada materia dice cómo viene comparada con el período anterior (mejora, pareja o
+baja) y arriba hay un mensaje general de aliento. Para comparar, los conceptos se
+llevan a números: EXC 10, MB 8,5, B 7, R 5, M 3. La barra lateral muestra los
 comunicados sin leer. Mesas de examen y boletines todavía no tienen datos para
 saber cómo vienen.
 

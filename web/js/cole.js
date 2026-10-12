@@ -93,27 +93,109 @@
     return cal.titulo || 'Materia';
   }
 
+  // Conceptos llevados a números para poder comparar (las notas numéricas se usan tal cual).
+  var VALOR_CONCEPTO = { EXC: 10, EX: 10, S: 10, SOBRESALIENTE: 10, EXCELENTE: 10, MB: 8.5, B: 7, BUENO: 7,
+    R: 5, REGULAR: 5, M: 3, I: 3, INS: 3, INSUFICIENTE: 3, D: 3, NS: 3 };
+
+  function valor(ev) {
+    if (!ev) return null;
+    var n = parseFloat(String(ev.nota || '').replace(',', '.'));
+    if (!isNaN(n)) return n;
+    var v = VALOR_CONCEPTO[String(ev.concepto || '').trim().toUpperCase()];
+    return v === undefined ? null : v;
+  }
+
+  function promedio(evals) {
+    var vs = evals.map(valor).filter(function (v) { return v !== null; });
+    if (!vs.length) return null;
+    return vs.reduce(function (a, b) { return a + b; }, 0) / vs.length;
+  }
+
+  function hoyIso(ahora) {
+    var d = ahora || new Date();
+    return d.getFullYear() + '-' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + '-' + (d.getDate() < 10 ? '0' : '') + d.getDate();
+  }
+
   /*
-   * Resumen de notas por materia: el período más reciente con notas, sus últimas
-   * evaluaciones y si hay alguna baja. Las materias con notas bajas van primero.
+   * Id del período en curso: el que Colegium marca como actual, o el que contiene la
+   * fecha de hoy. Null si no se sabe (todavía no se pasó por Asistencia).
    */
-  function resumenNotas(datos, cuantas) {
+  function periodoActualId(datos, ahora) {
+    var ps = (datos && datos.periodos) || [];
+    var marcado = ps.filter(function (p) { return p.actual; })[0];
+    if (marcado) return marcado.id;
+    var hoy = hoyIso(ahora);
+    var enCurso = ps.filter(function (p) { return p.inicio && p.fin && p.inicio <= hoy && hoy <= p.fin; })[0];
+    return enCurso ? enCurso.id : null;
+  }
+
+  /* Elige el período a mostrar de una materia: el actual; si no se sabe, el de la nota más reciente. */
+  function elegirPeriodo(periodos, idActual) {
+    if (!periodos.length) return { actual: null, anterior: null };
+    var i = -1;
+    if (idActual) i = periodos.map(function (p) { return p.id; }).indexOf(idActual);
+    if (i < 0) {
+      var mejor = '';
+      periodos.forEach(function (p, j) {
+        var f = (p.evaluaciones[0] && p.evaluaciones[0].fecha) || (p.final && p.final.fecha) || '';
+        if (f && f >= mejor) { mejor = f; i = j; }
+      });
+    }
+    if (i < 0) i = periodos.length - 1;
+    return { actual: periodos[i], anterior: i > 0 ? periodos[i - 1] : null };
+  }
+
+  /* Cómo viene una materia comparada con el período anterior (o dentro del período). */
+  function tendencia(actual, anterior) {
+    var evals = (actual && actual.evaluaciones) || [];
+    var hoy = promedio(evals);
+    if (hoy === null) return null;
+    var antes = null;
+    var contra = '';
+    if (anterior) {
+      antes = valor(anterior.final);
+      if (antes === null) antes = promedio(anterior.evaluaciones);
+      contra = anterior.nombre;
+    }
+    if (antes === null && evals.length >= 4) {
+      // Sin período anterior: las 2 más recientes contra las demás.
+      antes = promedio(evals.slice(2));
+      hoy = promedio(evals.slice(0, 2));
+      contra = 'las notas anteriores';
+    }
+    var dif = antes === null ? 0 : hoy - antes;
+    var estado = dif >= 1 ? 'mejora' : dif <= -1 ? 'baja' : hoy >= 8.5 ? 'excelente' : hoy < 6 ? 'atencion' : 'parejo';
+    var mensajes = {
+      mejora: '¡Viene mejorando respecto de ' + (contra || 'antes') + '! 💪',
+      baja: 'Bajó un poco respecto de ' + contra + ': ¡a meterle, que se puede!',
+      excelente: 'Sigue excelente 🌟',
+      atencion: 'Le está costando: un empujoncito y sale.',
+      parejo: 'Viene parejo 👍'
+    };
+    return { estado: estado, promedio: hoy, anterior: antes, mensaje: mensajes[estado] };
+  }
+
+  /*
+   * Resumen de notas por materia: el período actual, sus últimas evaluaciones,
+   * si hay alguna baja y cómo viene. Las materias con notas bajas van primero.
+   */
+  function resumenNotas(datos, cuantas, ahora) {
     cuantas = cuantas || 4;
     var cals = (datos && datos.calificaciones) || {};
+    var idActual = periodoActualId(datos, ahora);
     return Object.keys(cals).map(function (relId) {
       var cal = cals[relId];
-      var periodos = cal.periodos || [];
-      var actual = periodos[periodos.length - 1] || null;
-      var evals = actual ? actual.evaluaciones : [];
-      var ultima = evals[0] && evals[0].fecha || '';
+      var p = elegirPeriodo(cal.periodos || [], idActual);
+      var evals = p.actual ? p.actual.evaluaciones : [];
       return {
         relId: relId,
         nombre: nombreMateria(datos, cal),
-        periodo: actual ? actual.nombre : '',
-        final: actual ? actual.final : null,
+        periodo: p.actual ? p.actual.nombre : '',
+        final: p.actual ? p.actual.final : null,
         ultimas: evals.slice(0, cuantas),
-        alerta: evals.some(esBaja) || esBaja(actual && actual.final),
-        ultimaFecha: ultima
+        alerta: evals.some(esBaja) || esBaja(p.actual && p.actual.final),
+        tendencia: tendencia(p.actual, p.anterior),
+        ultimaFecha: (evals[0] && evals[0].fecha) || ''
       };
     }).sort(function (a, b) {
       if (a.alerta !== b.alerta) return a.alerta ? -1 : 1;
@@ -121,11 +203,38 @@
     });
   }
 
+  /* Mensaje general de aliento a partir del resumen por materia. */
+  function mensajeGeneral(materias, nombre) {
+    var con = materias.filter(function (m) { return m.tendencia; });
+    if (!con.length) return null;
+    var mejoran = con.filter(function (m) { return m.tendencia.estado === 'mejora'; });
+    var bajan = con.filter(function (m) { return m.tendencia.estado === 'baja'; });
+    var excelentes = con.filter(function (m) { return m.tendencia.estado === 'excelente'; });
+    var quien = nombre ? ', ' + nombre : '';
+    var nombres = function (ms) { return ms.map(function (m) { return m.nombre; }).join(', '); };
+    if (mejoran.length && !bajan.length) {
+      return { tono: 'bien', texto: '¡Muy bien' + quien + '! Mejoraste en ' + nombres(mejoran) + '. Seguí así 🚀' };
+    }
+    if (mejoran.length && bajan.length) {
+      return { tono: 'bien', texto: 'Mejoraste en ' + nombres(mejoran) + ' 💪. Ahora a darle una mano a ' + nombres(bajan) + '.' };
+    }
+    if (bajan.length) {
+      return { tono: 'atencion', texto: 'Algunas materias bajaron un poco (' + nombres(bajan) + '). ¡Todavía hay tiempo para levantarlas' + quien + '!' };
+    }
+    if (excelentes.length >= con.length / 2) {
+      return { tono: 'bien', texto: '¡Excelente cuatrimestre' + quien + '! 🌟' };
+    }
+    return { tono: 'neutro', texto: 'Viene parejo en todas las materias. ¡Bien' + quien + '!' };
+  }
+
   var api = {
     esBaja: esBaja,
     esAlta: esAlta,
     nombreMateria: nombreMateria,
     resumenNotas: resumenNotas,
+    mensajeGeneral: mensajeGeneral,
+    tendencia: tendencia,
+    periodoActualId: periodoActualId,
     fechaCorta: fechaCorta,
     horarioParaMostrar: horarioParaMostrar,
     sinLeer: sinLeer,

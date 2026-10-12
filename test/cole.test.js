@@ -80,3 +80,51 @@ test('notas: resumen por materia con las bajas primero', () => {
   assert.deepEqual(r.map((m) => m.nombre + ':' + m.alerta), ['Química:true', 'Lengua:false']);
   assert.equal(r[1].ultimas.length, 2);
 });
+
+const ev = (nombre, concepto, fecha, nota) => ({ nombre, tipo: 'TP', nota: nota || '', concepto, fecha });
+const MATE = { relId: 'A', titulo: 'Matemática', periodos: [
+  { id: 'j5', nombre: '1er cuatrimestre', final: { nombre: 'NF', tipo: 'NF', nota: '6', concepto: '', fecha: '2026-07-10' },
+    evaluaciones: [ev('Inecuaciones', 'B', '2026-06-01')] },
+  { id: 'jV', nombre: '2do cuatrimestre', final: null,
+    evaluaciones: [ev('Polinomios', 'MB', '2026-09-26'), ev('Parcial', 'EXC', '2026-09-10')] },
+] };
+
+test('notas: muestra el período actual que marca Colegium', () => {
+  const datos = { calificaciones: { A: MATE }, periodos: [
+    { id: 'j5', nombre: '1er cuatrimestre', actual: false }, { id: 'jV', nombre: '2do cuatrimestre', actual: true }] };
+  assert.equal(Cole.resumenNotas(datos)[0].periodo, '2do cuatrimestre');
+});
+
+test('notas: si el período actual no tiene notas, lo dice en vez de mostrar el anterior', () => {
+  const sinNotas = { relId: 'B', titulo: 'Química', periodos: [
+    { id: 'j5', nombre: '1er cuatrimestre', final: null, evaluaciones: [ev('Laboratorio', 'B', '2026-06-01')] },
+    { id: 'jV', nombre: '2do cuatrimestre', final: null, evaluaciones: [] }] };
+  const m = Cole.resumenNotas({ calificaciones: { B: sinNotas }, periodos: [{ id: 'jV', actual: true }] })[0];
+  assert.equal(m.periodo, '2do cuatrimestre');
+  assert.equal(m.ultimas.length, 0);
+});
+
+test('notas: sin datos de períodos, usa la fecha de hoy o el de la nota más reciente', () => {
+  const porFecha = { calificaciones: { A: MATE }, periodos: [
+    { id: 'j5', inicio: '2026-03-02', fin: '2026-07-17' }, { id: 'jV', inicio: '2026-07-27', fin: '2026-12-18' }] };
+  assert.equal(Cole.resumenNotas(porFecha, 4, new Date(2026, 9, 12))[0].periodo, '2do cuatrimestre');
+  assert.equal(Cole.resumenNotas({ calificaciones: { A: MATE } })[0].periodo, '2do cuatrimestre');
+});
+
+test('tendencia: mejora, baja y mensajes', () => {
+  const [p1, p2] = MATE.periodos;
+  const t = Cole.tendencia(p2, p1); // 1er: final 6 → 2do: promedio (8,5 + 10)/2
+  assert.equal(t.estado, 'mejora');
+  assert.match(t.mensaje, /mejorando respecto de 1er cuatrimestre/);
+  const baja = Cole.tendencia({ evaluaciones: [ev('x', 'R', '2026-09-01')] }, { nombre: '1er cuatrimestre', final: null, evaluaciones: [ev('y', 'MB', '2026-05-01')] });
+  assert.equal(baja.estado, 'baja');
+  assert.equal(Cole.tendencia({ evaluaciones: [] }, null), null);
+});
+
+test('mensaje general de aliento', () => {
+  const m = (nombre, estado) => ({ nombre, tendencia: { estado } });
+  assert.match(Cole.mensajeGeneral([m('Matemática', 'mejora'), m('Inglés', 'parejo')], 'Thiago').texto, /Muy bien, Thiago! Mejoraste en Matemática/);
+  assert.match(Cole.mensajeGeneral([m('Matemática', 'mejora'), m('Química', 'baja')]).texto, /darle una mano a Química/);
+  assert.equal(Cole.mensajeGeneral([m('Química', 'baja')]).tono, 'atencion');
+  assert.equal(Cole.mensajeGeneral([]), null);
+});

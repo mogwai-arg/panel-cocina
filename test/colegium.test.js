@@ -169,3 +169,21 @@ test('combinar: calificaciones por materia y códigos cortos sin marcar actualiz
   assert.equal(e.tiny['420879'], 'OtU5');
   assert.equal(e.actualizado.tiny, undefined);
 });
+
+test('calificaciones: conserva períodos vacíos y los ordena 1er, 2do', () => {
+  const r = C.normalizar('calificaciones', { data: { calificacionPeriodos: {
+    jV: [{ periodo_nombre: '2do cuatrimestre', notasInscriptos: [] }],
+    j5: [{ periodo_nombre: '1er cuatrimestre', notasInscriptos: [{ notasEvaluaciones: {
+      a: { nombre: 'X', abreviatura: 'Ev', observaciones: 'B', parent_id: '1', tipo: '1', updated_at: '1784813915' } } }] }],
+  } } }, { cuerpo: 'relId=Z' });
+  assert.deepEqual(r.periodos.map((p) => p.nombre + ':' + p.evaluaciones.length), ['1er cuatrimestre:1', '2do cuatrimestre:0']);
+});
+
+test('períodos del ciclo lectivo', () => {
+  assert.equal(C.reconocer('/api/4kJ4/general/periodos'), 'periodos');
+  assert.deepEqual(C.normalizar('periodos', { result: { periodos: [
+    { id: 'j5', nombre: '1er cuatrimestre', actual: false, fecha_inicio_format: '2026-03-02 00:00:00', fecha_fin_format: '2026-07-17 00:00:00' },
+    { id: 'jV', nombre: '2do cuatrimestre', actual: true, fecha_inicio_format: '2026-07-27 00:00:00', fecha_fin_format: '2026-12-18 00:00:00' }] } }),
+  [{ id: 'j5', nombre: '1er cuatrimestre', inicio: '2026-03-02', fin: '2026-07-17', actual: false },
+   { id: 'jV', nombre: '2do cuatrimestre', inicio: '2026-07-27', fin: '2026-12-18', actual: true }]);
+});

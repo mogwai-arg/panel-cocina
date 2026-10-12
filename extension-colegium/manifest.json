@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Panel de Cocina · Colegium",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Mientras usás Colegium, guarda comunicados, horario, asistencia y archivos y los manda a tu Panel de Cocina. No hace pedidos propios a Colegium.",
   "permissions": ["storage"],
   "host_permissions": [

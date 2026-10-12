@@ -74,6 +74,7 @@
       recibido: hace(2),
       datos: {
         colegio: { colegio: 'Colegio de ejemplo', alumno: 'Thiago' },
+        periodos: [{ id: 'j5', nombre: '1er cuatrimestre', actual: false }, { id: 'jV', nombre: '2do cuatrimestre', actual: true }],
         comunicados: [
           { id: 'c1', titulo: 'Gira deportiva a Miramar', remitente: 'Paula Gómez', rol: 'Administración', fecha: hace(5),
             resumen: 'Buenos días, les envío las novedades sobre la gira deportiva: salida el viernes 6 a las 7 h desde el colegio. Traer DNI y autorización firmada.',
@@ -103,14 +104,15 @@
           }
           function materia(relId, titulo, finalPrimero, evals) {
             return { relId: relId, materiaId: null, titulo: titulo, periodos: [
-              { id: 'j5', nombre: '1er cuatrimestre', final: { nombre: 'Nota final', tipo: 'NF', nota: finalPrimero, concepto: '' }, evaluaciones: [] },
+              { id: 'j5', nombre: '1er cuatrimestre', final: { nombre: 'Nota final', tipo: 'NF', nota: finalPrimero, concepto: '', fecha: hace(24 * 90) }, evaluaciones: [] },
               { id: 'jV', nombre: '2do cuatrimestre', final: null, evaluaciones: evals }] };
           }
           return {
             m1: materia('m1', 'Matemática', '8', [ev('Polinomios', 'TP', 'MB', 4), ev('Calificación parcial', 'CP', 'EXC', 20)]),
             m2: materia('m2', 'Química', '6', [ev('Tabla periódica', 'Ev', 'R', 6), ev('Laboratorio', 'TP', 'B', 15)]),
             m3: materia('m3', 'Lengua y Literatura', '9', [ev('Análisis de cuento', 'TP', 'EXC', 3)]),
-            m4: materia('m4', 'Inglés', '7', [ev('Reading', 'Ev', 'B', 9), ev('Vocabulary', 'TC', 'MB', 25)])
+            m4: materia('m4', 'Inglés', '7', [ev('Reading', 'Ev', 'B', 9), ev('Vocabulary', 'TC', 'MB', 25)]),
+            m5: materia('m5', 'Historia', '7', [])
           };
         })(),
         actualizado: { comunicados: hace(2), horario: hace(50), asistencia: hace(50), archivos: hace(50), calificaciones: hace(3) }

@@ -101,12 +101,15 @@
     function pintarNotas(d) {
       var caja = parte('notas');
       caja.innerHTML = '';
-      var materias = Cole.resumenNotas(d, 4);
+      var materias = Cole.resumenNotas(d, 4, new Date());
       if (!materias.length) {
         caja.appendChild(el('p', 'listas__vacio',
           'Todavía no hay notas. Entrá una vez a cada materia en Colegium (Asignaturas → la materia → Calificaciones) y después se actualizan solas.'));
         return;
       }
+      var alumno = d && d.colegio && d.colegio.alumno ? String(d.colegio.alumno).split(' ')[0] : '';
+      var general = Cole.mensajeGeneral(materias, alumno);
+      if (general) caja.appendChild(el('p', 'aliento aliento--' + general.tono, general.texto));
       materias.forEach(function (m) {
         var fila = el('div', 'materia' + (m.alerta ? ' materia--alerta' : ''));
         var cab = el('div', 'materia__cab');
@@ -116,8 +119,11 @@
         var chips = el('div', 'materia__notas');
         if (m.final) chips.appendChild(chipNota(m.final, true));
         m.ultimas.forEach(function (ev) { chips.appendChild(chipNota(ev, false)); });
-        if (!m.final && !m.ultimas.length) chips.appendChild(el('span', 'cole__vacio', 'Sin notas en este período'));
+        if (!m.final && !m.ultimas.length) {
+          chips.appendChild(el('span', 'cole__vacio', 'Sin notas todavía' + (m.periodo ? ' en el ' + m.periodo : '')));
+        }
         fila.appendChild(chips);
+        if (m.tendencia) fila.appendChild(el('p', 'materia__tendencia materia__tendencia--' + m.tendencia.estado, m.tendencia.mensaje));
         caja.appendChild(fila);
       });
     }

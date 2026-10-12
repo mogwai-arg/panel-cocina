@@ -10,7 +10,7 @@
   var MINUTOS = 30;
   // Datos que se actualizan solos. El horario no (cambia poco) ni el detalle de
   // un comunicado (abrirlo lo marca como leído en Colegium).
-  var AUTOMATICOS = ['comunicados', 'asistencia', 'faltas', 'archivos', 'eventos'];
+  var AUTOMATICOS = ['comunicados', 'asistencia', 'faltas', 'archivos', 'eventos', 'periodos'];
   function esAutomatico(clave) {
     return AUTOMATICOS.indexOf(clave) >= 0 || /^calificaciones:.+/.test(clave);
   }

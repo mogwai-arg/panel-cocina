@@ -15,7 +15,8 @@
     { tipo: 'archivos', patron: /\/familias\/\d+\/archivos$/ },
     { tipo: 'colegio', patron: /\/api\/usuario\/rol\/\d+\/info$/ },
     { tipo: 'calificaciones', patron: /\/alumno\/obtenerDetalleCalificaciones$/, metodo: 'POST' },
-    { tipo: 'tiny', patron: /\/api\/generico\/tiny\/\d+$/ }
+    { tipo: 'tiny', patron: /\/api\/generico\/tiny\/\d+$/ },
+    { tipo: 'periodos', patron: /\/general\/periodos$/ }
   ];
 
   function reconocer(ruta, metodo) {
@@ -153,14 +154,30 @@
           });
         });
         periodo.evaluaciones.sort(function (a, b) { return (b.fecha || '') < (a.fecha || '') ? -1 : 1; });
-        if (periodo.evaluaciones.length || periodo.final) lista.push(periodo);
+        lista.push(periodo); // también los vacíos: el período actual puede no tener notas todavía
       });
+      // Orden cronológico: por el número del nombre ("1er", "2do"...) y si no, como vinieron.
+      lista.forEach(function (p, i) { p._orden = (parseInt(p.nombre, 10) || 0) * 100 + i; });
+      lista.sort(function (a, b) { return a._orden - b._orden; });
+      lista.forEach(function (p) { delete p._orden; });
       return {
         relId: String(cuerpo.relId || cuerpo.rel_id || ''),
         materiaId: materiaId ? String(materiaId) : null,
         titulo: (extra && extra.titulo) || '',
         periodos: lista
       };
+    },
+    periodos: function (r) {
+      var res = r.result || {};
+      return (res.periodos || []).map(function (p) {
+        return {
+          id: String(p.id),
+          nombre: p.nombre || '',
+          inicio: (p.fecha_inicio_format || '').slice(0, 10) || null,
+          fin: (p.fecha_fin_format || '').slice(0, 10) || null,
+          actual: !!p.actual
+        };
+      });
     },
     tiny: function (r, extra) {
       var numero = ((extra && extra.ruta) || '').split('/').pop();
