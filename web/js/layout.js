@@ -7,6 +7,7 @@
  *   - cuadrada            → "centrada"
  *   - verticales seguidas → "par" o "triptico", priorizando fotos del mismo día
  *   - vertical suelta     → se empareja con otra suelta; si no hay, "centrada"
+ *   - video               → "video" (solo, entero, con fondo desenfocado)
  *
  * Es una función pura (sin DOM) para poder probarla con `node --test`.
  * Se carga como script clásico (Chrome 106 del marco) y también como módulo de Node.
@@ -88,6 +89,11 @@
     }
 
     ordenadas.forEach(function (foto) {
+      if (foto.video) {
+        if (opciones.sinVideos) return;
+        diapositivas.push({ tipo: 'video', fotos: [foto] });
+        return;
+      }
       var o = orientacion(foto);
       if (o === 'vertical') {
         if (grupo.length && dia(grupo[0]) !== dia(foto)) cerrarGrupo();

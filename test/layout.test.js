@@ -93,3 +93,10 @@ test('ordenar pone primero los recuerdos, del más viejo al más nuevo', () => {
   assert.deepEqual(orden.slice(0, 2).map((d) => d.haceAnios), [6, 2]);
   assert.equal(orden[2].haceAnios, null);
 });
+
+test('un video va solo y no corta el collage de verticales del mismo día', () => {
+  const video = { id: 'v1', video: true, ancho: 1920, alto: 1080, fecha: '2024-01-01T10:30' };
+  const ds = Layout.armarDiapositivas([V('2024-01-01T10:00'), video, V('2024-01-01T11:00')]);
+  assert.deepEqual(tipos(ds).sort(), ['par:2', 'video:1']);
+  assert.deepEqual(tipos(Layout.armarDiapositivas([video], { sinVideos: true })), []);
+});

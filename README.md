@@ -18,7 +18,7 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 | Avisos del cole leídos de Gmail con IA | pendiente |
 | Ubicación de Thiago (OwnTracks) | pendiente |
 | Instalación en el marco por ADB, con backup de Frameo | pendiente |
-| Videos de Drive (requiere probar qué reproduce el marco) | pendiente |
+| Videos de Drive | ✅ en la compu · falta probar qué formatos reproduce el marco |
 
 ## Cómo se usa
 
@@ -153,6 +153,17 @@ Los datos quedan en la hoja **Colegium** de la planilla de listas.
   foto desenfocada de fondo.
 - **Un día como hoy** → las fotos de esta fecha de otros años salen primero,
   con el cartel "Hace N años".
+- **Videos** (.mov y .mp4 de las mismas carpetas) → enteros, sin sonido, y al
+  terminar sigue con las fotos. Los horizontales llenan la pantalla; los verticales
+  van con fondo desenfocado. Se saltean:
+  - los de menos de 4 segundos (son las Live Photos del iPhone),
+  - los de más de 100 MB (tardarían demasiado),
+  - los recién subidos que Drive todavía está procesando (aparecen en un rato).
+
+  Cada video se baja una sola vez (por partes, a través del Apps Script) y queda
+  guardado en el navegador; se guardan los últimos 15. Si el navegador no puede
+  reproducir alguno (por ejemplo, HEVC en un Chrome viejo), lo saltea y no lo
+  vuelve a intentar. En `probar()` del Apps Script se ve cuántos videos encontró.
 - Toca a la derecha para avanzar y a la izquierda para volver.
 
 La lógica de diseño está en [`web/js/layout.js`](web/js/layout.js) y tiene tests.

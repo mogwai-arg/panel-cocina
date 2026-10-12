@@ -98,3 +98,20 @@ test('básquet: evento de calendario de un partido', () => {
   const b = contexto.eventoDePartido_(porJugar, 'ARGENTINO DE CASTELAR NORTE A');
   assert.equal(b.titulo, '🏀 Básquet vs Pedro Echagüe Azul');
 });
+
+test('videos: saltea Live Photos, pesados y sin procesar', () => {
+  const v = (ms, mb) => ({ id: 'x', mimeType: 'video/quicktime', createdTime: '2024-01-01T10:00:00Z',
+    size: String(mb * 1024 * 1024), videoMediaMetadata: { width: 1920, height: 1080, durationMillis: ms } });
+  const ok = contexto.videoDeArchivo_(v(12000, 20));
+  assert.equal(ok.video, true);
+  assert.equal(ok.segundos, 12);
+  assert.equal(ok.mime, 'video/quicktime');
+  assert.equal(contexto.videoDeArchivo_(v(2500, 3)), null);   // Live Photo
+  assert.equal(contexto.videoDeArchivo_(v(60000, 300)), null); // muy pesado
+  assert.equal(contexto.videoDeArchivo_(v(undefined, 20)), null); // Drive todavía lo procesa
+});
+
+test('videos: total del Content-Range', () => {
+  assert.equal(contexto.totalDeRango_('bytes 0-6291455/15000000'), 15000000);
+  assert.equal(contexto.totalDeRango_(undefined), null);
+});

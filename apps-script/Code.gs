@@ -13,7 +13,8 @@
  *
  * Pedidos:
  *   ?action=lista&token=...            → { fotos: [{ id, ancho, alto, fecha }] }
- *   ?action=img&id=...&ancho=1600&token=...  → { mime, data (base64) }
+ *   ?action=img&id=...&ancho=1600&token=...  → { mime, data (base64) }  (de un video: su miniatura)
+ *   ?action=video&id=...&parte=0&token=...   → { parte, partes, total, data (base64) }
  *   ?action=agenda&dias=7&token=...    → { eventos: [{ titulo, inicio, fin, todoElDia,
  *                                          lugar, calendario, color }] }
  *   ?action=basquet&token=...          → { equipo, actualizado, partidos: [{ fecha, cancha,
@@ -25,7 +26,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.1';
+var VERSION = '2026-10-12.2';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -33,6 +34,7 @@ function doGet(e) {
     if (!p.token || p.token !== propiedad_('TOKEN')) return json_({ error: 'Token inválido' });
     if (p.action === 'lista') return json_({ fotos: listarFotos_() });
     if (p.action === 'img') return json_(imagen_(p.id, Number(p.ancho) || 1600));
+    if (p.action === 'video') return json_(videoParte_(p.id, Number(p.parte) || 0));
     if (p.action === 'agenda') return json_({ eventos: agenda_(Number(p.dias) || 7) });
     if (p.action === 'basquet') return json_(basquet_());
     if (p.action === 'listas') return json_(listas_());     // Listas.gs
@@ -79,7 +81,7 @@ function listarFotos_() {
   var vistas = {};
   var fotos = [];
   var sinTamano = [];
-  ultimoResumen_ = { porTipo: {}, sinTamano: 0, recuperadas: 0, descartadas: [] };
+  ultimoResumen_ = { porTipo: {}, sinTamano: 0, recuperadas: 0, descartadas: [], videosSalteados: 0 };
 
   while (pendientes.length) {
     var carpeta = pendientes.shift();
@@ -90,9 +92,11 @@ function listarFotos_() {
     do {
       var r = Drive.Files.list({
         q: "'" + carpeta + "' in parents and trashed = false and " +
-           "(mimeType contains 'image/' or mimeType = 'application/vnd.google-apps.folder')",
-        fields: 'nextPageToken, files(id, mimeType, createdTime, ' +
-                'imageMediaMetadata(width, height, rotation, time))',
+           "(mimeType contains 'image/' or mimeType contains 'video/' or " +
+           "mimeType = 'application/vnd.google-apps.folder')",
+        fields: 'nextPageToken, files(id, mimeType, createdTime, size, ' +
+                'imageMediaMetadata(width, height, rotation, time), ' +
+                'videoMediaMetadata(width, height, durationMillis))',
         pageSize: 1000,
         pageToken: token,
         supportsAllDrives: true,
@@ -104,6 +108,11 @@ function listarFotos_() {
           return;
         }
         ultimoResumen_.porTipo[f.mimeType] = (ultimoResumen_.porTipo[f.mimeType] || 0) + 1;
+        if (/^video\//.test(f.mimeType)) {
+          var v = videoDeArchivo_(f);
+          if (v) fotos.push(v); else ultimoResumen_.videosSalteados++;
+          return;
+        }
         var m = f.imageMediaMetadata || {};
         var foto = { id: f.id, fecha: fechaExif_(m.time) || f.createdTime };
         if (m.width && m.height) {
@@ -140,6 +149,69 @@ function listarFotos_() {
 }
 
 var ultimoResumen_ = null;
+
+var VIDEO_MIN_SEGUNDOS = 4;       // más cortos son Live Photos del iPhone: se saltean
+var VIDEO_MAX_MB = 100;           // más pesados tardarían demasiado en bajar al marco
+var VIDEO_PARTE_BYTES = 6 * 1024 * 1024;
+
+/**
+ * Un video de Drive como item de la lista, o null si no conviene mostrarlo.
+ * Drive tarda un rato en procesar los videos recién subidos: hasta entonces
+ * no informa la duración y el video aparece en una próxima vuelta.
+ */
+function videoDeArchivo_(f) {
+  var m = f.videoMediaMetadata || {};
+  var segundos = Number(m.durationMillis) / 1000;
+  var bytes = Number(f.size) || 0;
+  if (!segundos || segundos < VIDEO_MIN_SEGUNDOS) return null;
+  if (!bytes || bytes > VIDEO_MAX_MB * 1024 * 1024) return null;
+  return {
+    id: f.id,
+    video: true,
+    mime: f.mimeType,
+    ancho: Number(m.width) || 1920,
+    alto: Number(m.height) || 1080,
+    segundos: Math.round(segundos),
+    bytes: bytes,
+    fecha: f.createdTime
+  };
+}
+
+/**
+ * Una parte del video, en base64. El marco pide las partes de a una y las junta.
+ * Apps Script no puede devolver binario ni respuestas muy grandes, por eso las partes.
+ */
+function videoParte_(id, parte) {
+  if (!id) throw new Error('Falta el id del video');
+  parte = Math.max(0, Math.floor(parte) || 0);
+  var desde = parte * VIDEO_PARTE_BYTES;
+  var resp = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) +
+    '?alt=media&supportsAllDrives=true', {
+    headers: {
+      Authorization: 'Bearer ' + ScriptApp.getOAuthToken(),
+      Range: 'bytes=' + desde + '-' + (desde + VIDEO_PARTE_BYTES - 1)
+    },
+    muteHttpExceptions: true
+  });
+  var codigo = resp.getResponseCode();
+  if (codigo === 416) return { parte: parte, total: desde, partes: parte, data: '' };
+  if (codigo !== 200 && codigo !== 206) throw new Error('Drive respondió ' + codigo + ' al bajar el video');
+  var bytes = resp.getContent();
+  var total = totalDeRango_(resp.getHeaders()['Content-Range']) || (codigo === 200 ? bytes.length : null);
+  if (codigo === 200 && bytes.length > VIDEO_PARTE_BYTES) bytes = bytes.slice(desde, desde + VIDEO_PARTE_BYTES);
+  return {
+    parte: parte,
+    total: total,
+    partes: total ? Math.ceil(total / VIDEO_PARTE_BYTES) : null,
+    data: Utilities.base64Encode(bytes)
+  };
+}
+
+/** "bytes 0-99/1234" → 1234 */
+function totalDeRango_(rango) {
+  var m = String(rango || '').match(/\/(\d+)\s*$/);
+  return m ? Number(m[1]) : null;
+}
 
 function tamanoGuardado_(props, id) {
   var v = props.getProperty('tam_' + id);
@@ -612,5 +684,8 @@ function probar() {
   Logger.log('Sin tamaño informado por Drive: ' + r.sinTamano +
              ' (recuperadas midiendo la miniatura: ' + r.recuperadas + ')');
   if (r.descartadas.length) Logger.log('No se pudieron mostrar: ' + r.descartadas.join(', '));
+  var videos = fotos.filter(function (f) { return f.video; });
+  Logger.log('Videos: ' + videos.length + ' (salteados por cortos —Live Photos—, pesados o sin procesar: ' +
+             r.videosSalteados + ')');
   Logger.log('Ejemplo: ' + JSON.stringify(fotos.slice(0, 2), null, 2));
 }

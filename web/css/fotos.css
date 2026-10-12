@@ -39,6 +39,18 @@
   position: relative;
   object-fit: contain;
 }
+.diapo__video {
+  position: relative;
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  object-fit: contain;
+}
+/* Video horizontal: llena la pantalla, como las fotos horizontales. */
+.diapo--video-completo .diapo__video { object-fit: cover; }
+.diapo--video-completo .diapo__fondo { display: none; }
+
 .diapo__fondo {
   position: absolute;
   inset: -40px;

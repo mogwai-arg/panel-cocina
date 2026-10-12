@@ -6,7 +6,8 @@
  *
  * Las dos devuelven el mismo formato:
  *   listar(): Promise<foto[]>      foto = { id, ancho, alto, fecha }
- *   url(foto): Promise<string>
+ *   url(foto): Promise<string>     (de un video: su miniatura)
+ *   video(foto): Promise<string>   URL reproducible del video (foto.video === true)
  *   agenda(): Promise<evento[]>    ver js/agenda.js
  *   clima(): Promise<clima>        ver js/clima.js
  *   basquet(): Promise<partidos>   ver js/basquet.js
@@ -38,11 +39,13 @@
       { id: 'asado', ancho: 1200, alto: 1200, fecha: hace(0, 1, 11) },
       { id: 'glaciar', ancho: 3600, alto: 1200, fecha: hace(2, 0, 28) },
       { id: 'lago', ancho: 1600, alto: 1200, fecha: hace(6) },
-      { id: 'primer-dia', ancho: 1200, alto: 1600, fecha: hace(4, 2, 1) }
+      { id: 'primer-dia', ancho: 1200, alto: 1600, fecha: hace(4, 2, 1) },
+      { id: 'video', video: true, mime: 'video/mp4', ancho: 640, alto: 360, segundos: 6, fecha: hace(1, 8, 2) }
     ];
     return {
       listar: function () { return Promise.resolve(fotos); },
-      url: function (foto) { return Promise.resolve('demo/' + foto.id + '.svg'); },
+      url: function (foto) { return Promise.resolve('demo/' + foto.id + (foto.video ? '.jpg' : '.svg')); },
+      video: function (foto) { return Promise.resolve('demo/' + foto.id + '.mp4'); },
       agenda: function () { return Promise.resolve(agendaEjemplo(new Date())); },
       clima: function () { return Promise.resolve(Clima.ejemplo(new Date())); },
       basquet: function () { return Promise.resolve(basquetEjemplo(new Date())); },
@@ -262,6 +265,7 @@
     var ancho = opciones.ancho || 1600;
     var maxCache = opciones.maxCache || 40;
     var cache = new Map(); // id → blob URL, en orden de uso
+    var videos = crearVideos(pedir, token, opciones.maxVideosGuardados || 15);
 
     function pedir(params) {
       var qs = Object.keys(params).map(function (k) {
@@ -305,14 +309,12 @@
           return Promise.resolve(u);
         }
         return pedir({ action: 'img', id: foto.id, ancho: ancho, token: token }).then(function (d) {
-          var bytes = atob(d.data);
-          var arr = new Uint8Array(bytes.length);
-          for (var i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-          var url = URL.createObjectURL(new Blob([arr], { type: d.mime }));
+          var url = URL.createObjectURL(new Blob([base64ABytes(d.data)], { type: d.mime }));
           guardar(foto.id, url);
           return url;
         });
       },
+      video: videos.url,
       agenda: function () {
         var nombres = opciones.nombresCalendarios || {};
         return pedir({ action: 'agenda', dias: 7, token: token }).then(function (d) {
@@ -333,6 +335,94 @@
       },
       colegium: function () { return pedir({ action: 'colegium', token: token }); }
     };
+  }
+
+  function base64ABytes(b64) {
+    var bytes = atob(b64);
+    var arr = new Uint8Array(bytes.length);
+    for (var i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    return arr;
+  }
+
+  /*
+   * Videos de Drive: se bajan por partes a través del Apps Script y se guardan
+   * en el almacenamiento del navegador (Cache Storage), así cada video se baja
+   * una sola vez. En memoria quedan solo los dos últimos.
+   */
+  function crearVideos(pedir, token, maxGuardados) {
+    var NOMBRE = 'panel-videos';
+    var enMemoria = new Map();
+    var enCurso = {};
+
+    function abrir() {
+      if (!root.caches) return Promise.resolve(null);
+      return caches.open(NOMBRE).catch(function () { return null; });
+    }
+
+    function clave(id) { return 'https://panel.local/videos/' + encodeURIComponent(id); }
+
+    // El .mov del iPhone es el mismo formato que .mp4: así Chrome lo acepta mejor.
+    function tipo(foto) { return foto.mime === 'video/quicktime' || !foto.mime ? 'video/mp4' : foto.mime; }
+
+    function bajar(foto) {
+      var partes = [];
+      function siguiente(n) {
+        return pedir({ action: 'video', id: foto.id, parte: n, token: token }).then(function (d) {
+          if (d.data) partes.push(base64ABytes(d.data));
+          var total = d.partes || 1;
+          if (d.data && n + 1 < total) return siguiente(n + 1);
+          return new Blob(partes, { type: tipo(foto) });
+        });
+      }
+      return siguiente(0);
+    }
+
+    function guardar(c, id, blob) {
+      if (!c) return Promise.resolve();
+      return c.put(clave(id), new Response(blob, { headers: { 'Content-Type': blob.type } })).then(function () {
+        return c.keys();
+      }).then(function (ks) {
+        // Los más viejos se borran para no llenar el marco.
+        var sobran = ks.length - maxGuardados;
+        return Promise.all(ks.slice(0, Math.max(0, sobran)).map(function (k) { return c.delete(k); }));
+      }).catch(function (e) { console.warn('No se pudo guardar el video', e); });
+    }
+
+    function enMem(id, blob) {
+      var u = URL.createObjectURL(blob);
+      enMemoria.set(id, u);
+      while (enMemoria.size > 2) {
+        var viejo = enMemoria.keys().next().value;
+        URL.revokeObjectURL(enMemoria.get(viejo));
+        enMemoria.delete(viejo);
+      }
+      return u;
+    }
+
+    function url(foto) {
+      if (enMemoria.has(foto.id)) return Promise.resolve(enMemoria.get(foto.id));
+      if (enCurso[foto.id]) return enCurso[foto.id];
+      var c0 = null;
+      var p = abrir().then(function (c) {
+        c0 = c;
+        return c ? c.match(clave(foto.id)) : null;
+      }).then(function (r) {
+        if (r) return r.blob();
+        return bajar(foto).then(function (blob) {
+          return guardar(c0, foto.id, blob).then(function () { return blob; });
+        });
+      }).then(function (blob) {
+        delete enCurso[foto.id];
+        return enMem(foto.id, blob);
+      }, function (err) {
+        delete enCurso[foto.id];
+        throw err;
+      });
+      enCurso[foto.id] = p;
+      return p;
+    }
+
+    return { url: url };
   }
 
   root.Fuentes = { demo: demo, drive: drive };
