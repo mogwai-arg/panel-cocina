@@ -9,7 +9,8 @@
  *
  * Propiedades del script:
  *   GEMINI_API_KEY   la clave de Google AI Studio (gratis): https://aistudio.google.com/apikey
- *   GEMINI_MODELO    (opcional) por defecto gemini-2.5-flash
+ *   GEMINI_MODELO    (opcional) un modelo fijo. Si no está, se elige solo el mejor "flash"
+ *                    disponible para tu clave (y si Google lo renombra, se vuelve a elegir).
  *
  * Ojo: en el nivel gratuito Google puede usar lo que se le manda para mejorar sus
  * productos. Se le mandan los textos de los comunicados y de Classroom (no notas, ni
@@ -22,11 +23,65 @@ var MODELO_POR_DEFECTO_ = 'gemini-2.5-flash';
 var DIAS_DE_TEXTOS_IA_ = 21;
 var MAX_REPASOS_ = 3;
 
-function gemini_(prompt, esquema) {
+/*
+ * Elige el modelo: el de GEMINI_MODELO si está; si no, el mejor "flash" estable que
+ * ofrece Google para esta clave (se recuerda en GEMINI_MODELO_ELEGIDO).
+ */
+function modeloGemini_(clave, otraVez) {
+  var props = PropertiesService.getScriptProperties();
+  var fijo = props.getProperty('GEMINI_MODELO');
+  if (fijo) return fijo;
+  var elegido = props.getProperty('GEMINI_MODELO_ELEGIDO');
+  if (elegido && !otraVez) return elegido;
+  var nombres = modelosDisponibles_(clave);
+  var mejor = elegirModelo_(nombres) || MODELO_POR_DEFECTO_;
+  props.setProperty('GEMINI_MODELO_ELEGIDO', mejor);
+  return mejor;
+}
+
+function modelosDisponibles_(clave) {
+  var resp = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', {
+    headers: { 'x-goog-api-key': clave }, muteHttpExceptions: true
+  });
+  if (resp.getResponseCode() !== 200) {
+    throw new Error('No se pudo pedir la lista de modelos de Gemini (' + resp.getResponseCode() + '): ' +
+      resp.getContentText().slice(0, 200) + ' — ¿la clave GEMINI_API_KEY está bien copiada?');
+  }
+  return (JSON.parse(resp.getContentText()).models || []).filter(function (m) {
+    return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0;
+  }).map(function (m) { return String(m.name).replace(/^models\//, ''); });
+}
+
+/*
+ * De la lista de modelos, el "flash" más nuevo que no sea de imágenes, audio, etc.
+ * Prefiere los estables a los "preview"/"exp", y el flash común al "lite". Puro, para tests.
+ */
+function elegirModelo_(nombres) {
+  var raros = /(image|imagen|tts|audio|live|embedding|vision|thinking|learnlm|aqa|robotics|computer|native)/i;
+  var candidatos = nombres.filter(function (n) { return /flash/i.test(n) && !raros.test(n); });
+  if (!candidatos.length) return null;
+  function version(n) { var m = n.match(/gemini-(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; }
+  function puntaje(n) {
+    return version(n) * 100 - (/(preview|exp)/i.test(n) ? 30 : 0) - (/lite/i.test(n) ? 10 : 0) -
+      (/-\d{3,}$|-\d{2}-\d{2}/.test(n) ? 1 : 0) - (/latest/i.test(n) ? 2 : 0);
+  }
+  candidatos.sort(function (a, b) { return puntaje(b) - puntaje(a); });
+  return candidatos[0];
+}
+
+/** Para ver qué modelos ofrece Google con tu clave y cuál elige el asistente. */
+function modelosGemini() {
+  var clave = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  var nombres = modelosDisponibles_(clave);
+  Logger.log('Modelos: ' + nombres.join(', '));
+  Logger.log('Elegido: ' + elegirModelo_(nombres));
+}
+
+function gemini_(prompt, esquema, reintento) {
   var props = PropertiesService.getScriptProperties();
   var clave = props.getProperty('GEMINI_API_KEY');
   if (!clave) throw new Error('Falta la propiedad GEMINI_API_KEY (sacala gratis en https://aistudio.google.com/apikey)');
-  var modelo = props.getProperty('GEMINI_MODELO') || MODELO_POR_DEFECTO_;
+  var modelo = modeloGemini_(clave, reintento);
   var resp = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelo + ':generateContent', {
     method: 'post',
     contentType: 'application/json',
@@ -39,7 +94,12 @@ function gemini_(prompt, esquema) {
   });
   var codigo = resp.getResponseCode();
   var cuerpo = resp.getContentText();
-  if (codigo === 404) throw new Error('Gemini no encontró el modelo "' + modelo + '": probá otro en la propiedad GEMINI_MODELO');
+  if (codigo === 404) {
+    // El modelo ya no existe (Google los renombra): se elige otro de la lista, una vez.
+    if (!reintento && !props.getProperty('GEMINI_MODELO')) return gemini_(prompt, esquema, true);
+    throw new Error('Gemini no encontró el modelo "' + modelo + '". Ejecutá modelosGemini para ver los disponibles' +
+      (props.getProperty('GEMINI_MODELO') ? ' y cambiá (o borrá) la propiedad GEMINI_MODELO' : ''));
+  }
   if (codigo === 429) throw new Error('Gemini dice que se pasó el límite gratuito por hoy: se vuelve a intentar mañana');
   if (codigo !== 200) throw new Error('Gemini respondió ' + codigo + ': ' + cuerpo.slice(0, 300));
   var r = JSON.parse(cuerpo);

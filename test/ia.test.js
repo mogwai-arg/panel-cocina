@@ -48,3 +48,11 @@ test('IA: sus fechas van al calendario automático (sin repetir días que ya tra
   const r = ctx.eventosAutomaticos_(null, null, cole, ahora, ia);
   assert.deepEqual([...r.eventos.map((e) => e.agente + ':' + e.titulo)], ['Colegio:🎒 Acto patrio', 'IA:🎒 Salida al Planetario']);
 });
+
+test('IA: elige el mejor modelo flash de la lista', () => {
+  const lista = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-3.0-flash-preview', 'gemini-3.0-flash',
+    'gemini-3.0-flash-image', 'gemini-3.0-pro', 'gemini-3.0-flash-lite', 'text-embedding-004', 'gemini-flash-latest'];
+  assert.equal(ctx.elegirModelo_(lista), 'gemini-3.0-flash');
+  assert.equal(ctx.elegirModelo_(['gemini-2.0-flash-001', 'gemini-2.0-flash']), 'gemini-2.0-flash');
+  assert.equal(ctx.elegirModelo_(['gemini-3.0-pro']), null);
+});
