@@ -4,7 +4,8 @@
  * Agente "Calendario": cada hora pasa a un calendario de Google "Familia · automático":
  *   - turnos y vencimientos detectados en los mails (Mails.gs),
  *   - entregas de Classroom de Thi (y las borra cuando las entrega),
- *   - eventos que publica el colegio en Colegium.
+ *   - eventos que publica el colegio en Colegium,
+ *   - fechas que encontró el asistente con IA en los comunicados (IA.gs).
  * Así llegan al celular con los avisos de Google Calendar. El panel no muestra ese
  * calendario (ya muestra todo eso por su cuenta): es para los teléfonos.
  *
@@ -49,6 +50,7 @@ function agentes_() {
       return { fecha: new Date(f[0]).toISOString(), agente: String(f[1]), texto: String(f[2]) };
     }),
     calendario: props.getProperty('AGENDA_AUTO_ID') ? NOMBRE_AGENDA_AUTO_ : null,
+    ia: props.getProperty('GEMINI_API_KEY') ? { generado: props.getProperty('IA_RECIBIDO') } : null,
     ultimaCorrida: props.getProperty('AGENTES_ULTIMA_CORRIDA')
   };
 }
@@ -83,7 +85,7 @@ function diaSiguiente_(d) {
  * Colegium. Puro (sin servicios) para los tests. Devuelve { eventos, borrar }:
  * `borrar` son claves de entregas que Thi ya hizo (su evento se saca).
  */
-function eventosAutomaticos_(mails, aula, cole, ahora) {
+function eventosAutomaticos_(mails, aula, cole, ahora, ia) {
   var hasta = new Date(ahora.getTime() + DIAS_AGENDA_AUTO_ * 86400000);
   var eventos = [];
   var borrar = [];
@@ -131,6 +133,20 @@ function eventosAutomaticos_(mails, aula, cole, ahora) {
       lugar: '', descripcion: 'Evento del colegio publicado en Colegium' + (e.categoria ? ' (' + e.categoria + ')' : '') + '.'
     });
   });
+  // Fechas que encontró la IA en los comunicados (las que ya trae Colegium como evento no se repiten).
+  var diasCole = {};
+  eventos.forEach(function (e) { if (e.agente === 'Colegio') diasCole[e.inicio.toDateString()] = true; });
+  ((ia && ia.fechas) || []).forEach(function (f) {
+    var p = parsearFecha_(f.fecha + (f.hora ? ' ' + f.hora : ''));
+    if (!p) return;
+    if (diasCole[p.fecha.toDateString()]) return;
+    agregar({
+      clave: 'ia:' + f.fecha + '|' + String(f.titulo).toLowerCase(), agente: 'IA',
+      titulo: '🎒 ' + f.titulo, inicio: p.fecha,
+      fin: new Date(p.fecha.getTime() + 60 * 60000), todoElDia: !p.conHora,
+      lugar: '', descripcion: (f.detalle ? f.detalle + '\n' : '') + 'Lo encontró el asistente en los comunicados del cole.'
+    });
+  });
   return { eventos: eventos, borrar: borrar };
 }
 
@@ -154,7 +170,9 @@ function sincronizarAgentes() {
   try { mails = mails_(); } catch (e) { Logger.log('Mails: ' + e.message); }
   try { aula = leerClassroom_().datos; } catch (e) { Logger.log('Classroom: ' + e.message); }
   try { cole = leerColegium_().datos; } catch (e) { Logger.log('Colegium: ' + e.message); }
-  var plan = eventosAutomaticos_(mails, aula, cole, ahora);
+  var ia = null;
+  try { ia = leerJson_('IA', 'IA_RECIBIDO').datos; } catch (e) { Logger.log('IA: ' + e.message); }
+  var plan = eventosAutomaticos_(mails, aula, cole, ahora, ia);
 
   var existentes = {};
   cal.getEvents(new Date(ahora.getTime() - 86400000), new Date(ahora.getTime() + (DIAS_AGENDA_AUTO_ + 1) * 86400000))

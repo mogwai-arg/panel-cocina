@@ -26,12 +26,13 @@
  *   ?action=mails                      → ver Mails.gs
  *   ?action=ubicacion (GET y POST)     → ver Ubicacion.gs (OwnTracks)
  *   ?action=agentes                    → ver Agentes.gs (calendario automático y registro)
+ *   ?action=ia                         → ver IA.gs (resumen de la semana y repasos)
  */
 
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-14.1';
+var VERSION = '2026-10-14.2';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -51,6 +52,7 @@ function doGet(e) {
     if (p.action === 'mails') return json_(mails_()); // Mails.gs
     if (p.action === 'ubicacion') return json_(ubicaciones_()); // Ubicacion.gs
     if (p.action === 'agentes') return json_(agentes_()); // Agentes.gs
+    if (p.action === 'ia') return json_(leerIA_()); // IA.gs
     if (p.action === 'reglasMails') return json_(reglasMailsPara_(p.cuenta));
     if (p.action === 'version') return json_({ version: VERSION });
     return json_({ error: 'Acción desconocida: ' + p.action + ' (versión publicada: ' + VERSION + ')' });

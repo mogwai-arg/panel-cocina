@@ -473,3 +473,21 @@ small.quien__alerta { color: #c4453a; }
 /* Cole: las pestañas van debajo del título (son 4 y no entran al lado). */
 .cole:not(.avisos):not(.agentes) .listas__cab { flex-direction: column; align-items: flex-start; gap: 10px; }
 .listas__titulo small { white-space: nowrap; }
+
+/* Asistente con IA: resumen de la semana y repasos */
+.semana-ia { background: var(--tarjeta); border-radius: 12px; padding: 14px 18px; border-left: 5px solid #e9b949; display: flex; flex-direction: column; gap: 6px; }
+.semana-ia__resumen { margin: 0; font: italic 400 19px/1.35 var(--serif); }
+.semana-ia__pendiente { display: flex; justify-content: space-between; gap: 12px; font: 600 15px var(--texto); }
+.semana-ia__pendiente small { flex: none; font: 800 12px var(--rotulo); color: var(--suave); }
+.repaso { overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 8px; }
+.repaso__prueba { background: var(--tarjeta); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.repaso__cab { display: flex; justify-content: space-between; align-items: baseline; font: 600 20px var(--texto); }
+.repaso__fecha { font: 800 13px var(--rotulo); letter-spacing: .04em; color: #c4453a; }
+.repaso__temas { margin: 0; font-size: 14px; color: var(--suave); }
+.pregunta { all: unset; cursor: pointer; display: flex; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--papel); }
+.pregunta__n { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--tinta); color: var(--sobre-tinta); font: 800 12px var(--rotulo); }
+.pregunta__txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pregunta__txt b { font: 600 16px/1.3 var(--texto); }
+.pregunta__resp { font-size: 15px; line-height: 1.4; color: #2e7d4f; }
+.pregunta__ver { font: 600 12px var(--rotulo); color: var(--suave); }
+.pregunta--abierta .pregunta__ver { display: none; }

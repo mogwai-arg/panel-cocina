@@ -233,11 +233,37 @@ Lo que el panel hace solo, y un registro de lo que hizo (pantalla **Agentes**):
   ese calendario (ya muestra todo eso por su cuenta).
 - **Básquet**: los partidos al calendario "Básquet Thiago" (ya existía; ahora queda anotado).
 - **Registro**: hoja "Registro" de la planilla ("Agendé el turno de OSDE para el mar 20/10…").
+- **Asistente con IA**: ver la sección siguiente.
 
 Para activarlo: agregá `Agentes.gs`, reemplazá `Code.gs`, publicá **Nueva versión** y
 ejecutá `activarAgentes` (crea el calendario y lo corre cada hora). Si querés que el
 calendario automático te avise, en Google Calendar → ese calendario → Configuración →
 Notificaciones (por ejemplo, 1 día antes y 1 hora antes).
+
+## Asistente con IA (Gemini, gratis)
+
+Todos los días a las 6 lee los comunicados del cole y lo de Classroom de las últimas
+3 semanas y:
+
+- **resume la semana** en 2-3 líneas y arma la **lista de pendientes** (firmar, llevar,
+  pagar, entregar): aparece arriba de los comunicados en **Cole**;
+- saca las **fechas** que mencionan (aunque digan "el jueves") y las pasa al calendario
+  automático;
+- si avisan de una **prueba**, le arma a Thi un **repaso** de 8 preguntas con respuesta
+  (Cole → **Repaso ✨**; tocar una pregunta muestra la respuesta).
+
+Para activarlo:
+1. Sacá una clave gratis en [Google AI Studio](https://aistudio.google.com/apikey) (con tu
+   cuenta de Google → "Create API key").
+2. Apps Script → Propiedades del script → `GEMINI_API_KEY` = esa clave.
+3. Agregá `IA.gs`, reemplazá `Code.gs` y `Agentes.gs`, publicá **Nueva versión**.
+4. Ejecutá `activarIA` (corre una vez y queda todos los días a las 6). `probarIA` lo corre
+   cuando quieras y muestra en el registro lo que armó.
+
+Ojo: en el nivel gratuito, Google puede usar lo que se le manda para mejorar sus
+productos. Se le mandan solo los textos de los comunicados y de Classroom (no notas,
+asistencia ni datos de la ficha). Si el modelo cambia de nombre, se ajusta con la
+propiedad `GEMINI_MODELO` (por defecto `gemini-2.5-flash`).
 
 ## Fotos y panel, alternados
 
@@ -247,6 +273,12 @@ con la pantalla en descanso, no lo hace.
 
 Se prende y apaga **tocando la hora de la barra lateral** → Ajustes (queda guardado en ese
 aparato). Los tiempos se cambian en `config.js` → `ALTERNAR: { activo, cadaMinutos, segundosPanel }`.
+
+## Tema oscuro de noche
+
+De 19:30 a 7 la pantalla pasa a colores oscuros que no encandilan, y Hoy saluda según la
+hora ("Buenas noches. Esto es lo de mañana."). Se prende y apaga desde Ajustes; el horario
+se cambia en `config.js` → `TEMA_OSCURO: { desde, hasta }` (o `TEMA_OSCURO: false`).
 
 ## Descanso de la pantalla
 

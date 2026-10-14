@@ -31,6 +31,7 @@
     var alCambiar = opciones.alCambiar || function () {};
     var respuesta = null;
     var aula = null; // { datos, recibido } de Classroom
+    var ia = null;   // resumen de la semana y repasos (asistente con IA)
     var errorAula = null;
     var abierto = null;
     var error = null;
@@ -40,8 +41,9 @@
       '<div class="cole__principal">' +
       '  <div class="listas__cab"><div><span class="lbl" data-r="colegio">Colegio</span><h2 class="listas__titulo"><span data-r="titulo">Comunicados</span> <small data-r="sinleer"></small></h2>' +
       '    <button class="cole__vistos" data-r="vistos" hidden>Marcar todos como vistos</button></div>' +
-      '    <div class="seg" role="group" aria-label="Sección"><button data-tab="comunicados" aria-pressed="true">COMUNICADOS</button><button data-tab="notas" aria-pressed="false">NOTAS</button><button data-tab="classroom" aria-pressed="false">CLASSROOM <span class="seg__num" data-r="urgentes" hidden></span></button></div></div>' +
+      '    <div class="seg" role="group" aria-label="Sección"><button data-tab="comunicados" aria-pressed="true">COMUNICADOS</button><button data-tab="notas" aria-pressed="false">NOTAS</button><button data-tab="classroom" aria-pressed="false">CLASSROOM <span class="seg__num" data-r="urgentes" hidden></span></button><button data-tab="repaso" aria-pressed="false">REPASO ✨</button></div></div>' +
       '  <div class="comunicados" data-r="comunicados"></div>' +
+      '  <div class="repaso" data-r="repaso" hidden></div>' +
       '  <div class="notas" data-r="notas" hidden></div>' +
       '  <div class="aula" data-r="classroom" hidden></div>' +
       '</div>' +
@@ -54,9 +56,66 @@
 
     function parte(n) { return contenedor.querySelector('[data-r="' + n + '"]'); }
 
+    // Resumen de la semana que arma el asistente con IA (arriba de los comunicados).
+    function semanaIA() {
+      var s = ia && ia.datos;
+      if (!s || (!s.resumen && !(s.pendientes || []).length)) return null;
+      var caja = el('div', 'semana-ia');
+      caja.appendChild(el('span', 'lbl', '✨ Esta semana'));
+      if (s.resumen) caja.appendChild(el('p', 'semana-ia__resumen', s.resumen));
+      (s.pendientes || []).forEach(function (p) {
+        var fila = el('div', 'semana-ia__pendiente');
+        fila.appendChild(el('span', null, '☐ ' + p.texto));
+        if (p.para) fila.appendChild(el('small', null, 'para el ' + Number(p.para.slice(8)) + '/' + Number(p.para.slice(5, 7))));
+        caja.appendChild(fila);
+      });
+      return caja;
+    }
+
+    // Repasos para las pruebas que vienen: tocar una pregunta muestra la respuesta.
+    function pintarRepaso() {
+      var caja = parte('repaso');
+      caja.innerHTML = '';
+      var repasos = (ia && ia.datos && ia.datos.repasos) || [];
+      if (!repasos.length) {
+        caja.appendChild(el('p', 'listas__vacio', ia
+          ? 'Cuando el cole avise de una prueba, acá aparece un repaso con preguntas para practicar.'
+          : 'El asistente con IA todavía no está activado (ver README, sección Asistente con IA).'));
+        return;
+      }
+      repasos.forEach(function (r) {
+        var tarjeta = el('div', 'box repaso__prueba');
+        var cab = el('div', 'repaso__cab');
+        cab.appendChild(el('b', null, r.materia));
+        if (r.fecha) cab.appendChild(el('span', 'repaso__fecha', 'Prueba ' + Cole.fechaCorta(r.fecha + 'T12:00:00', new Date()).replace(/ \d\d:\d\d$/, '')));
+        tarjeta.appendChild(cab);
+        tarjeta.appendChild(el('p', 'repaso__temas', r.temas));
+        (r.preguntas || []).forEach(function (q, i) {
+          var b = el('button', 'pregunta');
+          b.appendChild(el('span', 'pregunta__n', String(i + 1)));
+          var txt = el('span', 'pregunta__txt');
+          txt.appendChild(el('b', null, q.pregunta));
+          var resp = el('span', 'pregunta__resp', q.respuesta);
+          resp.hidden = true;
+          txt.appendChild(resp);
+          txt.appendChild(el('small', 'pregunta__ver', 'Tocá para ver la respuesta'));
+          b.appendChild(txt);
+          b.addEventListener('click', function () {
+            resp.hidden = !resp.hidden;
+            b.classList.toggle('pregunta--abierta', !resp.hidden);
+          });
+          tarjeta.appendChild(b);
+        });
+        caja.appendChild(tarjeta);
+      });
+      caja.appendChild(el('p', 'aula__pie', 'Preguntas armadas por IA a partir de los temas que mandó el cole: revisalas con la carpeta.'));
+    }
+
     function pintarComunicados(d) {
       var caja = parte('comunicados');
       caja.innerHTML = '';
+      var semana = semanaIA();
+      if (semana) caja.appendChild(semana);
       var lista = (d && d.comunicados) || [];
       if (!lista.length) {
         caja.appendChild(el('p', 'listas__vacio', 'Todavía no hay comunicados. Abrí Colegium en la compu con la extensión instalada.'));
@@ -198,7 +257,8 @@
       parte('comunicados').hidden = pestana !== 'comunicados';
       parte('notas').hidden = pestana !== 'notas';
       parte('classroom').hidden = pestana !== 'classroom';
-      parte('titulo').textContent = { notas: 'Notas', classroom: 'Classroom' }[pestana] || 'Comunicados';
+      parte('repaso').hidden = pestana !== 'repaso';
+      parte('titulo').textContent = { notas: 'Notas', classroom: 'Classroom', repaso: 'Repaso' }[pestana] || 'Comunicados';
       parte('sinleer').hidden = pestana !== 'comunicados';
       pintarSinLeer(respuesta && respuesta.datos);
     }
@@ -293,6 +353,7 @@
       }
       pintarNotas(d);
       pintarClassroom();
+      pintarRepaso();
       pintarPestana();
       pintarHorario(d);
       pintarAsistencia(d);
@@ -325,7 +386,10 @@
         console.error(err);
         errorAula = err.message;
       });
-      return Promise.all([cole, clase]).then(function () {
+      var asistente = (fuente.ia ? fuente.ia() : Promise.resolve(null)).then(function (r) {
+        ia = r && r.datos ? r : null;
+      }).catch(function (err) { console.error(err); ia = null; });
+      return Promise.all([cole, clase, asistente]).then(function () {
         pintar();
         avisarCambio(respuesta && respuesta.datos);
       });

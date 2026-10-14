@@ -89,9 +89,11 @@
         activo ? 'Revisa cada hora · última vez ' + hace(datos.ultimaCorrida) : 'Sin activar: ejecutá activarAgentes en el Apps Script',
         !activo));
       lado.appendChild(tarjeta('🏀', 'Básquet', 'Copia los partidos de Thi al calendario "Básquet Thiago" y los actualiza si cambian.', 'Revisa cada 3 horas'));
+      var ia = datos && datos.ia;
       lado.appendChild(tarjeta('✨', 'Asistente con IA',
-        'Leer comunicados y PDFs escritos de cualquier forma, resumir la semana del cole y armar repasos para las pruebas de Thi.',
-        'Próximamente', true));
+        'Lee los comunicados y Classroom, resume la semana, arma la lista de pendientes, pasa las fechas al calendario y prepara repasos para las pruebas de Thi (Cole → Repaso).',
+        ia ? 'Todos los días a las 6 · última vez ' + hace(ia.generado) : 'Sin activar: falta la clave de Gemini (ver README)',
+        !ia));
     }
 
     function cargar() {

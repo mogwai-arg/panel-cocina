@@ -17,6 +17,7 @@
  *   mails(): Promise<{ mails, actualizado }>          ver js/mails.js y apps-script/Mails.gs
  *   ubicacion(): Promise<{ personas }>               ver js/ubicacion.js y apps-script/Ubicacion.gs
  *   agentes(): Promise<{ registro, calendario, ultimaCorrida }>   ver apps-script/Agentes.gs
+ *   ia(): Promise<{ datos: { resumen, pendientes, fechas, repasos }, recibido }>   ver apps-script/IA.gs
  */
 (function (root) {
   'use strict';
@@ -60,11 +61,36 @@
       colegium: function () { return Promise.resolve(coleEjemplo(new Date())); },
       classroom: function () { return Promise.resolve(classroomEjemplo(new Date())); },
       mails: function () { return Promise.resolve(mailsEjemplo(new Date())); },
+      ia: function () {
+        var ahora = new Date();
+        function dia(n) { var d = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+        return Promise.resolve({ recibido: new Date(ahora.getTime() - 5 * 3600000).toISOString(), datos: {
+          generado: new Date(ahora.getTime() - 5 * 3600000).toISOString(),
+          resumen: 'Semana movida: el viernes es la gira deportiva a Miramar (salen a las 7 desde el colegio) y el jueves 22 hay prueba integradora de Matemática.',
+          pendientes: [
+            { texto: 'Firmar la autorización de la gira deportiva', para: dia(2) },
+            { texto: 'Llevar DNI el día de la gira', para: dia(2) },
+            { texto: 'Entregar el mapa de climas de Geografía (está atrasado)', para: '' }
+          ],
+          fechas: [{ fecha: dia(2), hora: '07:00', titulo: 'Gira deportiva a Miramar', detalle: 'Llevar DNI y autorización firmada' }],
+          repasos: [{
+            clave: 'mate', materia: 'Matemática', fecha: dia(8), temas: 'Funciones lineales y sistemas de ecuaciones',
+            preguntas: [
+              { pregunta: '¿Qué representa la pendiente m en y = mx + b?', respuesta: 'Cuánto cambia y cuando x aumenta 1. Si m > 0 la recta sube; si m < 0, baja.' },
+              { pregunta: '¿Cuál es la ordenada al origen de y = 3x − 2?', respuesta: '−2: es el valor de y cuando x = 0 (la recta corta al eje y en (0, −2)).' },
+              { pregunta: 'Hallá la recta que pasa por (1, 2) y (3, 6).', respuesta: 'm = (6 − 2)/(3 − 1) = 2; b = 2 − 2·1 = 0 → y = 2x.' },
+              { pregunta: 'Resolvé: x + y = 5 ; x − y = 1', respuesta: 'Sumando: 2x = 6 → x = 3; y = 2.' },
+              { pregunta: '¿Cuándo un sistema de dos rectas no tiene solución?', respuesta: 'Cuando las rectas son paralelas: misma pendiente y distinta ordenada al origen.' }
+            ]
+          }]
+        } });
+      },
       agentes: function () {
         var ahora = Date.now();
         function r(min, agente, texto) { return { fecha: new Date(ahora - min * 60000).toISOString(), agente: agente, texto: texto }; }
         return Promise.resolve({
           calendario: 'Familia · automático', ultimaCorrida: new Date(ahora - 22 * 60000).toISOString(),
+          ia: { generado: new Date(ahora - 5 * 3600000).toISOString() },
           registro: [
             r(22, 'Mails', 'Agendé "Recordatorio de turno – Clínica Pediátrica" para el mar 20/10 a las 10:30.'),
             r(85, 'Classroom', 'Thi entregó "Cuestionario de la unidad 2": lo saqué del calendario.'),
@@ -442,6 +468,7 @@
       mails: function () { return pedir({ action: 'mails', token: token }); },
       ubicacion: function () { return pedir({ action: 'ubicacion', token: token }); },
       agentes: function () { return pedir({ action: 'agentes', token: token }); },
+      ia: function () { return pedir({ action: 'ia', token: token }); },
       classroom: function () {
         var nombres = opciones.nombresCalendarios || {};
         return pedir({ action: 'classroom', token: token }).then(function (r) {
