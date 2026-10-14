@@ -69,8 +69,17 @@ fi
   $A shell 'which su; su -c id 2>&1; id' 2>&1
   echo
   echo "=== Navegador (WebView / Chrome) ==="
-  $A shell dumpsys webviewupdate 2>/dev/null | grep -iE "current webview|package|version" | head -8
   $A shell "pm list packages | grep -iE 'webview|chrome|browser'"
+  for w in com.android.webview com.google.android.webview com.android.browser com.android.chrome; do
+    $A shell "dumpsys package $w 2>/dev/null | grep -m2 -E 'versionName|codePath'" | sed "s/^/$w: /"
+  done
+  echo
+  echo "=== Todas las apps (para encontrar Frameo y el lanzador) ==="
+  $A shell pm list packages -f | tr -d '\r' | grep -viE 'com\.android\.(providers|inputmethod|keychain|location|shell|sharedstorage|externalstorage|backupconfirm|statementservice|defcontainer|proxyhandler|wallpaper|pacprocessor|certinstaller|bluetoothmidiservice|managedprovisioning|bips|printspooler|vpndialogs|captiveportallogin|smspush|cellbroadcastreceiver|dreams)'
+  echo
+  echo "=== App en pantalla ahora ==="
+  $A shell dumpsys activity activities 2>/dev/null | grep -m3 -E 'mFocusedActivity|mResumedActivity'
+  $A shell dumpsys package r 2>/dev/null | grep -A3 'android.intent.category.HOME' | head -8
   echo
   echo "=== Apps instaladas (no de sistema) ==="
   $A shell pm list packages -3
@@ -90,8 +99,13 @@ fi
   $A shell getevent -lp 2>/dev/null | grep -E "add device|name:" | head -30
   echo
   echo "=== Pistas del sensor en el sistema ==="
-  $A shell 'ls /sys/class/gpio /sys/class/misc /dev 2>/dev/null' | tr '\n' ' ' | grep -ioE "[a-z_]*(pir|motion|human|body|sensor|ir_)[a-z0-9_]*" | sort -u
-  $A shell "dumpsys package net.frameo.app 2>/dev/null | grep -iE 'versionName|permission.*(SENSOR|BODY)'" | head -10
+  $A shell 'ls /dev /sys/class/misc /sys/class/gpio 2>/dev/null' | tr -d '\r' | grep -iE "pir|motion|human|body|prox|sensor|ir" | sort -u
+  $A shell 'ls /system/lib/hw/ 2>/dev/null' | tr -d '\r' | grep -iE "sensor|prox"
+  $A shell 'getprop' | tr -d '\r' | grep -iE "pir|motion|prox|sensor|frameo|screen" | head -20
+  $A shell 'cat /proc/bus/input/devices 2>/dev/null' | grep -E "Name=|Handlers=" | head -20
+  echo
+  echo "=== Quién usa el sensor (con Frameo abierto) ==="
+  $A shell dumpsys sensorservice 2>/dev/null | sed -n '/active connections/,$p' | head -25
 } > "$INFO" 2>&1
 echo "Información del marco guardada en $INFO"
 
@@ -99,11 +113,17 @@ echo "Información del marco guardada en $INFO"
 # No se borra nada: en el paso siguiente Frameo solo se "pausa" y se puede volver atrás.
 echo "Copiando Frameo a la Mac ..."
 $A shell pm list packages -f > "$DESTINO/paquetes.txt"
-for paq in $($A shell pm list packages | tr -d '\r' | sed 's/package://' | grep -iE 'frameo'); do
+for paq in $($A shell pm list packages | tr -d '\r' | sed 's/package://' | grep -iE 'frameo|lieyan|photo|frame'); do
   mkdir -p "$DESTINO/apk/$paq"
   for ruta in $($A shell pm path "$paq" | tr -d '\r' | sed 's/package://'); do
     $A pull "$ruta" "$DESTINO/apk/$paq/" >/dev/null && echo "  copiado: $paq ($(basename "$ruta"))"
   done
+done
+# Con root: copia completa de los datos de Frameo (fotos y configuración), para poder volver atrás.
+for paq in $($A shell pm list packages | tr -d '\r' | sed 's/package://' | grep -iE 'frameo'); do
+  $A shell "su -c 'tar -czf /sdcard/backup-$paq.tgz -C /data/data $paq'" 2>/dev/null && \
+    $A pull "/sdcard/backup-$paq.tgz" "$DESTINO/" >/dev/null && \
+    $A shell "rm /sdcard/backup-$paq.tgz" && echo "  copiados los datos de $paq (fotos y ajustes)"
 done
 # Fotos que estén en la memoria del marco a la vista (Frameo guarda las suyas adentro de la app).
 $A shell 'ls -la /sdcard /sdcard/DCIM /sdcard/Pictures /sdcard/Frameo 2>/dev/null' > "$DESTINO/archivos-sdcard.txt"
