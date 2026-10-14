@@ -18,7 +18,7 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 | Classroom de Thi (tareas, entregas, avisos) | ✅ |
 | Avisos: mails importantes (turnos, cole, vencimientos) | ✅ con búsquedas de Gmail, sin IA |
 | Ubicación de Thi (OwnTracks) con avisos de llegada | ✅ |
-| Instalación en el marco por ADB, con backup de Frameo | pendiente |
+| Instalación en el marco por ADB, con backup de Frameo (ver marco/README.md) | ✅ |
 | Videos de Drive | ✅ en la compu · falta probar qué formatos reproduce el marco |
 
 ## Cómo se usa
