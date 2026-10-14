@@ -36,9 +36,7 @@ if [ "$IP" = "usb" ]; then
     exit 1
   fi
   A="adb -d"
-  # Dejar ADB por Wi-Fi prendido, así los pasos siguientes no necesitan el cable.
-  IPW=$($A shell ip -f inet addr show wlan0 2>/dev/null | tr -d '\r' | grep -o 'inet [0-9.]*' | cut -d' ' -f2)
-  $A tcpip 5555 >/dev/null 2>&1 && echo "ADB por Wi-Fi prendido. IP del marco: ${IPW:-no la encontré}"
+  POR_CABLE=1
 else
   echo "Conectando con $IP ..."
   adb connect "$IP:5555"
@@ -109,6 +107,13 @@ for paq in $($A shell pm list packages | tr -d '\r' | sed 's/package://' | grep 
 done
 # Fotos que estén en la memoria del marco a la vista (Frameo guarda las suyas adentro de la app).
 $A shell 'ls -la /sdcard /sdcard/DCIM /sdcard/Pictures /sdcard/Frameo 2>/dev/null' > "$DESTINO/archivos-sdcard.txt"
+
+# Por cable: al final (prenderlo corta la conexión USB), dejar ADB por Wi-Fi prendido
+# para que los pasos siguientes no necesiten el cable.
+if [ -n "$POR_CABLE" ]; then
+  IPW=$($A shell ip -f inet addr show wlan0 2>/dev/null | tr -d '\r' | grep -o 'inet [0-9.]*' | cut -d' ' -f2)
+  $A tcpip 5555 >/dev/null 2>&1 && echo "ADB por Wi-Fi prendido. IP del marco: ${IPW:-no la encontré}"
+fi
 
 echo
 echo "Listo. Mandale a Claude el contenido de: $INFO"
