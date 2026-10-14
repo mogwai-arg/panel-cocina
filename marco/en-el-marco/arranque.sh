@@ -35,6 +35,8 @@ fi
 anotar "ip $(ip -f inet addr show wlan0 2>/dev/null | grep -o 'inet [0-9.]*' | cut -d' ' -f2)"
 settings put global policy_control immersive.full=com.android.chrome
 settings put system screen_off_timeout 2147483647
+# Frameo deshabilitado (ver 4-instalar.sh); si una actualización lo volvió a habilitar, de nuevo.
+pm list packages -d 2>/dev/null | grep -q net.frameo.frame || { pm disable net.frameo.frame >/dev/null 2>&1; anotar "Frameo en pausa"; }
 
 abrir_panel() {
   input keyevent KEYCODE_WAKEUP
@@ -66,6 +68,12 @@ while true; do
     CUENTA=$((CUENTA + 1))
     if [ $CUENTA -ge 30 ]; then
       CUENTA=0
+      # Si Android cerró Chrome por falta de memoria, la ventana queda negra: abrirlo de nuevo.
+      if ! ps | grep -q 'com\.android\.chrome$'; then
+        anotar "Chrome estaba cerrado (falta de memoria?): abrir de nuevo"
+        abrir_panel
+        continue
+      fi
       case "$(adelante)" in
         *com.android.chrome*|*com.android.settings*|*packageinstaller*) ;;
         *) anotar "panel de nuevo adelante ($(adelante | sed 's/.* u0 //; s/ .*//'))"; abrir_panel ;;

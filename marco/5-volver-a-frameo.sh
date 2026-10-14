@@ -18,6 +18,7 @@ SU "rm -rf /system/su.d"
 SU "[ -f /data/local/panel/original/install-recovery.sh ] && cp /data/local/panel/original/install-recovery.sh /system/bin/install-recovery.sh"
 SU "mount -o remount,ro /system"
 SU "settings delete global policy_control"
+SU "pm enable net.frameo.frame" >/dev/null
 $A shell am force-stop com.android.chrome
 $A shell am start -n net.frameo.frame/.feature.slideshow.ui.AScreenSlidePager >/dev/null
 echo "Listo: el marco volvió a Frameo (y al reiniciar sigue en Frameo)."
