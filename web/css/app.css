@@ -67,7 +67,8 @@ html, body {
   stroke-linecap: round; stroke-linejoin: round;
 }
 .nav button[aria-current="page"] { background: var(--tinta); color: var(--papel); }
-.nav button:focus-visible { outline: 3px solid #2f5fd0; outline-offset: -3px; }
+/* Pantalla táctil: sin el borde azul de "foco" al tocar (la sección elegida ya queda en negro). */
+button:focus, button:focus-visible, label:focus-within { outline: none; }
 .nav__reloj {
   margin-top: auto;
   text-align: center;
