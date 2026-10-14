@@ -114,8 +114,39 @@ function recibirUbicacion_(quien, msg) {
     if (!r) return [];
     props.setProperty(clave, JSON.stringify(r.estado));
     if (r.cambio) avisarCambio_(quien, r.cambio, lugares, r.estado);
-    return []; // OwnTracks espera una lista (de comandos para el teléfono): ninguno
+    return comandosParaTelefono_(props, quien, lugares, new Date());
   });
+}
+
+/*
+ * OwnTracks acepta comandos en la respuesta. Le mandamos los lugares de la planilla como
+ * "regiones": iOS las vigila por su cuenta y despierta a OwnTracks al entrar o salir,
+ * aunque esté en segundo plano (más confiable y con menos batería que esperar a que se
+ * mueva). Se mandan cuando cambian los lugares, y una vez por semana por las dudas.
+ * (En OwnTracks tiene que estar prendido "Remote Control".)
+ */
+function comandosParaTelefono_(props, quien, lugares, ahora) {
+  if (!lugares.length) return [];
+  var firma = JSON.stringify(lugares.map(function (l) { return [l.nombre, l.lat, l.lon, l.radio]; }));
+  var clave = 'REGIONES_' + quien;
+  var previo = props.getProperty(clave) ? JSON.parse(props.getProperty(clave)) : {};
+  if (previo.firma === firma && ahora - new Date(previo.cuando) < 7 * 86400000) return [];
+  props.setProperty(clave, JSON.stringify({ firma: firma, cuando: ahora.toISOString() }));
+  return [regionesOwnTracks_(lugares, ahora)];
+}
+
+function regionesOwnTracks_(lugares, ahora) {
+  var tst = Math.floor(ahora.getTime() / 1000);
+  return {
+    _type: 'cmd',
+    action: 'setWaypoints',
+    waypoints: {
+      _type: 'waypoints',
+      waypoints: lugares.map(function (l, i) {
+        return { _type: 'waypoint', desc: l.nombre, lat: l.lat, lon: l.lon, rad: l.radio, tst: tst + i };
+      })
+    }
+  };
 }
 
 /* Aviso (push con ntfy y/o mail) cuando llega o se va de un lugar con "avisar" tildado. */
@@ -198,6 +229,8 @@ function probarUbicacion() {
       ' · ' + x.cuando + (x.bateria ? ' · batería ' + x.bateria + '%' : ''));
   });
   // Desde el editor getUrl() da la URL de prueba (/dev), que no sirve para OwnTracks.
+  var reg = PropertiesService.getScriptProperties().getProperty('REGIONES_Thi');
+  Logger.log(reg ? 'Regiones mandadas a OwnTracks: ' + JSON.parse(reg).cuando : 'Todavía no se mandaron las regiones a OwnTracks.');
   Logger.log('URL para OwnTracks: la APPS_SCRIPT_URL de tu config.js (termina en /exec) + ' +
     '?action=ubicacion&quien=Thi&token=<TU TOKEN>');
 }

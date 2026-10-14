@@ -66,3 +66,17 @@ test('ubicación en el panel: mosaico de OpenStreetMap', () => {
   assert.deepEqual([m.x, m.y], [11046, 19750]);
   assert.ok(m.px >= 0 && m.px < 256 && m.py >= 0 && m.py < 256);
 });
+
+test('ubicación: los lugares van a OwnTracks como regiones (cuando cambian o una vez por semana)', () => {
+  const guardado = {};
+  const props = { getProperty: (k) => guardado[k] || null, setProperty: (k, v) => { guardado[k] = v; } };
+  const ahora = new Date('2026-10-15T12:00:00Z');
+  const c1 = ctx.comandosParaTelefono_(props, 'Thi', lugares, ahora);
+  assert.equal(c1.length, 1);
+  assert.equal(c1[0].action, 'setWaypoints');
+  assert.deepEqual([...c1[0].waypoints.waypoints.map((w) => w.desc + ':' + w.rad)], ['Casa:150', 'Colegio:150']);
+  assert.equal(ctx.comandosParaTelefono_(props, 'Thi', lugares, new Date('2026-10-16T12:00:00Z')).length, 0);
+  assert.equal(ctx.comandosParaTelefono_(props, 'Thi', lugares, new Date('2026-10-23T12:00:00Z')).length, 1);
+  const otros = lugares.concat([{ nombre: 'Club', lat: -34.6, lon: -58.6, radio: 200 }]);
+  assert.equal(ctx.comandosParaTelefono_(props, 'Thi', otros, new Date('2026-10-23T13:00:00Z')).length, 1);
+});

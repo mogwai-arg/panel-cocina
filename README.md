@@ -212,6 +212,14 @@ un mail cuando llega o se va** de un lugar (como Findmykid, pero gratis).
 Con el teléfono quieto OwnTracks puede pasar horas sin mandar nada: el panel muestra el
 último dato y "hace cuánto".
 
+**Para que siga mandando sin abrirla** (iPhone):
+- No cerrarla deslizándola hacia arriba en el selector de apps: así iOS no la despierta más.
+- Ajustes del iPhone → OwnTracks → Ubicación **Siempre** y **Ubicación exacta**; y
+  **Actualización en segundo plano** activada (también en Ajustes → General).
+- Evitar el **modo Bajo consumo** (apaga la actualización en segundo plano).
+- En OwnTracks → Settings → **Remote Control** activado: el panel le manda los lugares de la
+  planilla como **regiones**, y iOS despierta a OwnTracks al entrar o salir de cada una.
+
 **Avisos al celular sin mail (ntfy, gratis):**
 1. Instalá **ntfy** en tu celular (App Store / Play Store) → **+** → suscribite a un tema con
    un nombre difícil de adivinar, por ejemplo `thi-casa-8k2p9x` (quien sepa el nombre ve los
