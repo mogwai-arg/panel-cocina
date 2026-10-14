@@ -4,3 +4,5 @@ node_modules/
 
 # Backups del marco (pueden tener la app y datos personales)
 marco/backup-*/
+marco/pantalla-negra-*
+marco/revision-*.txt

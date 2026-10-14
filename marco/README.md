@@ -50,3 +50,13 @@ para Android 6), copia el panel y lo abre.
 
 `bash marco/5-volver-a-frameo.sh IP` — saca el arranque automático y abre Frameo. Frameo nunca
 se desinstala; el backup de su app y sus datos quedó en `marco/backup-FECHA/`.
+
+## Si la pantalla queda negra y no responde
+
+```
+bash marco/7-pantalla-negra.sh 192.168.68.114
+```
+
+Guarda un informe (`marco/pantalla-negra-FECHA.txt`) y una captura de lo que Chrome está
+dibujando, y después vuelve a abrir el panel. Si no conecta: desenchufar y volver a enchufar
+el marco (al prender abre el panel solo). Los últimos errores del panel se ven al pie de ⚙️ Ajustes.

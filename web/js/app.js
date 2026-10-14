@@ -116,7 +116,12 @@
           return fotos.recargar().then(function (n) { return n + ' fotos y videos'; });
         }
       },
-      info: function () { return 'Fotos y videos en la presentación: ' + fotos.cantidad() + '.'; }
+      info: function () {
+        var errores = [];
+        try { errores = JSON.parse(localStorage.getItem('panel-errores') || '[]'); } catch (e) { /* nada */ }
+        return 'Fotos y videos en la presentación: ' + fotos.cantidad() + '. Abierto desde ' + abiertoDesde + '.' +
+          (errores.length ? ' Últimos errores: ' + errores.slice(-3).join(' · ') : '');
+      }
     }),
     avisos: VistaAvisos.crearAvisos(document.getElementById('vista-avisos'), fuente, {
       alCambiar: function (d) {
@@ -142,6 +147,7 @@
   });
 
   var vistaActual = null;
+  var abiertoDesde = new Date().toTimeString().slice(0, 5) + ' del ' + new Date().getDate() + '/' + (new Date().getMonth() + 1);
   function irA(vista) {
     if (vista === vistaActual) return;
     vistaActual = vista;
@@ -219,13 +225,18 @@
     temporizador = setTimeout(function () {
       if (vistaActual === 'ajustes') return;
       // En la mañana de cole el panel se queda en Hoy (no pasa a las fotos).
-      if (hoy.enManana()) { irA('hoy'); return; }
+      if (mananaActiva()) { irA('hoy'); return; }
       irA('fotos');
     }, minutos * 60000);
     ultimaActividad = Date.now();
     // Si alguien toca mientras se muestra el panel automático, se queda en el panel.
     if (panelAutomatico) { panelAutomatico = false; clearTimeout(vueltaAFotos); }
     revisarDescanso();
+  }
+
+  // Un error en la mañana de cole nunca tiene que dejar la pantalla trabada.
+  function mananaActiva() {
+    try { return hoy.enManana(); } catch (e) { console.error(e); return false; }
   }
 
   // Ajustes que se cambian desde la pantalla (⚙️): ver js/ajustes.js y js/vista-ajustes.js.
@@ -256,7 +267,7 @@
   var vueltaAFotos = null;
   var panelAutomatico = false;
   setInterval(function () {
-    if (vistaActual === 'fotos' && hoy.enManana() && Date.now() - ultimaActividad > 120000) { irA('hoy'); return; }
+    if (vistaActual === 'fotos' && mananaActiva() && Date.now() - ultimaActividad > 120000) { irA('hoy'); return; }
     if (!ajustes.valor('alternar') || vistaActual !== 'fotos' || estadoDescanso !== 'activo') return;
     if (!Descanso.tocaPanel(Date.now(), enFotosDesde, ultimaActividad, { cadaMinutos: ajustes.valor('alternarCada') })) return;
     panelAutomatico = true;
@@ -275,7 +286,7 @@
     if (!capaDescanso) return;
     var nuevo = Descanso.estado(new Date(), ultimaActividad, configDescanso(), haySensor && ajustes.valor('sensor'));
     // En la mañana de cole la pantalla queda prendida.
-    if (hoy.enManana()) nuevo = 'activo';
+    if (mananaActiva()) nuevo = 'activo';
     if (nuevo === estadoDescanso) return;
     estadoDescanso = nuevo;
     capaDescanso.hidden = nuevo === 'activo';
@@ -300,7 +311,12 @@
       capaDescanso.addEventListener(t, function (e) {
         e.preventDefault();
         e.stopPropagation();
-        if (t === 'pointerdown') actividad();
+        if (t !== 'pointerdown') return;
+        // Primero se saca la capa negra (pase lo que pase después) y recién ahí se avisa.
+        capaDescanso.hidden = true;
+        estadoDescanso = 'activo';
+        ultimaActividad = Date.now();
+        actividad();
       });
     });
   }
@@ -311,6 +327,16 @@
     revisarDescanso();
   };
   setInterval(revisarDescanso, 30000);
+
+  // Una vez por día, de madrugada y sin nadie usándolo, el panel se recarga: el marco tiene
+  // poca memoria y así arranca limpio cada día.
+  var cargadoEl = new Date().toDateString();
+  setInterval(function () {
+    var ahora = new Date();
+    if (ahora.toDateString() === cargadoEl || ahora.getHours() !== 4) return;
+    if (Date.now() - ultimaActividad < 30 * 60000) return;
+    location.reload();
+  }, 5 * 60000);
   ['pointerdown', 'keydown'].forEach(function (ev) {
     document.addEventListener(ev, actividad, { passive: true });
   });

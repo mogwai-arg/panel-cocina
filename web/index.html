@@ -68,7 +68,20 @@
     // Si config.js tiene un error de escritura, se anota para mostrarlo en pantalla.
     window.addEventListener('error', function (e) {
       if (e.filename && /config\.js/.test(e.filename)) window.ERROR_CONFIG = e.message + ' (línea ' + e.lineno + ')';
+      anotarError(e.message + ' — ' + String(e.filename || '').split('/').pop() + ':' + e.lineno);
     });
+    window.addEventListener('unhandledrejection', function (e) {
+      anotarError('Promesa: ' + ((e.reason && e.reason.message) || e.reason));
+    });
+    // Los últimos errores quedan guardados y se ven al pie de Ajustes (para saber qué pasó).
+    function anotarError(texto) {
+      try {
+        var l = JSON.parse(localStorage.getItem('panel-errores') || '[]');
+        var d = new Date();
+        l.push(d.getDate() + '/' + (d.getMonth() + 1) + ' ' + d.toTimeString().slice(0, 5) + ' ' + String(texto).slice(0, 200));
+        localStorage.setItem('panel-errores', JSON.stringify(l.slice(-10)));
+      } catch (err) { /* sin almacenamiento */ }
+    }
   </script>
   <script src="config.js" onerror="window.CONFIG = null"></script>
   <script src="js/layout.js"></script>
