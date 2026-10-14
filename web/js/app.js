@@ -160,6 +160,25 @@
     else irA('hoy');
   });
   vistaFotos.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  // En el marco (index.html?marco=1):
+  //  - el primer toque pone la pantalla completa (Chrome no deja hacerlo sin un toque);
+  //  - el sensor de movimiento llega como la tecla F12 (la manda marco/movimiento.sh).
+  //    No cuenta como "tocar": no saca de las fotos, solo despierta o atenúa la pantalla.
+  if (params.get('marco') === '1') {
+    window.addEventListener('pointerdown', function () {
+      var raiz = document.documentElement;
+      if (!document.fullscreenElement && raiz.requestFullscreen) {
+        raiz.requestFullscreen({ navigationUI: 'hide' }).catch(function () { /* nada */ });
+      }
+    }, true);
+  }
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'F12' && e.keyCode !== 123) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    window.panelMovimiento();
+  }, true);
+
   document.addEventListener('keydown', function (e) {
     if (vistaActual !== 'fotos') return;
     if (e.key === 'ArrowRight') fotos.siguiente();
