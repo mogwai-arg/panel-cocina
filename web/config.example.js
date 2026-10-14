@@ -28,6 +28,8 @@ window.CONFIG = {
   // Alternar: con fotos un rato, muestra el panel Hoy unos segundos y vuelve a las fotos.
   // También se prende/apaga desde la pantalla (tocando la hora de la barra lateral).
   ALTERNAR: { activo: true, cadaMinutos: 10, segundosPanel: 30 },
+  // Tema oscuro de noche (también se prende/apaga desde Ajustes). false = nunca.
+  TEMA_OSCURO: { desde: '19:30', hasta: '07:00' },
   // Descanso de la pantalla: de noche queda negra ('apagado') o tenue ('tenue'); al tocarla
   // se despierta 5 minutos. Con el sensor de movimiento conectado, de día se atenúa si no
   // pasa nadie en 20 minutos. Para no usar el horario nocturno: noche: false

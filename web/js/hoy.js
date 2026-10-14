@@ -46,7 +46,8 @@
     var basquetConfig = opciones.basquet || {};
 
     contenedor.innerHTML =
-      '<div class="reloj"><b data-r="hora"></b><div><span data-r="dia"></span><span data-r="fecha"></span></div></div>' +
+      '<div class="reloj"><b data-r="hora"></b><div><span data-r="dia"></span><span data-r="fecha"></span></div>' +
+      '<p class="saludo" data-r="saludo"></p></div>' +
       '<div class="clima" data-r="clima"></div>' +
       '<div class="quienes" data-r="quienes"></div>' +
       '<button class="recuerdo" data-r="recuerdo" aria-label="Ver fotos"></button>' +
@@ -70,6 +71,15 @@
       parte('hora').textContent = Agenda.hora(ahora);
       parte('dia').textContent = DIAS[ahora.getDay()];
       parte('fecha').textContent = ahora.getDate() + ' de ' + MESES[ahora.getMonth()];
+      parte('saludo').textContent = saludo(ahora);
+    }
+
+    // "Buen día. Esto es lo de hoy." / "Buenas noches. Esto es lo de mañana."
+    function saludo(ahora) {
+      var m = ahora.getHours() * 60 + ahora.getMinutes();
+      if (m >= 5 * 60 && m < 12 * 60) return 'Buen día. Esto es lo de hoy.';
+      if (m < 19 * 60 + 30 && m >= 12 * 60) return 'Buenas tardes. Esto es lo de hoy.';
+      return 'Buenas noches. Esto es lo de mañana.';
     }
 
     function pintarClima(c) {

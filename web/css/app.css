@@ -6,6 +6,8 @@
   --papel: #f5f4f0;
   --tarjeta: #ffffff;
   --ambar: #f2b53a;
+  --sobre-tinta: #ffffff;  /* texto sobre fondo "tinta" (botones elegidos, etc.) */
+  --texto2: #3d3b37;       /* texto secundario de párrafos */
   --serif: "Newsreader", Georgia, "Times New Roman", serif;
   --rotulo: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --texto: "Figtree", "Segoe UI", system-ui, sans-serif;
@@ -234,7 +236,7 @@ html, body {
 /* Aviso abajo, con Deshacer */
 .aviso {
   position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 8;
-  background: var(--tinta); color: #fff; border-radius: 12px; padding: 14px 18px;
+  background: var(--tinta); color: var(--sobre-tinta); border-radius: 12px; padding: 14px 18px;
   display: flex; gap: 20px; align-items: center; font: 600 16px var(--texto);
   max-width: 900px; box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
 }
@@ -248,10 +250,10 @@ html, body {
 .listas__vacio { font: italic 400 22px var(--serif); color: var(--suave); }
 .seg { display: flex; gap: 4px; }
 .seg button { all: unset; cursor: pointer; font: 800 14px var(--rotulo); letter-spacing: .1em; padding: 12px 20px; border-radius: 99px; }
-.seg button[aria-pressed="true"] { background: var(--tinta); color: #fff; }
+.seg button[aria-pressed="true"] { background: var(--tinta); color: var(--sobre-tinta); }
 
 .caja { width: 40px; height: 40px; border-radius: 10px; border: 2px solid #cfccc3; display: grid; place-items: center; flex: none; background: var(--tarjeta); }
-.caja svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 3; opacity: 0; }
+.caja svg { width: 22px; height: 22px; stroke: var(--sobre-tinta); fill: none; stroke-width: 3; opacity: 0; }
 
 .personas { display: grid; gap: 14px; height: 640px; }
 .persona { background: var(--tarjeta); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
@@ -286,14 +288,14 @@ html, body {
 .agregar { display: flex; border: 4px solid var(--tinta); border-radius: 14px; overflow: hidden; background: var(--tarjeta); }
 .agregar input { all: unset; flex: 1; min-width: 0; padding: 16px; font: 400 20px var(--texto); }
 .agregar input::placeholder { color: var(--suave); }
-.agregar button { all: unset; cursor: pointer; padding: 0 16px; background: var(--tinta); color: #fff; font: 800 13px var(--rotulo); letter-spacing: .1em; text-transform: uppercase; }
+.agregar button { all: unset; cursor: pointer; padding: 0 16px; background: var(--tinta); color: var(--sobre-tinta); font: 800 13px var(--rotulo); letter-spacing: .1em; text-transform: uppercase; }
 .habituales { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; overflow-y: auto; }
 .habitual { all: unset; cursor: pointer; height: 84px; box-sizing: border-box; border-radius: 10px; padding: 10px; background: var(--tarjeta);
   display: flex; flex-direction: column; justify-content: space-between; }
 .habitual b { font: 800 13px var(--rotulo); letter-spacing: .04em; text-transform: uppercase; }
 .habitual small { font: 600 11px var(--rotulo); color: var(--suave); }
-.habitual--en-lista { background: var(--tinta); color: #fff; }
-.habitual--en-lista small { color: #fff; }
+.habitual--en-lista { background: var(--tinta); color: var(--sobre-tinta); }
+.habitual--en-lista small { color: var(--sobre-tinta); }
 
 /* ===== COLE ===== */
 .cole { padding: 24px 30px; display: grid; grid-template-columns: 1fr 340px; grid-template-rows: minmax(0, 1fr); gap: 28px; }
@@ -306,7 +308,7 @@ html, body {
 .comunicado--nuevo .comunicado__titulo { font-weight: 800; }
 .comunicado__fecha { flex: none; font: 600 13px var(--rotulo); color: var(--suave); }
 .comunicado__de { display: block; margin-top: 2px; font: 600 13px var(--rotulo); color: var(--suave); }
-.comunicado__resumen { margin: 6px 0 0; font-size: 15px; color: #3d3b37; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.comunicado__resumen { margin: 6px 0 0; font-size: 15px; color: var(--texto2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .comunicado__texto { margin: 10px 0 0; font-size: 16px; line-height: 1.45; white-space: pre-line; }
 .comunicado__nota { display: block; margin-top: 8px; font-size: 13px; color: var(--suave); font-style: italic; }
 .comunicado--abierto { box-shadow: inset 0 0 0 2px var(--tinta); }
@@ -343,8 +345,8 @@ html, body {
 .nota span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nota--alta b { background: #2e7d4f; color: #fff; }
 .nota--baja b { background: #c4453a; color: #fff; }
-.nota--final { background: var(--tinta); color: #fff; }
-.nota--final b { background: #fff; color: var(--tinta); }
+.nota--final { background: var(--tinta); color: var(--sobre-tinta); }
+.nota--final b { background: var(--sobre-tinta); color: var(--tinta); }
 .aliento { margin: 0 0 4px; padding: 12px 16px; border-radius: 12px; font: 600 17px var(--texto); }
 .aliento--bien { background: #e3f1e8; color: #1f5c39; }
 .aliento--atencion { background: #fbeadf; color: #8a3f14; }
@@ -431,7 +433,7 @@ small.quien__alerta { color: #c4453a; }
 .interruptor input:checked + span { background: #2e7d4f; }
 .interruptor input:checked + span::after { left: 25px; }
 .interruptor small { display: block; font: 500 13px var(--texto); color: var(--suave); }
-.ajustes__cerrar { align-self: flex-end; border: 0; border-radius: 99px; padding: 10px 22px; background: var(--tinta); color: #fff; font: 800 14px var(--rotulo); letter-spacing: .08em; cursor: pointer; }
+.ajustes__cerrar { align-self: flex-end; border: 0; border-radius: 99px; padding: 10px 22px; background: var(--tinta); color: var(--sobre-tinta); font: 800 14px var(--rotulo); letter-spacing: .08em; cursor: pointer; }
 
 /* Agentes */
 .registro { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 8px; }
@@ -443,6 +445,31 @@ small.quien__alerta { color: #c4453a; }
 .registro__texto { font-size: 15px; line-height: 1.35; }
 .agente__cab { display: flex; gap: 10px; align-items: center; font: 600 17px var(--texto); }
 .agente__icono { font-size: 20px; }
-.agente__texto { margin: 0; font-size: 14px; line-height: 1.4; color: #3d3b37; }
+.agente__texto { margin: 0; font-size: 14px; line-height: 1.4; color: var(--texto2); }
 .agente__estado { font: 800 12px var(--rotulo); letter-spacing: .04em; color: #2e7d4f; }
 .agente--apagado .agente__estado { color: var(--suave); }
+
+/* Saludo según la hora (debajo de la fecha, en Hoy) */
+.saludo { margin: 6px 0 0; font: italic 400 20px/1.2 var(--serif); color: var(--suave); }
+
+/* Tema oscuro de noche: misma pantalla, colores invertidos y suaves para la cocina a oscuras. */
+.pantalla[data-tema="noche"] {
+  --tinta: #ecebe6;
+  --suave: #9b988f;
+  --linea: #2e2f35;
+  --papel: #111214;
+  --tarjeta: #1c1d21;
+  --sobre-tinta: #141414;
+  --texto2: #c9c6be;
+}
+.pantalla[data-tema="noche"] .saludo { color: #e9c37a; }
+.pantalla[data-tema="noche"] .proximo { background: #3a2f17; color: #f3e6c8; }
+.pantalla[data-tema="noche"] .proximo .lbl { color: #e9c37a; }
+.pantalla[data-tema="noche"] .proximo--vacio { background: var(--tarjeta); }
+.pantalla[data-tema="noche"] .escudo { border-color: #2a2b30; background: #f5f4f0; }
+.pantalla[data-tema="noche"] .quien__av { background: transparent; }
+.pantalla[data-tema="noche"] .donde__mapa, .pantalla[data-tema="noche"] .evt { color: var(--tinta); }
+
+/* Cole: las pestañas van debajo del título (son 4 y no entran al lado). */
+.cole:not(.avisos):not(.agentes) .listas__cab { flex-direction: column; align-items: flex-start; gap: 10px; }
+.listas__titulo small { white-space: nowrap; }

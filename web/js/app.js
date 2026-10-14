@@ -188,7 +188,8 @@
     try { guardados = JSON.parse(localStorage.getItem('panel-ajustes') || '{}') || {}; } catch (e) { /* nada */ }
     return {
       alternar: guardados.alternar !== undefined ? guardados.alternar : alternarCfg.activo !== false,
-      noche: guardados.noche !== undefined ? guardados.noche : !(config.DESCANSO && config.DESCANSO.noche === false)
+      noche: guardados.noche !== undefined ? guardados.noche : !(config.DESCANSO && config.DESCANSO.noche === false),
+      oscuro: guardados.oscuro !== undefined ? guardados.oscuro : !(config.TEMA_OSCURO === false)
     };
   })();
   function guardarAjustes() {
@@ -200,12 +201,23 @@
     return c;
   }
 
+  // Tema oscuro: de noche la pantalla pasa a colores oscuros (antes del apagado y si la despiertan).
+  var temaOscuro = Object.assign({ desde: '19:30', hasta: '07:00' }, config.TEMA_OSCURO || {});
+  function revisarTema() {
+    var oscuro = ajustes.oscuro && Descanso.esDeNoche(new Date(), temaOscuro);
+    if (oscuro) pantalla.setAttribute('data-tema', 'noche'); else pantalla.removeAttribute('data-tema');
+  }
+  revisarTema();
+  setInterval(revisarTema, 60000);
+
   var panelAjustes = document.getElementById('ajustes');
   function pintarAjustes() {
     panelAjustes.querySelectorAll('[data-ajuste]').forEach(function (i) { i.checked = !!ajustes[i.getAttribute('data-ajuste')]; });
     var n = Descanso.configuracion(config.DESCANSO).noche || { desde: '23:00', hasta: '07:00' };
     panelAjustes.querySelector('[data-r="alternar-detalle"]').textContent =
       'Cada ' + alternarCfg.cadaMinutos + ' min de fotos, el panel ' + alternarCfg.segundosPanel + ' s y vuelve a las fotos';
+    panelAjustes.querySelector('[data-r="oscuro-detalle"]').textContent =
+      'De ' + temaOscuro.desde + ' a ' + temaOscuro.hasta + ', colores oscuros que no encandilan';
     panelAjustes.querySelector('[data-r="noche-detalle"]').textContent =
       'De ' + n.desde + ' a ' + n.hasta + ' la pantalla queda ' + (n.modo === 'tenue' ? 'tenue' : 'negra');
   }
@@ -217,6 +229,7 @@
       guardarAjustes();
       estadoDescanso = null; // recalcular ya
       revisarDescanso();
+      revisarTema();
     });
   });
 
