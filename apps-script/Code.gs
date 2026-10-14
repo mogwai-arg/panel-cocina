@@ -32,7 +32,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-14.2';
+var VERSION = '2026-10-14.3';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -172,6 +172,7 @@ function listarFotos_() {
 
   aplicarGiros_(props, sinGiro, SEGUNDOS_GIROS_POR_LISTA);
   aplicarGirosManuales_(props, fotos);
+  guardarDatosFotos_();
 
   guardarCacheGrande_(cache, 'lista', fotos, MINUTOS_CACHE_LISTA * 60);
   return fotos;
@@ -181,7 +182,7 @@ function listarFotos_() {
  * Algunas fotos del iPhone (HEIC) guardan el giro de una forma que Drive no lee:
  * Drive dice "sin giro" y su miniatura sale acostada o boca abajo. Para esas se lee
  * el comienzo del archivo y se manda `girar` (grados, sentido horario): el panel
- * gira la miniatura antes de mostrarla. El resultado queda guardado (gir_<id>).
+ * gira la miniatura antes de mostrarla. El resultado queda guardado (gir_<id>, ver DatosFotos.gs).
  */
 var PUEDE_TENER_GIRO_ = /^image\/(heic|heif|jpeg)/;
 var SEGUNDOS_GIROS_POR_LISTA = 10;
@@ -189,15 +190,14 @@ var SEGUNDOS_GIROS_POR_LISTA = 10;
 function aplicarGiros_(props, fotos, segundos) {
   var hasta = Date.now() + segundos * 1000;
   var pendientes = 0;
-  var guardados = props.getProperties();
   fotos.forEach(function (foto) {
-    var g = guardados['gir_' + foto.id];
+    var g = datoFoto_('gir_' + foto.id);
     if (g === undefined || g === null) {
       if (Date.now() > hasta) { pendientes++; return; }
       g = leerGiro_(foto.id);
       if ((g === 90 || g === 270) && miniaturaYaGirada_(foto)) g = 0;
       g = String(g);
-      props.setProperty('gir_' + foto.id, g);
+      guardarDatoFoto_('gir_' + foto.id, g);
     }
     g = Number(g);
     if (!g) return;
@@ -217,17 +217,16 @@ function aplicarGiros_(props, fotos, segundos) {
 function girarFoto_(id, grados) {
   if (!id) throw new Error('Falta el id de la foto');
   if (grados % 90) throw new Error('Los grados tienen que ser múltiplo de 90');
-  var props = PropertiesService.getScriptProperties();
-  var total = (((Number(props.getProperty('man_' + id)) || 0) + grados) % 360 + 360) % 360;
-  if (total) props.setProperty('man_' + id, String(total)); else props.deleteProperty('man_' + id);
+  var total = (((Number(datoFoto_('man_' + id)) || 0) + grados) % 360 + 360) % 360;
+  guardarDatoFoto_('man_' + id, total ? String(total) : null);
+  guardarDatosFotos_();
   CacheService.getScriptCache().remove('lista_n');
   return { id: id, manual: total };
 }
 
 function aplicarGirosManuales_(props, fotos) {
-  var guardados = props.getProperties();
   fotos.forEach(function (foto) {
-    var m = Number(guardados['man_' + foto.id]) || 0;
+    var m = Number(datoFoto_('man_' + foto.id)) || 0;
     if (!m || foto.video) return;
     foto.girar = ((foto.girar || 0) + m) % 360;
     if (!foto.girar) delete foto.girar;
@@ -354,6 +353,7 @@ function revisarGiros() {
   ultimoResumen_ = null;
   var fotos = listarFotosSinGiros_();
   var pendientes = aplicarGiros_(props, fotos, 300);
+  guardarDatosFotos_();
   var giradas = fotos.filter(function (f) { return f.girar; });
   Logger.log('Fotos revisadas: ' + (fotos.length - pendientes) + ' de ' + fotos.length +
     '. Con giro que Drive no informa: ' + giradas.length +
@@ -455,7 +455,7 @@ function totalDeRango_(rango) {
 }
 
 function tamanoGuardado_(props, id) {
-  var v = props.getProperty('tam_' + id);
+  var v = datoFoto_('tam_' + id);
   if (!v) return null;
   var p = v.split('x');
   return { ancho: Number(p[0]), alto: Number(p[1]) };
@@ -472,7 +472,7 @@ function medirMiniatura_(props, id) {
     });
     if (resp.getResponseCode() !== 200) return null;
     var t = tamanoImagen_(resp.getContent());
-    if (t) props.setProperty('tam_' + id, t.ancho + 'x' + t.alto);
+    if (t) guardarDatoFoto_('tam_' + id, t.ancho + 'x' + t.alto);
     return t;
   } catch (e) {
     return null;

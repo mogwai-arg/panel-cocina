@@ -8,6 +8,7 @@ const vm = require('node:vm');
 const contexto = {};
 vm.createContext(contexto);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../apps-script/Code.gs'), 'utf8'), contexto);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../apps-script/DatosFotos.gs'), 'utf8'), contexto);
 
 // Apps Script entrega los bytes como enteros con signo (-128..127).
 function bytes(nombre) {
@@ -149,7 +150,8 @@ test('giro: orientación EXIF de un JPG', () => {
 });
 
 test('giro manual: suma al giro y da vuelta ancho y alto', () => {
-  const props = { getProperties: () => ({ man_a: '90', man_b: '180' }) };
+  const props = null;
+  contexto.DATOS_FOTOS_ = { man_a: '90', man_b: '180' }; // datos de fotos ya cargados (hoja "Datos de fotos")
   const fotos = [{ id: 'a', ancho: 800, alto: 600 }, { id: 'b', ancho: 800, alto: 600, girar: 180 }, { id: 'c', ancho: 1, alto: 2 }];
   contexto.aplicarGirosManuales_(props, fotos);
   assert.deepEqual([fotos[0].girar, fotos[0].ancho, fotos[0].alto], [90, 600, 800]);
