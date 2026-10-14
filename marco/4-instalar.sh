@@ -39,8 +39,13 @@ SU "setprop persist.adb.tcp.port 5555"
 SU "kill \$(cat /data/local/panel/pid 2>/dev/null) 2>/dev/null; rm -f /data/local/panel/pid"
 $A shell "su -c 'setsid nohup /system/bin/sh /data/local/panel/arranque.sh > /dev/null 2>&1 &'" &
 sleep 3
-$A shell "su -c 'am start -n com.android.chrome/com.google.android.apps.chrome.Main -a android.intent.action.VIEW -d file:///sdcard/panel/index.html?marco=1'" >/dev/null
+# Cerrar las pestañas de antes (cada apertura vieja dejó una) y abrir el panel en una sola.
+$A shell am force-stop com.android.chrome
+SU "rm -rf /data/data/com.android.chrome/app_tabs"
+$A shell "am start -n com.android.chrome/com.google.android.apps.chrome.Main -a android.intent.action.VIEW -d file:///sdcard/panel/index.html?marco=1 --es com.android.browser.application_id panel-cocina --ez create_new_tab false" >/dev/null
+sleep 10
+$A shell input tap 760 40
 echo
-echo "Listo. En el marco: tocá la pantalla una vez para que quede a pantalla completa."
+echo "Listo: el panel tiene que quedar a pantalla completa solo (el marco se toca a sí mismo)."
 echo "Para probar el arranque: apagá y prendé el marco; en ~1 minuto tiene que aparecer el panel."
 echo "Registro de lo que hace el marco:  $A shell su -c 'cat /data/local/panel/registro.log'"

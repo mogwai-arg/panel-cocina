@@ -31,7 +31,13 @@ settings put system screen_off_timeout 2147483647
 
 abrir_panel() {
   input keyevent KEYCODE_WAKEUP
-  am start -n $CHROME -a android.intent.action.VIEW -d "$URL" > /dev/null 2>&1
+  # application_id: Chrome reutiliza siempre la misma pestaña (no abre una nueva cada vez).
+  am start -n $CHROME -a android.intent.action.VIEW -d "$URL" \
+    --es com.android.browser.application_id panel-cocina --ez create_new_tab false > /dev/null 2>&1
+  # Chrome solo deja la pantalla completa después de un toque: el marco se toca solo,
+  # arriba al medio (sobre el clima, donde no hay botones).
+  sleep 10
+  input tap 760 40
 }
 
 adelante() { dumpsys activity activities 2>/dev/null | grep -m1 mResumedActivity; }
