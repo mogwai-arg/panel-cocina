@@ -165,12 +165,16 @@
   //  - el sensor de movimiento llega como la tecla F12 (la manda marco/movimiento.sh).
   //    No cuenta como "tocar": no saca de las fotos, solo despierta o atenúa la pantalla.
   if (params.get('marco') === '1') {
-    window.addEventListener('pointerdown', function () {
+    // En pantallas táctiles Chrome solo acepta pedirla al levantar el dedo (pointerup/click),
+    // no al apoyarlo.
+    var pedirPantallaCompleta = function () {
       var raiz = document.documentElement;
       if (!document.fullscreenElement && raiz.requestFullscreen) {
         raiz.requestFullscreen({ navigationUI: 'hide' }).catch(function () { /* nada */ });
       }
-    }, true);
+    };
+    window.addEventListener('pointerup', pedirPantallaCompleta, true);
+    window.addEventListener('click', pedirPantallaCompleta, true);
   }
   window.addEventListener('keydown', function (e) {
     if (e.key !== 'F12' && e.keyCode !== 123) return;
