@@ -94,3 +94,15 @@ test('mañana: tareas de la mañana de la persona', () => {
   assert.deepEqual(Manana.tareasDeLaManana(tareas, 'Thi', lunes(7, 0), Listas.tocaHoy).map((t) => t.tarea), ['Cama']);
   assert.deepEqual(Manana.tareasDeLaManana(tareas, 'Thi', new Date(2026, 9, 13, 7, 0), Listas.tocaHoy).map((t) => t.tarea), ['Cama', 'Mochila']);
 });
+
+test('mañana: ícono de cada tarea y premio', () => {
+  assert.equal(Manana.iconoDeTarea('Lavarse los dientes'), 'dientes');
+  assert.equal(Manana.iconoDeTarea('Desayunar y lavar la taza'), 'desayuno');
+  assert.equal(Manana.iconoDeTarea('Preparar la MOCHILA'), 'mochila');
+  assert.equal(Manana.iconoDeTarea('Tomar el remedio'), 'remedio');
+  assert.equal(Manana.iconoDeTarea('Algo raro'), 'estrella');
+  const p = Manana.premio([{ estrellas: 2, hecha: true }, { estrellas: 0, hecha: false }, { estrellas: 3, hecha: true }], 5);
+  assert.deepEqual(p, { puntos: 5, total: 6, minutos: 25, minutosTotal: 30, completa: false });
+  assert.equal(Manana.premio([{ estrellas: 1, hecha: true }], 0).completa, true);
+  assert.equal(Manana.premio([], 5).completa, false);
+});

@@ -83,12 +83,13 @@
     var lluvia = Math.max.apply(null, manana.map(function (h) { return h.lluvia || 0; }));
     var maxima = Math.max(clima.max || -99, Math.max.apply(null, manana.map(function (h) { return h.temp; })));
     var lista = [];
-    if (lluvia >= 50) lista.push({ icono: '☔', texto: 'Llevá paraguas o campera de lluvia' });
-    else if (lluvia >= 30) lista.push({ icono: '🌂', texto: 'Puede llover: paraguas chico por las dudas' });
-    if (alSalir <= 10) lista.push({ icono: '🧣', texto: 'Hace frío al salir: ' + alSalir + '°. Bien abrigado' });
-    else if (alSalir <= 15) lista.push({ icono: '🧥', texto: 'Fresco al salir: ' + alSalir + '°. Llevá campera' });
-    if (maxima >= 28) lista.push({ icono: '💧', texto: 'Llega a ' + maxima + '°: llevá agua' });
-    if (!lista.length) lista.push({ icono: '🙂', texto: alSalir + '° al salir. Lindo para ir' });
+    if (lluvia >= 50) lista.push({ icono: 'paraguas', texto: 'Llevá paraguas o campera de lluvia' });
+    else if (lluvia >= 30) lista.push({ icono: 'paraguas', texto: 'Puede llover: paraguas chico por las dudas' });
+    if (alSalir <= 10) lista.push({ icono: 'abrigo', texto: 'Hace frío al salir: ' + alSalir + '°. Bien abrigado' });
+    else if (alSalir <= 15) lista.push({ icono: 'abrigo', texto: 'Fresco al salir: ' + alSalir + '°. Llevá campera' });
+    if (maxima >= 28) lista.push({ icono: 'agua', texto: 'Llega a ' + maxima + '°: llevá agua' });
+    if (clima.uvMax >= 6) lista.push({ icono: 'sol', texto: 'UV ' + clima.uvMax + ' al mediodía: protector y gorra' });
+    if (!lista.length) lista.push({ icono: 'ok', texto: alSalir + '° al salir. Lindo para ir' });
     return lista;
   }
 
@@ -128,7 +129,44 @@
     });
   }
 
+  /* Ícono para una tarea de la mañana, según lo que dice (para el camino de la búsqueda). */
+  var ICONOS_TAREA = [
+    ['despertador', /levant|despert|alarma/],
+    ['cama', /cama/],
+    ['desayuno', /desayun|taza|comer|leche|merienda/],
+    ['dientes', /diente|cepill/],
+    ['ropa', /vest|uniforme|ropa|cambiar|zapat/],
+    ['mochila', /mochila|bolso|vianda|util|cartuchera|carpeta/],
+    ['remedio', /remedio|pastilla|medic|tratamiento|gotas|inhal/],
+    ['ducha', /duch|bañ|lavar la cara|cara/],
+    ['pelo', /pein|pelo/],
+    ['mascota', /perro|gato|mascota|pez|peces/],
+    ['corazon', /herman|ayud|calma|portar|abraz/]
+  ];
+  function iconoDeTarea(texto) {
+    var t = String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    for (var i = 0; i < ICONOS_TAREA.length; i++) if (ICONOS_TAREA[i][1].test(t)) return ICONOS_TAREA[i][0];
+    return 'estrella';
+  }
+
+  /*
+   * Puntos y premio de la búsqueda de la mañana: cada tarea vale sus estrellas (mínimo 1)
+   * y cada estrella, `minutosPorEstrella` minutos de premio.
+   */
+  function premio(tareas, minutosPorEstrella) {
+    var total = 0, ganados = 0;
+    (tareas || []).forEach(function (t) {
+      var p = Math.max(1, Number(t.estrellas) || 0);
+      total += p;
+      if (t.hecha) ganados += p;
+    });
+    var m = Number(minutosPorEstrella) || 0;
+    return { puntos: ganados, total: total, minutos: ganados * m, minutosTotal: total * m,
+      completa: !!(tareas && tareas.length) && ganados === total };
+  }
+
   var api = {
+    iconoDeTarea: iconoDeTarea, premio: premio,
     clasesDelDia: clasesDelDia, hayCole: hayCole, plan: plan, cuentaRegresiva: cuentaRegresiva,
     consejosClima: consejosClima, paraHoy: paraHoy, tareasDeLaManana: tareasDeLaManana,
     diaIso: diaIso, MINUTOS_DESPUES: MINUTOS_DESPUES

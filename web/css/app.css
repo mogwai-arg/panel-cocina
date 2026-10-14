@@ -253,11 +253,17 @@ button:focus, button:focus-visible, label:focus-within { outline: none; }
 .dias__clima { font: 600 12px var(--rotulo); color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Tareas que faltan en este momento del día (chips debajo de la agenda) */
-.pendientes-hoy { grid-column: 1 / 3; display: flex; align-items: center; gap: 8px; overflow: hidden; }
+.pie-hoy { grid-column: 1 / 3; display: flex; align-items: center; gap: 12px; min-width: 0; }
+.pendientes-hoy { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; overflow: hidden; }
+.rapidos { display: flex; gap: 8px; margin-left: auto; flex: none; }
+.rapido { all: unset; cursor: pointer; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--tinta); }
+.rapido .ic { stroke: var(--sobre-tinta); }
+.ic--rapido { width: 24px; height: 24px; margin: 0; }
+.ic--btn { width: 17px; height: 17px; margin: 0; flex: none; }
 .pendientes-hoy[hidden] { display: none; }
 .pendientes-hoy .lbl { flex: none; margin-right: 4px; }
 .tchip {
-  all: unset; cursor: pointer; display: flex; align-items: center; gap: 7px; min-width: 0; max-width: 230px;
+  all: unset; cursor: pointer; display: flex; align-items: center; gap: 7px; min-width: 0; max-width: 230px; flex: 0 1 auto;
   background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 99px; padding: 5px 12px 5px 5px;
   font: 600 14px var(--texto); color: var(--tinta);
 }
@@ -266,7 +272,7 @@ button:focus, button:focus-visible, label:focus-within { outline: none; }
 .tchip--mas { padding: 7px 12px; font: 800 12px var(--rotulo); letter-spacing: .06em; color: var(--suave); flex: none; }
 
 /* Mañana de cole: ocupa el lugar del próximo evento y la agenda */
-.manana { grid-column: 1 / 3; grid-row: 2 / 5; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.manana { grid-column: 1 / 3; grid-row: 2 / 4; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
 .manana[hidden] { display: none; }
 .hoy--manana .proximo, .hoy--manana .columnas, .hoy--manana .pendientes-hoy { display: none; }
 .manana__cab {
@@ -276,7 +282,7 @@ button:focus, button:focus-visible, label:focus-within { outline: none; }
 .manana__cab .lbl { color: #5a4310; }
 .manana__cab--ya { background: #c4453a; color: #fff; }
 .manana__cab--ya .lbl { color: #ffe2dc; }
-.manana__cuerpo { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; }
+.manana__cuerpo { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
 .manana__lista, .manana__info { background: var(--tarjeta); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: hidden; }
 .manana__tit { display: flex; justify-content: space-between; align-items: baseline; }
 .manana__progreso { font: 800 15px var(--rotulo); }
@@ -293,7 +299,122 @@ button:focus, button:focus-visible, label:focus-within { outline: none; }
 .manana__clases .clase span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .manana__ojo { margin: 0; font: 600 15px var(--texto); padding-left: 10px; border-left: 3px solid var(--ambar); }
 .manana__ojo--atrasada, .manana__ojo--prueba { border-left-color: #c4453a; }
-.manana__llevar { margin: 0; font: 500 15px var(--texto); }
+.manana__llevar { margin: 0; font: 500 15px var(--texto); display: flex; align-items: center; gap: 8px; }
+.ic--llevar { width: 20px; height: 20px; margin: 0; flex: none; }
+
+/* La búsqueda de la mañana: tareas como un camino */
+.quest__puntos { font: 800 13px var(--rotulo); letter-spacing: .04em; background: var(--ambar); color: #141414; border-radius: 99px; padding: 3px 10px; }
+.quest__camino { position: relative; flex: none; margin: 2px 0; }
+.quest__linea { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.quest__linea polyline { fill: none; stroke: var(--ambar); stroke-width: 3; stroke-dasharray: 1 7; stroke-linecap: round; stroke-linejoin: round; }
+.quest__nodo {
+  all: unset; cursor: pointer; position: absolute; transform: translate(-50%, -32px);
+  display: flex; flex-direction: column; align-items: center; gap: 3px; width: 96px; text-align: center;
+}
+.quest__circulo {
+  position: relative; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--tarjeta); border: 2.5px solid var(--linea);
+}
+.ic--quest { width: 30px; height: 30px; margin: 0; stroke-width: 1.6; }
+.quest__mas {
+  position: absolute; right: -6px; bottom: -4px; min-width: 24px; height: 24px; border-radius: 99px; padding: 0 4px;
+  display: grid; place-items: center; background: var(--tarjeta); border: 2px solid var(--linea);
+  font: 800 11px var(--rotulo); font-style: normal; color: var(--tinta);
+}
+.quest__txt { font: 600 12px/1.15 var(--texto); color: var(--tinta); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.quest__nodo--sigue .quest__circulo { border-color: var(--ambar); box-shadow: 0 0 0 5px rgba(242, 181, 58, .25); }
+.quest__nodo--hecho .quest__circulo { background: #2e7d4f; border-color: #2e7d4f; }
+.quest__nodo--hecho .ic--quest { stroke: #fff; }
+.quest__nodo--hecho .quest__mas { background: #2e7d4f; border-color: var(--tarjeta); color: #fff; }
+.quest__nodo--hecho .quest__txt { color: var(--suave); }
+.quest__cofre { cursor: default; }
+.quest__cofre .quest__circulo { border-style: dashed; border-color: #b8862a; }
+.quest__cofre .ic--quest { stroke: #b8862a; }
+.quest__cofre .quest__txt { font-weight: 800; color: #8a6418; }
+.quest__cofre--abierto .quest__circulo { background: var(--ambar); border-style: solid; border-color: var(--ambar); }
+.quest__cofre--abierto .ic--quest { stroke: #141414; fill: #fff3d6; }
+.quest__yo {
+  position: absolute; transform: translate(-42px, -46px); width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; background: #c4453a; color: #fff; border: 2px solid var(--tarjeta);
+  font: 800 12px var(--rotulo); pointer-events: none; z-index: 1;
+}
+.quest__camino--chico .quest__circulo { width: 52px; height: 52px; }
+.quest__camino--chico .ic--quest { width: 24px; height: 24px; }
+.quest__camino--chico .quest__nodo { transform: translate(-50%, -26px); }
+.quest__camino--chico .quest__yo { transform: translate(-36px, -40px); }
+
+/* Cena de esta noche (columna de la agenda) */
+.col--cena { border-top-color: var(--ambar); }
+.av--cena { background: var(--ambar); }
+.ic--av { width: 14px; height: 14px; margin: 0; stroke: #141414; stroke-width: 2.2; }
+.cena { background: var(--tarjeta); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.cena__plato { font: 400 22px/1.1 var(--serif); }
+.cena__ing { font: 500 13px var(--texto); color: var(--suave); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cena__botones { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.cena__btn {
+  all: unset; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 5px 10px 5px 7px; border-radius: 99px;
+  background: var(--papel); border: 1px solid var(--linea); font: 700 12px var(--rotulo); color: var(--tinta);
+}
+.cena__btn--listo { color: #2e7d4f; }
+.dia--cena i { background: var(--ambar); }
+
+/* Clima: UV y calidad del aire */
+.clima__ahora small.clima__extra { display: block; margin-top: 1px; }
+.clima__extra--alerta { color: #c4453a !important; font-weight: 700; }
+
+/* Ventanas (temporizador, Wi-Fi, QR) */
+.modal { position: absolute; inset: 0; z-index: 70; background: rgba(0, 0, 0, .45); display: grid; place-items: center; }
+.modal[hidden] { display: none; }
+.modal__caja { background: var(--papel); color: var(--tinta); border-radius: 18px; padding: 22px 26px 26px; min-width: 560px; max-width: 900px; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); }
+.modal__cab { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.modal__titulo { margin: 0; font: 400 36px var(--serif); }
+.modal__cerrar { all: unset; cursor: pointer; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--tarjeta); font: 800 18px var(--rotulo); }
+.qr { display: flex; gap: 28px; align-items: center; }
+.qr__img { width: 300px; height: 300px; flex: none; background: #fff; border-radius: 12px; padding: 6px; }
+.qr__img svg { width: 100%; height: 100%; display: block; }
+.qr__txt { display: flex; flex-direction: column; gap: 14px; max-width: 380px; }
+.qr__ayuda { margin: 0; font: italic 400 21px/1.3 var(--serif); color: var(--texto2); }
+.qr__dato b { display: block; font: 800 28px var(--rotulo); font-stretch: 80%; word-break: break-all; }
+.qr__codigo { margin: 0; padding: 10px 12px; background: var(--tarjeta); border-radius: 8px; font: 14px monospace; white-space: pre-wrap; }
+.tmr { display: flex; flex-direction: column; gap: 12px; width: 640px; }
+.tmr__lista:empty { display: none; }
+.tmr__lista { display: flex; flex-direction: column; gap: 8px; }
+.tmr__fila { display: flex; align-items: center; gap: 10px; background: var(--tarjeta); border-radius: 12px; padding: 8px 10px 8px 16px; }
+.tmr__resta { font: 800 34px var(--rotulo); font-stretch: 75%; font-variant-numeric: tabular-nums; min-width: 96px; }
+.tmr__nombre { flex: 1; font: 600 16px var(--texto); color: var(--suave); }
+.tmr__btn { all: unset; cursor: pointer; padding: 10px 14px; border-radius: 10px; background: var(--papel); font: 800 13px var(--rotulo); }
+.tmr__btn--no { color: #c4453a; }
+.tmr__presets { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.tmr__preset { all: unset; cursor: pointer; background: var(--tarjeta); border-radius: 14px; padding: 12px 0 10px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.tmr__preset b { font: 800 34px/1 var(--rotulo); font-stretch: 75%; }
+.tmr__preset span { font: 700 11px var(--rotulo); letter-spacing: .1em; text-transform: uppercase; color: var(--suave); }
+.tmr__propio { display: flex; align-items: center; gap: 10px; }
+.tmr__otro { flex: 1; font: 600 16px var(--texto); color: var(--suave); }
+.tmr__valor { min-width: 90px; text-align: center; font: 800 24px var(--rotulo); }
+.tmr__empezar { all: unset; cursor: pointer; padding: 12px 20px; border-radius: 12px; background: var(--tinta); color: var(--sobre-tinta); font: 800 15px var(--rotulo); }
+
+/* Temporizadores en marcha (arriba, en cualquier pantalla) y la alarma */
+.timers { position: absolute; top: 10px; right: 16px; z-index: 40; display: flex; gap: 8px; }
+.timers[hidden] { display: none; }
+.timer {
+  all: unset; cursor: pointer; display: flex; align-items: center; gap: 7px; padding: 6px 14px 6px 10px; border-radius: 99px;
+  background: #141414; color: #fff; box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+}
+.timer .ic { stroke: var(--ambar); }
+.ic--timer { width: 18px; height: 18px; margin: 0; }
+.timer b { font: 800 20px var(--rotulo); font-stretch: 80%; font-variant-numeric: tabular-nums; }
+.timer span { font: 600 12px var(--texto); color: #c9c6be; }
+.timer--pausa b { color: #9b988f; }
+.alarma { position: absolute; inset: 0; z-index: 80; background: rgba(242, 181, 58, .96); display: grid; place-items: center; animation: alarma 1s ease-in-out infinite alternate; }
+.alarma[hidden] { display: none; }
+@keyframes alarma { from { background: rgba(242, 181, 58, .96); } to { background: rgba(232, 128, 40, .96); } }
+.alarma__caja { text-align: center; color: #141414; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ic--alarma { width: 110px; height: 110px; stroke: #141414; stroke-width: 1.4; }
+.alarma__titulo { font: 800 120px/1 var(--rotulo); font-stretch: 70%; }
+.alarma__nombre { margin: 0; font: italic 400 34px var(--serif); }
+.alarma__botones { display: flex; gap: 14px; margin-top: 14px; }
+.alarma__btn { all: unset; cursor: pointer; padding: 18px 46px; border-radius: 16px; background: #141414; color: #fff; font: 800 26px var(--rotulo); }
+.alarma__btn--suave { background: rgba(255, 255, 255, .55); color: #141414; }
 .pantalla[data-tema="noche"] .manana__cab:not(.manana__cab--ya) { background: #3a2f17; color: #f3e6c8; }
 .pantalla[data-tema="noche"] .manana__cab .lbl { color: #e9c37a; }
 .pantalla[data-tema="noche"] .chip { background: #e9c37a; }

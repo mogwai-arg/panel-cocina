@@ -271,7 +271,15 @@
         { id: id(), tarea: 'Vaciar el lavavajillas', persona: 'Cualquiera', momento: '', estrellas: 3, dias: '', hecha: false },
         { id: id(), tarea: 'Poner la mesa', persona: 'Cualquiera', momento: 'Noche', estrellas: 1, dias: '', hecha: false }
       ],
-      estrellas: { Thi: 42, Javi: 9, Dan: 15 }
+      estrellas: { Thi: 42, Javi: 9, Dan: 15 },
+      menu: [
+        { dia: 'lun', cena: 'Milanesas con puré', ingredientes: 'milanesas, papas, manteca, leche', receta: '' },
+        { dia: 'mar', cena: 'Fideos con tuco', ingredientes: 'fideos, tomate triturado, cebolla, queso rallado', receta: '' },
+        { dia: 'mié', cena: 'Tarta de verdura', ingredientes: 'tapas de tarta, acelga, huevos, queso, Leche', receta: 'https://cookpad.com/ar/buscar/tarta%20de%20acelga' },
+        { dia: 'jue', cena: 'Pollo al horno con papas', ingredientes: 'pollo, papas, limón', receta: '' },
+        { dia: 'vie', cena: 'Pizza casera', ingredientes: 'harina, levadura, salsa de tomate, muzzarella', receta: '' },
+        { dia: 'sáb', cena: 'Asado', ingredientes: 'tira de asado, chorizos, pan', receta: '' }
+      ]
     };
     function copia() { return JSON.parse(JSON.stringify(estado)); }
     function buscar(lista, idBuscado) {

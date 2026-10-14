@@ -2,11 +2,11 @@
  * Tareas y compras, guardadas en una planilla de Google Sheets.
  *
  * Ejecutá una vez crearPlanilla(): crea "Panel de Cocina · Listas" en tu Drive con
- * las hojas Compras, Habituales, Tareas e Historial, y guarda su ID en la
+ * las hojas Compras, Habituales, Tareas, Historial y Menú, y guarda su ID en la
  * propiedad PLANILLA_ID. La planilla se puede editar a mano (también desde el celular).
  *
  * Pedidos:
- *   ?action=listas                                       → { compras, habituales, tareas, estrellas }
+ *   ?action=listas                                       → { compras, habituales, tareas, estrellas, menu }
  *   ?action=compra&op=agregar&item=Leche&cantidad=2&categoria=Lácteos
  *   ?action=compra&op=marcar&id=...&valor=1|0           (comprado / no comprado)
  *   ?action=compra&op=cantidad&id=...&cantidad=3
@@ -18,7 +18,9 @@ var HOJAS_ = {
   Compras: ['id', 'item', 'cantidad', 'categoria', 'comprado', 'comprado_el', 'agregado_el'],
   Habituales: ['item', 'categoria'],
   Tareas: ['id', 'tarea', 'persona', 'momento', 'estrellas', 'dias', 'hecha_el'],
-  Historial: ['fecha', 'persona', 'tarea', 'estrellas']
+  Historial: ['fecha', 'persona', 'tarea', 'estrellas'],
+  // Menú: dia = una fecha o un día de la semana (lun, mar, ...) que se repite cada semana.
+  'Menú': ['dia', 'cena', 'ingredientes', 'receta']
 };
 
 var ZONA_ = 'America/Argentina/Buenos_Aires';
@@ -62,6 +64,20 @@ function hoja_(libro, nombre) {
     hoja.getRange('D2:D').setDataValidation(SpreadsheetApp.newDataValidation()
       .requireValueInList(['Mañana', 'Tarde', 'Noche'], true).setAllowInvalid(true).build());
     hoja.getRange(1, 6).setNote('Días en que toca, separados por coma: lun,mar,mié,jue,vie,sáb,dom. Vacío = todos los días.');
+  }
+  if (nombre === 'Menú') {
+    var menu = [
+      ['lun', 'Milanesas con puré', 'milanesas, papas, manteca, leche', ''],
+      ['mar', 'Fideos con tuco', 'fideos, tomate triturado, cebolla, queso rallado', ''],
+      ['mié', 'Tarta de verdura', 'tapas de tarta, acelga, huevos, queso', ''],
+      ['jue', 'Pollo al horno con papas', 'pollo, papas, limón', ''],
+      ['vie', 'Pizza casera', 'harina, levadura, salsa de tomate, muzzarella', '']
+    ];
+    hoja.getRange(2, 1, menu.length, columnas.length).setValues(menu);
+    hoja.getRange(1, 1).setNote('Un día de la semana (lun, mar, mié...) se repite todas las semanas. ' +
+      'Una fecha (16/10/2026) vale solo ese día y gana sobre el día de la semana.');
+    hoja.getRange(1, 3).setNote('Separados por coma. Desde el panel se mandan a Compras con un toque.');
+    hoja.getRange(1, 4).setNote('Opcional: link a la receta (en el panel aparece un QR para abrirla en el celular).');
   }
   return hoja;
 }
@@ -170,6 +186,10 @@ function listas_() {
     habituales: habituales,
     tareas: tareas,
     estrellas: estrellasDeLaSemana_(leerHoja_(libro, 'Historial'), hoy),
+    menu: leerHoja_(libro, 'Menú').map(function (m) {
+      var dia = Object.prototype.toString.call(m.dia) === '[object Date]' ? fechaIso_(m.dia) : String(m.dia || '').trim();
+      return { dia: dia, cena: String(m.cena || ''), ingredientes: String(m.ingredientes || ''), receta: String(m.receta || '') };
+    }),
     hoy: hoy
   };
 }

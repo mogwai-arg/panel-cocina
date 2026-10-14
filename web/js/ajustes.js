@@ -40,7 +40,8 @@
       mananaCole: { tipo: 'si', def: config.MANANA_COLE !== false },
       mananaDesde: { tipo: 'hora', paso: 15, def: man.desde || '06:30' },
       viajeMinutos: { tipo: 'numero', min: 0, max: 90, paso: 5, def: man.viajeMinutos !== undefined ? man.viajeMinutos : 20 },
-      salidaPorDefecto: { tipo: 'hora', paso: 5, def: man.salida || '07:20' }
+      salidaPorDefecto: { tipo: 'hora', paso: 5, def: man.salida || '07:20' },
+      minutosPorEstrella: { tipo: 'numero', min: 0, max: 30, paso: 1, def: man.minutosPorEstrella !== undefined ? man.minutosPorEstrella : 5 }
     };
   }
 
@@ -96,7 +97,8 @@
       // Lo que entiende Manana.plan (ver manana.js), sin el horario
       manana: function () {
         return { activo: valores.mananaCole, desde: valores.mananaDesde,
-          viajeMinutos: valores.viajeMinutos, salidaPorDefecto: valores.salidaPorDefecto };
+          viajeMinutos: valores.viajeMinutos, salidaPorDefecto: valores.salidaPorDefecto,
+          minutosPorEstrella: valores.minutosPorEstrella };
       },
       // Lo que entiende Descanso.estado (ver descanso.js)
       descanso: function () {

@@ -126,7 +126,7 @@ test('clima: describe los códigos', () => {
 test('clima: los días de la semana con amanecer y atardecer', () => {
   const c = Clima.normalizar(respuesta(() => 0), AHORA);
   assert.equal(c.dias.length, 2);
-  assert.deepEqual(c.dias[1], { fecha: '2026-10-13', max: 18, min: 9, codigo: 61, lluvia: 80, sale: '06:51', pone: '19:32' });
+  assert.deepEqual(c.dias[1], { fecha: '2026-10-13', max: 18, min: 9, codigo: 61, lluvia: 80, uv: null, sale: '06:51', pone: '19:32' });
   assert.equal(c.horas[0].fecha, '2026-10-12');
 });
 
@@ -149,4 +149,20 @@ test('clima: puntos de la curva y marca del atardecer', () => {
   // 15 h es el punto 0 y 19:31 cae entre el 4 y el 5
   assert.ok(r.sol[0].x > r.puntos[4].x && r.sol[0].x < r.puntos[5].x);
   assert.deepEqual(Clima.curva({ horas: [] }, 100, 40).puntos, []);
+});
+
+test('clima: UV y calidad del aire', () => {
+  const r = respuesta(() => 0);
+  r.daily.uv_index_max = [8.6, 5.1];
+  r.hourly.uv_index = r.hourly.time.map(() => 3.4);
+  const c = Clima.normalizar(r, AHORA);
+  assert.equal(c.uvMax, 9);
+  assert.equal(c.uv, 3);
+  assert.equal(c.dias[1].uv, 5);
+  assert.equal(Clima.describirUV(9).texto, 'muy alto');
+  assert.equal(Clima.describirUV(2).texto, 'bajo');
+  assert.equal(Clima.describirUV(null), null);
+  assert.equal(Clima.describirAire(15).texto, 'bueno');
+  assert.equal(Clima.describirAire(70).texto, 'malo');
+  assert.equal(Clima.describirAire(undefined), null);
 });

@@ -66,6 +66,11 @@
     manana: function () { return ajustes.manana(); },
     personaCole: config.APODO_ALUMNO || 'Thi',
     alCambiarManana: function (activo) { if (activo) mananaEmpezo(); },
+    mostrarQR: function (d) { rapidos.qr(d); },
+    rapidos: [
+      { icono: 'temporizador', texto: 'Temporizador', accion: function () { rapidos.temporizador(); } },
+      { icono: 'wifi', texto: 'Wi-Fi invitados', accion: function () { rapidos.wifi(); } }
+    ],
     basquet: config.BASQUET || { calendario: 'Thi', color: '#d39b1e' },
     // Las entregas de Classroom de la semana también van a la agenda
     classroom: config.CLASSROOM || { calendario: 'Thi', color: '#d39b1e' },
@@ -73,6 +78,14 @@
     // Los mails con fecha (turnos, vencimientos) también van a la agenda
     mails: config.MAILS || { calendario: 'Avisos' },
     nombresCortos: Object.keys(config.NOMBRES_CALENDARIOS || {}).map(function (k) { return config.NOMBRES_CALENDARIOS[k]; })
+  });
+
+  // Temporizadores de cocina, Wi-Fi de invitados y QR (js/vista-rapidos.js).
+  var rapidos = VistaRapidos.crearRapidos(pantalla, {
+    wifi: config.WIFI_INVITADOS || null,
+    avisar: function (t) { avisar(t); },
+    // Cuando suena una alarma la pantalla se despierta (aunque esté en descanso).
+    despertar: function () { ultimaActividad = Date.now(); revisarDescanso(); }
   });
 
   // Aviso abajo de la pantalla, con "Deshacer" opcional.

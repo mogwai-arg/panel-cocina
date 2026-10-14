@@ -33,6 +33,8 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 - Clima de [Open-Meteo](https://open-meteo.com) (gratis, sin clave) con una frase
   para las próximas horas (lluvia, si refresca o si hace calor) y la **curva de temperatura**
   de las próximas 12 horas, con barritas si puede llover y la hora del amanecer/atardecer.
+  Abajo de la máxima y la mínima: **índice UV** del día y **calidad del aire** (Open-Meteo,
+  también gratis; el polen no está disponible para Argentina).
 - **Próximo**: el siguiente evento con horario, con cuenta regresiva si falta menos
   de hora y media.
 - Una columna por calendario de Google Calendar con lo de hoy y mañana
@@ -40,8 +42,22 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 - **La semana**: siete pastillas con el clima de cada día (ícono y máxima) y un puntito por
   cada calendario que tiene algo ese día. Tocando un día se ve lo de ese día; si no, los
   **próximos días** (lo que viene a partir de pasado mañana).
+- **Esta noche**: la cena de la hoja **Menú** (después de las 21, la de mañana) como cuarta
+  columna de la agenda, con **A Compras** (manda a la lista los ingredientes que falten) y
+  **Receta** (un QR para abrirla en el celular).
 - **Lo que falta**: abajo, las tareas de este momento del día que todavía no se hicieron;
   tocando una se marca (con "Deshacer").
+- **Botones rápidos** (abajo a la derecha): **temporizador** de cocina (varios a la vez; se ven
+  arriba en cualquier pantalla y al terminar suena una alarma grande, aunque la pantalla esté
+  descansando) y **Wi-Fi de invitados** (QR para conectarse con la cámara del celular; la red se
+  pone en `config.js` → `WIFI_INVITADOS`).
+
+### Menú de la semana
+
+La hoja **Menú** de la planilla de Listas (se crea sola) tiene `dia`, `cena`, `ingredientes` y
+`receta`. En `dia` va un día de la semana (`lun`, `mar`, `mié`...) que se repite todas las semanas,
+o una fecha para un día especial (gana sobre el de la semana). Los ingredientes van separados por
+coma. Tocando un día en la semana de Hoy también se ve qué se come ese día.
 - Un recuerdo: una foto de "un día como hoy" si hay, si no una al azar.
 - **Básquet**: el próximo partido de Thiago con los dos escudos, día, hora y cancha;
   cuántos días faltan, el último resultado y la racha de los últimos 5. Los partidos por jugar también
@@ -55,7 +71,9 @@ cambia el "Próximo" y la agenda por la mañana de Thi:
 
 - **Salir a las 7:20** con cuenta regresiva (se pone roja cuando ya es hora). La hora sale del
   horario de Colegium: primera clase menos lo que tarda el viaje (20 min por defecto).
-- **Antes de salir**: sus tareas de la planilla con momento "Mañana", para tildar tocándolas.
+- **La búsqueda de la mañana**: sus tareas de la planilla con momento "Mañana" como un camino
+  (cada una con su ícono y sus estrellas). Tocando una se marca; el avatar avanza y al final
+  está el cofre con el premio: cada estrella vale unos minutos (5 por defecto, se cambia en Ajustes).
 - **Hoy en el cole**: las materias del día; **No olvidar**: entregas de Classroom de hoy/mañana,
   atrasadas, pruebas y pendientes que encontró el asistente; **Qué llevar**: paraguas, abrigo o
   agua según el clima de la mañana.

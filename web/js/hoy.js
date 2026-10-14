@@ -17,7 +17,32 @@
     niebla: '<path d="M4 9h16M2 13h20M5 17h14"/>',
     lluvia: '<path d="M6.5 15h11a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.5 1.6A3.8 3.8 0 0 0 6.5 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>',
     nieve: '<path d="M6.5 15h11a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.5 1.6A3.8 3.8 0 0 0 6.5 15z"/><path d="M8 19h.01M12 21h.01M16 19h.01"/>',
-    tormenta: '<path d="M6.5 15h11a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.5 1.6A3.8 3.8 0 0 0 6.5 15z"/><path d="M12.5 15l-2 4h3l-2 4"/>'
+    tormenta: '<path d="M6.5 15h11a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.5 1.6A3.8 3.8 0 0 0 6.5 15z"/><path d="M12.5 15l-2 4h3l-2 4"/>',
+    // Tareas de la mañana (camino de la búsqueda)
+    despertador: '<circle cx="12" cy="13" r="7"/><path d="M12 9.5V13l2.5 2M5 4.5 3 6.5M19 4.5l2 2"/>',
+    cama: '<path d="M3 18V7M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.6"/>',
+    desayuno: '<path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M9 7.5c0-1.5 1-1.5 1-3M13 7.5c0-1.5 1-1.5 1-3"/>',
+    dientes: '<path d="M3 21l10-10"/><path d="M12 8l4 4 5-5-4-4z"/><path d="M14 6l1 1M16 4l1 1M18 6l1 1"/>',
+    ropa: '<path d="M8 3 3 6l2 4 3-1.5V21h8V8.5l3 1.5 2-4-5-3a4 4 0 0 1-8 0z"/>',
+    mochila: '<rect x="5" y="7" width="14" height="14" rx="3"/><path d="M9 7V5a3 3 0 0 1 6 0v2M8 14h8M12 14v2"/>',
+    remedio: '<g transform="rotate(-35 12 12)"><rect x="3" y="8.5" width="18" height="7" rx="3.5"/><path d="M12 8.5v7"/></g>',
+    ducha: '<path d="M4 21V8a4 4 0 0 1 8 0"/><path d="M8.5 8h7M10 12l-1 2M13 12v2M16 12l1 2M11 17l-1 2M15 17l1 2"/>',
+    pelo: '<rect x="3" y="7" width="18" height="4" rx="1"/><path d="M5 11v6M8 11v6M11 11v6M14 11v6M17 11v6M20 11v4"/>',
+    mascota: '<circle cx="6.5" cy="10" r="1.8"/><circle cx="10.5" cy="6.2" r="1.8"/><circle cx="15" cy="6.5" r="1.8"/><circle cx="18" cy="10.5" r="1.8"/><path d="M8 18c0-3 2-5 4.5-5s4.5 2.5 3.5 5-6 2.5-8 0z"/>',
+    corazon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+    estrella: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+    cofre: '<rect x="3" y="10" width="18" height="10" rx="1.5"/><path d="M3 10a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4M10 12h4v3h-4z"/>',
+    // Qué llevar
+    paraguas: '<path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v6a2 2 0 0 0 4 0"/>',
+    abrigo: '<path d="M8 3 4 6v15h5v-8M16 3l4 3v15h-5v-8M8 3l4 5 4-5M12 8v13"/>',
+    agua: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+    ok: '<circle cx="12" cy="12" r="9"/><path d="M8.5 14a4 4 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/>',
+    // Varios
+    cubiertos: '<path d="M6 3v6a3 3 0 0 0 6 0V3M9 3v18"/><path d="M18 21V3c-2 1-3.5 3-3.5 6v4H18"/>',
+    temporizador: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4M12 2v3"/>',
+    wifi: '<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/>',
+    carrito: '<circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2l2.5 11h11L21 7H6"/>',
+    qr: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3h-3z"/>'
   };
 
   function icono(nombre, clase) {
@@ -53,7 +78,7 @@
       '<button class="recuerdo" data-r="recuerdo" aria-label="Ver fotos"></button>' +
       '<div class="proximo" data-r="proximo"></div>' +
       '<div class="columnas" data-r="columnas"></div>' +
-      '<div class="pendientes-hoy" data-r="pendientes" hidden></div>' +
+      '<div class="pie-hoy"><div class="pendientes-hoy" data-r="pendientes"></div><div class="rapidos" data-r="rapidos"></div></div>' +
       '<div class="manana" data-r="manana" hidden></div>' +
       '<div class="lateral"><div class="basquet" data-r="basquet" hidden></div>' +
       '<div class="dias" data-r="dias"></div></div>';
@@ -94,11 +119,19 @@
       var nombreIcono = desc.icono === 'sol' && !c.esDeDia ? 'luna' : desc.icono;
       caja.innerHTML =
         '<div class="clima__ahora">' + icono(nombreIcono, 'ic ic--grande') +
-        '<b></b><span><em></em><small></small></span></div>' +
+        '<b></b><span><em></em><small></small><small class="clima__extra"></small></span></div>' +
         '<p class="clima__nota"></p>' + curvaClima(c);
       caja.querySelector('b').textContent = c.temp + '°';
       caja.querySelector('em').textContent = desc.texto;
       caja.querySelector('small').textContent = 'Máx ' + c.max + '° · Mín ' + c.min + '°';
+      var extra = [];
+      var uv = Clima.describirUV(c.uvMax);
+      if (uv) extra.push('UV ' + c.uvMax + ' ' + uv.texto);
+      var aire = c.aire && Clima.describirAire(c.aire.aqi);
+      if (aire) extra.push('Aire ' + aire.texto);
+      var cajaExtra = caja.querySelector('.clima__extra');
+      cajaExtra.textContent = extra.join(' · ');
+      cajaExtra.className = 'clima__extra' + ((uv && uv.nivel >= 3) || (aire && aire.nivel >= 3) ? ' clima__extra--alerta' : '');
       caja.querySelector('.clima__nota').textContent = Clima.frase(c);
     }
 
@@ -175,8 +208,9 @@
       var caja = parte('columnas');
       caja.innerHTML = '';
       if (errorAgenda) return;
-      var cols = Agenda.columnas(eventos, new Date(), 4, 5);
-      if (!cols.length) {
+      var cena = root.Menu ? root.Menu.paraMostrar((datosListas() || {}).menu, new Date()) : null;
+      var cols = Agenda.columnas(eventos, new Date(), cena ? 3 : 4, 5);
+      if (!cols.length && !cena) {
         caja.appendChild(el('p', 'columnas__vacio', 'Hoy y mañana, agenda libre.'));
         return;
       }
@@ -199,6 +233,49 @@
         if (c.mas) col.appendChild(el('span', 'mas', '+' + c.mas + ' más'));
         caja.appendChild(col);
       });
+      if (cena) caja.appendChild(columnaCena(cena));
+    }
+
+    /* La cena de esta noche (hoja Menú): plato, ingredientes, mandarlos a Compras y la receta. */
+    function columnaCena(cena) {
+      var col = el('div', 'col col--cena');
+      var titulo = el('h3');
+      var av = el('span', 'av av--cena');
+      av.innerHTML = icono('cubiertos', 'ic ic--av');
+      titulo.appendChild(av);
+      titulo.appendChild(document.createTextNode(cena.titulo));
+      col.appendChild(titulo);
+      var caja = el('div', 'cena');
+      caja.appendChild(el('b', 'cena__plato', cena.cena));
+      if (cena.ingredientes.length) caja.appendChild(el('small', 'cena__ing', cena.ingredientes.join(', ')));
+      var botones = el('div', 'cena__botones');
+      var faltan = Menu.faltanEnCompras(cena.ingredientes, (datosListas() || {}).compras);
+      if (cena.ingredientes.length && listas) {
+        var b = el('button', 'cena__btn' + (faltan.length ? '' : ' cena__btn--listo'));
+        b.innerHTML = icono('carrito', 'ic ic--btn');
+        b.appendChild(document.createTextNode(faltan.length ? 'A Compras (' + faltan.length + ')' : 'En la lista'));
+        b.addEventListener('click', function () {
+          if (!faltan.length) { if (opciones.irA) opciones.irA('compras'); return; }
+          faltan.reduce(function (p, item) {
+            return p.then(function () { return listas.agregar(item); });
+          }, Promise.resolve()).then(function () {
+            if (opciones.avisar) opciones.avisar('🛒 ' + faltan.length + ' ingredientes para ' + cena.cena + ' en Compras');
+          });
+        });
+        botones.appendChild(b);
+      }
+      if (cena.receta && opciones.mostrarQR) {
+        var r = el('button', 'cena__btn');
+        r.innerHTML = icono('qr', 'ic ic--btn');
+        r.appendChild(document.createTextNode('Receta'));
+        r.addEventListener('click', function () {
+          opciones.mostrarQR({ titulo: cena.cena, texto: 'Apuntá la cámara del celular para abrir la receta', qr: cena.receta });
+        });
+        botones.appendChild(r);
+      }
+      caja.appendChild(botones);
+      col.appendChild(caja);
+      return col;
     }
 
     /*
@@ -266,7 +343,15 @@
         }
         caja.appendChild(cab);
         lista = eventosDelDia(f);
-        vacio = 'Nada agendado ese día.';
+        var cenaDia = root.Menu ? root.Menu.delDia((datosListas() || {}).menu, f) : null;
+        if (cenaDia) {
+          var fc = el('div', 'dia dia--cena');
+          fc.appendChild(el('i'));
+          fc.appendChild(el('b', null, 'Cena'));
+          fc.appendChild(el('span', null, cenaDia.cena));
+          caja.appendChild(fc);
+        }
+        vacio = cenaDia ? '' : 'Nada agendado ese día.';
         conHora = true;
       } else {
         caja.appendChild(el('span', 'lbl', 'Próximos días'));
@@ -274,7 +359,7 @@
         vacio = 'Nada agendado.';
       }
       if (!lista.length) {
-        caja.appendChild(el('p', 'dias__vacio', vacio));
+        if (vacio) caja.appendChild(el('p', 'dias__vacio', vacio));
         return;
       }
       lista.forEach(function (e) {
@@ -549,7 +634,7 @@
       if (!faltan.length) return;
       caja.appendChild(el('span', 'lbl', 'Falta ' + (momento === 'Mañana' ? 'esta mañana' : momento === 'Tarde' ? 'esta tarde' : 'esta noche')));
       var colores = opciones.personas || {};
-      var MAX = 4;
+      var MAX = 3;
       faltan.slice(0, MAX).forEach(function (t) {
         var b = el('button', 'tchip');
         var av = el('span', 'tchip__av', inicial(t.persona));
@@ -613,28 +698,31 @@
 
       var cuerpo = el('div', 'manana__cuerpo');
 
-      // Izquierda: lo que hay que hacer antes de salir
-      var izq = el('section', 'manana__lista');
-      var tareas = Manana.tareasDeLaManana((datosListas() || {}).tareas, personaCole, ahora, Listas.tocaHoy);
-      var hechas = tareas.filter(function (t) { return t.hecha; }).length;
+      // Izquierda: la búsqueda de la mañana (las tareas como un camino, con premio al final)
+      var tareas = Manana.tareasDeLaManana((datosListas() || {}).tareas, personaCole, ahora, Listas.tocaHoy).slice(0, 8);
+      var config = opciones.manana ? opciones.manana() : {};
+      var premio = Manana.premio(tareas, config.minutosPorEstrella);
+      var izq = el('section', 'manana__lista quest');
       var t1 = el('div', 'manana__tit');
-      t1.appendChild(el('span', 'lbl', 'Antes de salir'));
-      if (tareas.length) t1.appendChild(el('b', 'manana__progreso', hechas + '/' + tareas.length));
+      t1.appendChild(el('span', 'lbl', 'La búsqueda de la mañana'));
+      if (tareas.length) {
+        t1.appendChild(el('b', 'quest__puntos', '★ ' + premio.puntos + '/' + premio.total +
+          (premio.minutosTotal ? ' · ' + premio.minutos + ' min de premio' : '')));
+      }
       izq.appendChild(t1);
       if (!tareas.length) {
-        izq.appendChild(el('p', 'dias__vacio', 'No hay tareas de la mañana para ' + personaCole + ' en la planilla.'));
+        izq.appendChild(el('p', 'dias__vacio', 'No hay tareas de la mañana para ' + personaCole +
+          ' en la planilla (Tareas, momento "Mañana").'));
+      } else {
+        izq.appendChild(caminoDeLaManana(tareas, premio));
       }
-      tareas.slice(0, 6).forEach(function (t) {
-        var b = el('button', 'check' + (t.hecha ? ' check--hecha' : ''));
-        b.appendChild(el('span', 'check__caja', t.hecha ? '✓' : ''));
-        b.appendChild(el('span', 'check__txt', t.tarea));
-        b.addEventListener('click', function () { marcar(t); });
-        izq.appendChild(b);
-      });
-      var listo = el('button', 'manana__listo', tareas.length && hechas === tareas.length ? '¡Todo listo! Nos vamos ✓' : 'Listo ✓');
+      var listo = el('button', 'manana__listo', premio.completa ? '¡Todo listo! Nos vamos ✓' : 'Listo ✓');
       listo.addEventListener('click', function () {
         try { window.localStorage.setItem(CLAVE_LISTO, Manana.diaIso(new Date())); } catch (e) { /* nada */ }
-        if (opciones.avisar) opciones.avisar('¡Que tengas un lindo día, ' + personaCole + '! 🎒', null, 6000);
+        if (opciones.avisar) {
+          opciones.avisar('¡Que tengas un lindo día, ' + personaCole + '! 🎒' +
+            (premio.minutos ? ' Ganaste ' + premio.minutos + ' min de premio.' : ''), null, 6000);
+        }
         pintarManana();
       });
       izq.appendChild(listo);
@@ -663,10 +751,74 @@
       var llevar = Manana.consejosClima(climaDatos, plan.salida);
       if (llevar.length) {
         der.appendChild(el('span', 'lbl', 'Qué llevar'));
-        llevar.forEach(function (x) { der.appendChild(el('p', 'manana__llevar', x.icono + ' ' + x.texto)); });
+        llevar.forEach(function (x) {
+          var f = el('p', 'manana__llevar');
+          f.innerHTML = icono(x.icono, 'ic ic--llevar');
+          f.appendChild(document.createTextNode(x.texto));
+          der.appendChild(f);
+        });
       }
       cuerpo.appendChild(der);
       caja.appendChild(cuerpo);
+    }
+
+    /*
+     * El camino: un círculo por tarea (con su ícono y sus estrellas) unidos por una línea de
+     * puntos que va y vuelve (como una víbora), el avatar en la que sigue y el cofre al final.
+     */
+    function caminoDeLaManana(tareas, premio) {
+      var lugares = tareas.length + 1; // + el cofre
+      var porFila = lugares <= 4 ? lugares : lugares <= 6 ? 3 : 4;
+      var filas = Math.ceil(lugares / porFila);
+      var ALTO_FILA = filas >= 3 ? 82 : 104;
+      var caja = el('div', 'quest__camino' + (filas >= 3 ? ' quest__camino--chico' : ''));
+      caja.style.height = filas * ALTO_FILA + 'px';
+      function lugar(i) {
+        var fila = Math.floor(i / porFila), col = i % porFila;
+        if (fila % 2) col = porFila - 1 - col;
+        return { x: (col + 0.5) / porFila * 100, y: fila * ALTO_FILA + ALTO_FILA / 2 - 10 };
+      }
+      var puntos = [];
+      for (var i = 0; i < lugares; i++) puntos.push(lugar(i));
+      caja.innerHTML = '<svg class="quest__linea" viewBox="0 0 100 ' + filas * ALTO_FILA + '" preserveAspectRatio="none" aria-hidden="true">' +
+        '<polyline vector-effect="non-scaling-stroke" points="' +
+        puntos.map(function (p) { return p.x + ',' + p.y; }).join(' ') + '"/></svg>';
+      var siguiente = -1;
+      tareas.forEach(function (t, j) { if (siguiente < 0 && !t.hecha) siguiente = j; });
+      if (siguiente < 0) siguiente = tareas.length;
+      tareas.forEach(function (t, j) {
+        var p = puntos[j];
+        var b = el('button', 'quest__nodo' + (t.hecha ? ' quest__nodo--hecho' : '') + (j === siguiente ? ' quest__nodo--sigue' : ''));
+        b.style.left = p.x + '%';
+        b.style.top = p.y + 'px';
+        var circulo = el('span', 'quest__circulo');
+        circulo.innerHTML = icono(Manana.iconoDeTarea(t.tarea), 'ic ic--quest');
+        circulo.appendChild(el('i', 'quest__mas', t.hecha ? '✓' : '+' + Math.max(1, Number(t.estrellas) || 0)));
+        b.appendChild(circulo);
+        b.appendChild(el('span', 'quest__txt', t.tarea));
+        b.addEventListener('click', function () { marcar(t); });
+        caja.appendChild(b);
+      });
+      var pc = puntos[tareas.length];
+      var cofre = el('div', 'quest__nodo quest__cofre' + (premio.completa ? ' quest__cofre--abierto' : ''));
+      cofre.style.left = pc.x + '%';
+      cofre.style.top = pc.y + 'px';
+      var cc = el('span', 'quest__circulo');
+      cc.innerHTML = icono(premio.completa ? 'estrella' : 'cofre', 'ic ic--quest');
+      cofre.appendChild(cc);
+      cofre.appendChild(el('span', 'quest__txt', premio.completa
+        ? (premio.minutos ? '¡' + premio.minutos + ' min!' : '¡Lo lograste!')
+        : (premio.minutosTotal ? premio.minutosTotal + ' min de premio' : 'Premio')));
+      caja.appendChild(cofre);
+      // El avatar en la tarea que sigue (o en el cofre si ya terminó)
+      var pa = puntos[siguiente];
+      var yo = el('span', 'quest__yo', inicial(personaCole));
+      yo.style.left = pa.x + '%';
+      yo.style.top = pa.y + 'px';
+      var colorYo = (opciones.personas || {})[personaCole];
+      if (colorYo) yo.style.background = color(colorYo);
+      caja.appendChild(yo);
+      return caja;
     }
 
     function cargarCole() {
@@ -680,7 +832,17 @@
       return Promise.all(pedidos).then(pintarManana);
     }
 
-    if (listas) listas.alCambiar(function () { pintarPendientes(); if (planManana) pintarManana(); });
+    if (listas) listas.alCambiar(function () { pintarPendientes(); pintarColumnas(); if (planManana) pintarManana(); });
+
+    // Botones rápidos abajo a la derecha (temporizador, Wi-Fi de invitados): los arma app.js.
+    (opciones.rapidos || []).forEach(function (r) {
+      var b = el('button', 'rapido');
+      b.innerHTML = icono(r.icono, 'ic ic--rapido');
+      b.setAttribute('aria-label', r.texto);
+      b.title = r.texto;
+      b.addEventListener('click', r.accion);
+      parte('rapidos').appendChild(b);
+    });
 
     parte('recuerdo').addEventListener('click', alTocarRecuerdo);
 
@@ -726,5 +888,5 @@
     };
   }
 
-  root.Hoy = { crearHoy: crearHoy };
+  root.Hoy = { crearHoy: crearHoy, icono: icono };
 })(window);

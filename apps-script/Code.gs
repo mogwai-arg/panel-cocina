@@ -32,7 +32,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-15.1';
+var VERSION = '2026-10-16.1';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};

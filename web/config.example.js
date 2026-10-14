@@ -35,6 +35,10 @@ window.CONFIG = {
   // pasa nadie en 20 minutos. Para no usar el horario nocturno: noche: false
   // Mañana de cole: los días de clase muestra la hora de salir y lo de la mañana de Thi.
   // La salida es la primera clase (horario de Colegium) menos el viaje. false = apagada.
-  MANANA_COLE: { desde: '06:30', viajeMinutos: 20, salida: '07:20' },
+  // minutosPorEstrella: premio de la búsqueda de la mañana (cada tarea vale sus estrellas).
+  MANANA_COLE: { desde: '06:30', viajeMinutos: 20, salida: '07:20', minutosPorEstrella: 5 },
+  // Wi-Fi de invitados: el panel muestra un QR para conectarse con la cámara del celular.
+  // (config.js no se sube a GitHub, así que la clave queda solo en tu compu y en el marco.)
+  WIFI_INVITADOS: { red: 'Casa-Invitados', clave: 'la-clave-de-invitados', tipo: 'WPA' },
   DESCANSO: { noche: { desde: '23:00', hasta: '07:00', modo: 'apagado' }, despiertoMinutos: 5, sinMovimientoMinutos: 20 }
 };
