@@ -31,7 +31,8 @@
     return {
       noche: cfg.noche === false ? null : Object.assign({}, PREDETERMINADO.noche, cfg.noche || {}),
       despiertoMinutos: cfg.despiertoMinutos || PREDETERMINADO.despiertoMinutos,
-      sinMovimientoMinutos: cfg.sinMovimientoMinutos || PREDETERMINADO.sinMovimientoMinutos
+      sinMovimientoMinutos: cfg.sinMovimientoMinutos || PREDETERMINADO.sinMovimientoMinutos,
+      sinMovimientoModo: cfg.sinMovimientoModo === 'apagado' ? 'apagado' : 'tenue'
     };
   }
 
@@ -43,7 +44,7 @@
     var c = configuracion(cfg);
     var minutos = (ahora - ultimaActividad) / 60000;
     if (esDeNoche(ahora, c.noche)) return minutos < c.despiertoMinutos ? 'activo' : c.noche.modo;
-    if (haySensor && minutos >= c.sinMovimientoMinutos) return 'tenue';
+    if (haySensor && minutos >= c.sinMovimientoMinutos) return c.sinMovimientoModo;
     return 'activo';
   }
 

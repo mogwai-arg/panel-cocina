@@ -32,13 +32,16 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-14.3';
+var VERSION = '2026-10-14.4';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
   try {
     if (!p.token || p.token !== propiedad_('TOKEN')) return json_({ error: 'Token inválido' });
-    if (p.action === 'lista') return json_({ fotos: listarFotos_() });
+    if (p.action === 'lista') {
+      if (p.refrescar) CacheService.getScriptCache().remove('lista_n'); // "Buscar fotos nuevas ahora"
+      return json_({ fotos: listarFotos_() });
+    }
     if (p.action === 'img') return json_(imagen_(p.id, Number(p.ancho) || 1600));
     if (p.action === 'girar') return json_(girarFoto_(p.id, Number(p.grados) || 0));
     if (p.action === 'video') return json_(videoParte_(p.id, Number(p.parte) || 0));

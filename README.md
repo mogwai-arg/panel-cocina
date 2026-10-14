@@ -265,6 +265,23 @@ productos. Se le mandan solo los textos de los comunicados y de Classroom (no no
 asistencia ni datos de la ficha). Si el modelo cambia de nombre, se ajusta con la
 propiedad `GEMINI_MODELO` (por defecto `gemini-2.5-flash`).
 
+## Ajustes (⚙️)
+
+La pantalla **Ajustes** de la barra lateral (o tocando la hora) cambia, con botones − / +:
+
+- **Fotos**: cuánto se ve cada foto, videos sí/no, y **Buscar fotos nuevas ahora** (solas
+  aparecen en menos de una hora: el panel toma todo lo que haya en la carpeta de Drive y sus
+  subcarpetas).
+- **Panel y fotos**: a los cuántos minutos sin tocar pasa a fotos; mostrar el panel cada tanto
+  (cada cuántos minutos y cuántos segundos).
+- **Sensor de movimiento**: usarlo o no, a los cuántos minutos sin nadie descansa la pantalla
+  y si queda tenue o negra.
+- **Noche**: colores oscuros (desde/hasta), descanso nocturno (desde/hasta, tenue o negra) y
+  cuántos minutos queda despierta al tocarla.
+
+Se guardan en cada aparato (el marco tiene los suyos). Los valores de `config.js` son los de
+fábrica ("Volver a los valores de fábrica").
+
 ## Fotos y panel, alternados
 
 Mientras están las fotos, **cada 10 minutos** aparece el panel Hoy **30 segundos** y vuelve

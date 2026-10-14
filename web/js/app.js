@@ -45,8 +45,11 @@
   ajustar();
   window.addEventListener('resize', ajustar);
 
+  var ajustes = Ajustes.crear(config, (function () { try { return window.localStorage; } catch (e) { return null; } })());
+
   var fotos = Fotos.crearSlideshow(document.getElementById('fotos'), fuente, {
-    segundos: Number(params.get('segundos')) || config.SEGUNDOS_POR_FOTO || 15,
+    segundos: Number(params.get('segundos')) || ajustes.valor('segundosFoto'),
+    videos: ajustes.valor('videos'),
     debug: params.get('debug') === '1'
   });
 
@@ -99,6 +102,14 @@
       }
     }),
     agentes: VistaAgentes.crearAgentes(document.getElementById('vista-agentes'), fuente),
+    ajustes: VistaAjustes.crearAjustes(document.getElementById('vista-ajustes'), ajustes, {
+      acciones: {
+        fotosNuevas: function () {
+          return fotos.recargar().then(function (n) { return n + ' fotos y videos'; });
+        }
+      },
+      info: function () { return 'Fotos y videos en la presentación: ' + fotos.cantidad() + '.'; }
+    }),
     avisos: VistaAvisos.crearAvisos(document.getElementById('vista-avisos'), fuente, {
       alCambiar: function (d) {
         var n = document.querySelector('[data-num="avisos"]');
@@ -192,82 +203,52 @@
   });
 
   // Sin tocar la pantalla por un rato → fotos.
-  var minutos = Number(params.get('inactividad')) || config.MINUTOS_INACTIVIDAD || 3;
   var temporizador = null;
   function actividad() {
     clearTimeout(temporizador);
-    temporizador = setTimeout(function () { irA('fotos'); }, minutos * 60000);
+    var minutos = Number(params.get('inactividad')) || ajustes.valor('minutosInactividad');
+    // En Ajustes no se pasa solo a las fotos (se está tocando de a poco).
+    temporizador = setTimeout(function () { if (vistaActual !== 'ajustes') irA('fotos'); }, minutos * 60000);
     ultimaActividad = Date.now();
     // Si alguien toca mientras se muestra el panel automático, se queda en el panel.
     if (panelAutomatico) { panelAutomatico = false; clearTimeout(vueltaAFotos); }
     revisarDescanso();
   }
 
-  // Ajustes que se cambian desde la pantalla (tocando la hora de la barra lateral).
-  // Se guardan en este aparato; los valores iniciales salen de config.js.
-  var alternarCfg = Object.assign({ activo: true, cadaMinutos: 10, segundosPanel: 30 }, config.ALTERNAR || {});
-  var ajustes = (function () {
-    var guardados = {};
-    try { guardados = JSON.parse(localStorage.getItem('panel-ajustes') || '{}') || {}; } catch (e) { /* nada */ }
-    return {
-      alternar: guardados.alternar !== undefined ? guardados.alternar : alternarCfg.activo !== false,
-      noche: guardados.noche !== undefined ? guardados.noche : !(config.DESCANSO && config.DESCANSO.noche === false),
-      oscuro: guardados.oscuro !== undefined ? guardados.oscuro : !(config.TEMA_OSCURO === false)
-    };
-  })();
-  function guardarAjustes() {
-    try { localStorage.setItem('panel-ajustes', JSON.stringify(ajustes)); } catch (e) { /* nada */ }
-  }
-  function configDescanso() {
-    var c = Object.assign({}, config.DESCANSO || {});
-    if (!ajustes.noche) c.noche = false;
-    return c;
-  }
+  // Ajustes que se cambian desde la pantalla (⚙️): ver js/ajustes.js y js/vista-ajustes.js.
+  function configDescanso() { return ajustes.descanso(); }
 
   // Tema oscuro: de noche la pantalla pasa a colores oscuros (antes del apagado y si la despiertan).
-  var temaOscuro = Object.assign({ desde: '19:30', hasta: '07:00' }, config.TEMA_OSCURO || {});
   function revisarTema() {
-    var oscuro = ajustes.oscuro && Descanso.esDeNoche(new Date(), temaOscuro);
+    var oscuro = ajustes.valor('oscuro') &&
+      Descanso.esDeNoche(new Date(), { desde: ajustes.valor('oscuroDesde'), hasta: ajustes.valor('oscuroHasta') });
     if (oscuro) pantalla.setAttribute('data-tema', 'noche'); else pantalla.removeAttribute('data-tema');
   }
   revisarTema();
   setInterval(revisarTema, 60000);
 
-  var panelAjustes = document.getElementById('ajustes');
-  function pintarAjustes() {
-    panelAjustes.querySelectorAll('[data-ajuste]').forEach(function (i) { i.checked = !!ajustes[i.getAttribute('data-ajuste')]; });
-    var n = Descanso.configuracion(config.DESCANSO).noche || { desde: '23:00', hasta: '07:00' };
-    panelAjustes.querySelector('[data-r="alternar-detalle"]').textContent =
-      'Cada ' + alternarCfg.cadaMinutos + ' min de fotos, el panel ' + alternarCfg.segundosPanel + ' s y vuelve a las fotos';
-    panelAjustes.querySelector('[data-r="oscuro-detalle"]').textContent =
-      'De ' + temaOscuro.desde + ' a ' + temaOscuro.hasta + ', colores oscuros que no encandilan';
-    panelAjustes.querySelector('[data-r="noche-detalle"]').textContent =
-      'De ' + n.desde + ' a ' + n.hasta + ' la pantalla queda ' + (n.modo === 'tenue' ? 'tenue' : 'negra');
-  }
-  reloj.addEventListener('click', function () { pintarAjustes(); panelAjustes.hidden = false; });
-  panelAjustes.querySelector('[data-r="cerrar"]').addEventListener('click', function () { panelAjustes.hidden = true; });
-  panelAjustes.querySelectorAll('[data-ajuste]').forEach(function (i) {
-    i.addEventListener('change', function () {
-      ajustes[i.getAttribute('data-ajuste')] = i.checked;
-      guardarAjustes();
-      estadoDescanso = null; // recalcular ya
-      revisarDescanso();
-      revisarTema();
-    });
+  // Cuando se cambia un ajuste, se aplica en el momento.
+  ajustes.alCambiar(function () {
+    fotos.configurar({ segundos: ajustes.valor('segundosFoto'), videos: ajustes.valor('videos') });
+    estadoDescanso = null; // recalcular ya
+    revisarDescanso();
+    revisarTema();
+    actividad();
   });
+  reloj.addEventListener('click', function () { irA('ajustes'); });
 
   // Alternar: después de un rato de fotos, el panel Hoy unos segundos, y de vuelta a fotos.
   var enFotosDesde = Date.now();
   var vueltaAFotos = null;
   var panelAutomatico = false;
   setInterval(function () {
-    if (!ajustes.alternar || vistaActual !== 'fotos' || estadoDescanso !== 'activo') return;
-    if (!Descanso.tocaPanel(Date.now(), enFotosDesde, ultimaActividad, alternarCfg)) return;
+    if (!ajustes.valor('alternar') || vistaActual !== 'fotos' || estadoDescanso !== 'activo') return;
+    if (!Descanso.tocaPanel(Date.now(), enFotosDesde, ultimaActividad, { cadaMinutos: ajustes.valor('alternarCada') })) return;
     panelAutomatico = true;
     irA('hoy');
     vueltaAFotos = setTimeout(function () {
       if (panelAutomatico) { panelAutomatico = false; irA('fotos'); }
-    }, alternarCfg.segundosPanel * 1000);
+    }, ajustes.valor('alternarSegundos') * 1000);
   }, 15000);
 
   // Modo descanso: de noche se apaga (negro) y, si hay sensor, de día se atenúa sin nadie.
@@ -277,7 +258,7 @@
   var estadoDescanso = 'activo';
   function revisarDescanso() {
     if (!capaDescanso) return;
-    var nuevo = Descanso.estado(new Date(), ultimaActividad, configDescanso(), haySensor);
+    var nuevo = Descanso.estado(new Date(), ultimaActividad, configDescanso(), haySensor && ajustes.valor('sensor'));
     if (nuevo === estadoDescanso) return;
     estadoDescanso = nuevo;
     capaDescanso.hidden = nuevo === 'activo';
@@ -332,6 +313,6 @@
   fotos.iniciar();
   fotos.pausar();
   hoy.iniciar();
-  irA(['fotos', 'tareas', 'compras', 'cole', 'avisos', 'agentes'].indexOf(params.get('vista')) >= 0 ? params.get('vista') : 'hoy');
+  irA(['fotos', 'tareas', 'compras', 'cole', 'avisos', 'agentes', 'ajustes'].indexOf(params.get('vista')) >= 0 ? params.get('vista') : 'hoy');
   actividad();
 })();

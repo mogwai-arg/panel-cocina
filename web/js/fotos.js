@@ -41,6 +41,7 @@
     var debug = !!opciones.debug;
     var maxSegundosVideo = opciones.maxSegundosVideo || 90;
     var hayVideos = typeof fuente.video === 'function' && opciones.videos !== false;
+    var cantidadFotos = 0;
     var fallidosSeguidos = 0;
 
     var secuencia = [];
@@ -59,9 +60,12 @@
       return contenedor.clientWidth / Math.max(1, contenedor.clientHeight);
     }
 
+    var refrescarLista = false;
     function cargarLista() {
       if (!actual) contenedor.setAttribute('data-estado', 'cargando');
-      return fuente.listar().then(function (fotos) {
+      return fuente.listar(refrescarLista ? { refrescar: true } : undefined).then(function (fotos) {
+        refrescarLista = false;
+        cantidadFotos = fotos.filter(function (f) { return !(f.video && !hayVideos); }).length;
         var malos = leerNoSoportados();
         fotos = fotos.filter(function (f) { return !(f.video && malos[f.id]); });
         var ds = Layout.armarDiapositivas(fotos, { proporcionPantalla: proporcionPantalla(), sinVideos: !hayVideos });
@@ -349,6 +353,18 @@
       anterior: function () { return mostrar(-1); },
       // Mientras está pausado no cambia de foto ni descarga nada.
       menuGiro: menuGiro,
+      // Desde Ajustes: tiempo por foto y videos sí/no (se aplican en la próxima diapositiva).
+      configurar: function (c) {
+        if (c.segundos) segundos = c.segundos;
+        var conVideos = typeof fuente.video === 'function' && c.videos !== false;
+        if (conVideos !== hayVideos) { hayVideos = conVideos; ultimaLista = 0; }
+      },
+      // "Buscar fotos nuevas ahora": pide la lista de nuevo a Drive (sin esperar la media hora).
+      recargar: function () {
+        refrescarLista = true;
+        return cargarLista().then(function () { return cantidadFotos; });
+      },
+      cantidad: function () { return cantidadFotos; },
       pausar: function () {
         cerrarMenu();
         pausado = true;

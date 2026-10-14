@@ -420,8 +420,10 @@
     }
 
     return {
-      listar: function () {
-        return pedir({ action: 'lista', token: token }).then(function (d) { return d.fotos; });
+      listar: function (op) {
+        var params = { action: 'lista', token: token };
+        if (op && op.refrescar) params.refrescar = 1; // sin esperar la media hora de la lista guardada
+        return pedir(params).then(function (d) { return d.fotos; });
       },
       url: function (foto) {
         if (cache.has(foto.id)) {
