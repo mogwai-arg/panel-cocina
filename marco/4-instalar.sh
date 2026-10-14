@@ -9,9 +9,18 @@
 IP="$1"
 [ -z "$IP" ] && { echo "Uso: bash marco/4-instalar.sh IP_DEL_MARCO"; exit 1; }
 [ -f web/config.js ] || { echo "Falta web/config.js (corré esto desde la carpeta panel-cocina)"; exit 1; }
-adb connect "$IP:5555" >/dev/null
+adb connect "$IP:5555" >/dev/null 2>&1
 A="adb -s $IP:5555"
-$A shell true 2>/dev/null || { echo "No se pudo conectar con $IP (si se reinició: cable USB y bash marco/1-diagnostico.sh usb)"; exit 1; }
+# Si por Wi-Fi no responde pero hay un cable USB conectado, se usa el cable.
+if ! $A shell true >/dev/null 2>&1 && adb -d shell true >/dev/null 2>&1; then
+  echo "(por Wi-Fi no responde: uso el cable USB)"
+  A="adb -d"
+fi
+$A shell true 2>/dev/null || {
+  echo "No se pudo conectar con $IP."
+  echo " - Puede que el router le haya dado otra IP: mirala en el marco (Ajustes de Android → Wi-Fi) o en tu router."
+  echo " - O conectá un cable USB de datos entre la Mac y el marco y volvé a correr este mismo comando."
+  exit 1; }
 $A shell pm list packages | grep -q com.android.chrome || { echo "Falta Chrome: corré antes marco/2-probar.sh"; exit 1; }
 SU() { $A shell "su -c '$1'"; }
 
@@ -62,3 +71,8 @@ echo
 echo "Listo: el panel tiene que quedar a pantalla completa solo (el marco se toca a sí mismo)."
 echo "Para probar el arranque: apagá y prendé el marco; en ~1 minuto tiene que aparecer el panel."
 echo "Registro de lo que hace el marco:  $A shell su -c 'cat /data/local/panel/registro.log'"
+if [ "$A" = "adb -d" ]; then
+  IPW=$($A shell ip -f inet addr show wlan0 2>/dev/null | tr -d '\r' | grep -o 'inet [0-9.]*' | cut -d' ' -f2)
+  $A tcpip 5555 >/dev/null 2>&1
+  echo "ADB por Wi-Fi prendido de nuevo. IP del marco: ${IPW:-no la encontré} (usá esa la próxima vez)."
+fi

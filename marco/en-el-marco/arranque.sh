@@ -26,7 +26,13 @@ while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 3; done
 sleep 20
 anotar "arranque"
 
-setprop persist.adb.tcp.port 5555
+# ADB por Wi-Fi en cada arranque (si no, después de apagar hace falta el cable).
+if [ "$(getprop service.adb.tcp.port)" != "5555" ]; then
+  setprop persist.adb.tcp.port 5555
+  setprop service.adb.tcp.port 5555
+  stop adbd; start adbd
+fi
+anotar "ip $(ip -f inet addr show wlan0 2>/dev/null | grep -o 'inet [0-9.]*' | cut -d' ' -f2)"
 settings put global policy_control immersive.full=com.android.chrome
 settings put system screen_off_timeout 2147483647
 

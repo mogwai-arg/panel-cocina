@@ -3,8 +3,13 @@
 # Uso:  bash marco/6-revisar.sh 192.168.68.114
 IP="$1"
 [ -z "$IP" ] && { echo "Uso: bash marco/6-revisar.sh IP_DEL_MARCO"; exit 1; }
-adb connect "$IP:5555" >/dev/null
+adb connect "$IP:5555" >/dev/null 2>&1
 A="adb -s $IP:5555"
+# Si por Wi-Fi no responde pero hay un cable USB conectado, se usa el cable.
+if ! $A shell true >/dev/null 2>&1 && adb -d shell true >/dev/null 2>&1; then
+  echo "(por Wi-Fi no responde: uso el cable USB)"
+  A="adb -d"
+fi
 $A shell true 2>/dev/null || { echo "No se pudo conectar con $IP (si no responde: cable USB y bash marco/1-diagnostico.sh usb)"; exit 1; }
 SALIDA="marco/revision-$(date +%Y%m%d-%H%M).txt"
 {

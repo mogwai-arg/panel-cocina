@@ -4,8 +4,13 @@
 # Uso:  bash marco/5-volver-a-frameo.sh 192.168.68.114
 IP="$1"
 [ -z "$IP" ] && { echo "Uso: bash marco/5-volver-a-frameo.sh IP_DEL_MARCO"; exit 1; }
-adb connect "$IP:5555" >/dev/null
+adb connect "$IP:5555" >/dev/null 2>&1
 A="adb -s $IP:5555"
+# Si por Wi-Fi no responde pero hay un cable USB conectado, se usa el cable.
+if ! $A shell true >/dev/null 2>&1 && adb -d shell true >/dev/null 2>&1; then
+  echo "(por Wi-Fi no responde: uso el cable USB)"
+  A="adb -d"
+fi
 SU() { $A shell "su -c '$1'"; }
 SU "rm -f /data/local/panel/activo; kill \$(cat /data/local/panel/pid 2>/dev/null) 2>/dev/null; rm -f /data/local/panel/pid"
 SU "mount -o remount,rw /system"
