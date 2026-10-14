@@ -16,6 +16,7 @@
  *   classroom(): Promise<{ datos, recibido }>        ver js/classroom.js y apps-script-classroom/
  *   mails(): Promise<{ mails, actualizado }>          ver js/mails.js y apps-script/Mails.gs
  *   ubicacion(): Promise<{ personas }>               ver js/ubicacion.js y apps-script/Ubicacion.gs
+ *   agentes(): Promise<{ registro, calendario, ultimaCorrida }>   ver apps-script/Agentes.gs
  */
 (function (root) {
   'use strict';
@@ -59,6 +60,21 @@
       colegium: function () { return Promise.resolve(coleEjemplo(new Date())); },
       classroom: function () { return Promise.resolve(classroomEjemplo(new Date())); },
       mails: function () { return Promise.resolve(mailsEjemplo(new Date())); },
+      agentes: function () {
+        var ahora = Date.now();
+        function r(min, agente, texto) { return { fecha: new Date(ahora - min * 60000).toISOString(), agente: agente, texto: texto }; }
+        return Promise.resolve({
+          calendario: 'Familia · automático', ultimaCorrida: new Date(ahora - 22 * 60000).toISOString(),
+          registro: [
+            r(22, 'Mails', 'Agendé "Recordatorio de turno – Clínica Pediátrica" para el mar 20/10 a las 10:30.'),
+            r(85, 'Classroom', 'Thi entregó "Cuestionario de la unidad 2": lo saqué del calendario.'),
+            r(140, 'Colegio', 'Agendé "🎒 Reunión de padres 4° B" para el jue 15/10 a las 19:00.'),
+            r(60 * 26, 'Básquet', 'Agendé Básquet vs Pedro Echagüe Azul (sáb 24/10 11:00).'),
+            r(60 * 27, 'Mails', 'Agendé "Tu factura de luz" para el jue 22/10.'),
+            r(60 * 28, 'Calendario', 'Creé el calendario "Familia · automático" en tu Google Calendar.')
+          ]
+        });
+      },
       ubicacion: function () {
         var ahora = new Date();
         return Promise.resolve({ personas: [{
@@ -425,6 +441,7 @@
       colegium: function () { return pedir({ action: 'colegium', token: token }); },
       mails: function () { return pedir({ action: 'mails', token: token }); },
       ubicacion: function () { return pedir({ action: 'ubicacion', token: token }); },
+      agentes: function () { return pedir({ action: 'agentes', token: token }); },
       classroom: function () {
         var nombres = opciones.nombresCalendarios || {};
         return pedir({ action: 'classroom', token: token }).then(function (r) {

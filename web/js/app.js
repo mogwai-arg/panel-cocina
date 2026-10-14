@@ -98,6 +98,7 @@
         n.hidden = !total;
       }
     }),
+    agentes: VistaAgentes.crearAgentes(document.getElementById('vista-agentes'), fuente),
     avisos: VistaAvisos.crearAvisos(document.getElementById('vista-avisos'), fuente, {
       alCambiar: function (d) {
         var n = document.querySelector('[data-num="avisos"]');
@@ -295,6 +296,6 @@
   fotos.iniciar();
   fotos.pausar();
   hoy.iniciar();
-  irA(['fotos', 'tareas', 'compras', 'cole', 'avisos'].indexOf(params.get('vista')) >= 0 ? params.get('vista') : 'hoy');
+  irA(['fotos', 'tareas', 'compras', 'cole', 'avisos', 'agentes'].indexOf(params.get('vista')) >= 0 ? params.get('vista') : 'hoy');
   actividad();
 })();

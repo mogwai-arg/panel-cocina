@@ -222,6 +222,23 @@ Con el teléfono quieto OwnTracks puede pasar horas sin mandar nada: el panel mu
 Con `NTFY_TEMA` ya no llegan mails (si los querés igual: propiedad `AVISOS_POR_MAIL` = `si`).
 El marco además muestra un cartel "📍 Thi llegó a Colegio" cuando cambia de lugar.
 
+## Agentes
+
+Lo que el panel hace solo, y un registro de lo que hizo (pantalla **Agentes**):
+
+- **Calendario automático**: cada hora pasa a un calendario de Google **"Familia ·
+  automático"** los turnos y vencimientos detectados en los mails, las entregas de
+  Classroom de Thi (y las saca cuando las entrega) y los eventos que publica el colegio en
+  Colegium. Así te llegan al celular con los avisos de Google Calendar. El panel no muestra
+  ese calendario (ya muestra todo eso por su cuenta).
+- **Básquet**: los partidos al calendario "Básquet Thiago" (ya existía; ahora queda anotado).
+- **Registro**: hoja "Registro" de la planilla ("Agendé el turno de OSDE para el mar 20/10…").
+
+Para activarlo: agregá `Agentes.gs`, reemplazá `Code.gs`, publicá **Nueva versión** y
+ejecutá `activarAgentes` (crea el calendario y lo corre cada hora). Si querés que el
+calendario automático te avise, en Google Calendar → ese calendario → Configuración →
+Notificaciones (por ejemplo, 1 día antes y 1 hora antes).
+
 ## Fotos y panel, alternados
 
 Mientras están las fotos, **cada 10 minutos** aparece el panel Hoy **30 segundos** y vuelve

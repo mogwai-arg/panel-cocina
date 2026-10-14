@@ -432,3 +432,17 @@ small.quien__alerta { color: #c4453a; }
 .interruptor input:checked + span::after { left: 25px; }
 .interruptor small { display: block; font: 500 13px var(--texto); color: var(--suave); }
 .ajustes__cerrar { align-self: flex-end; border: 0; border-radius: 99px; padding: 10px 22px; background: var(--tinta); color: #fff; font: 800 14px var(--rotulo); letter-spacing: .08em; cursor: pointer; }
+
+/* Agentes */
+.registro { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 8px; }
+.registro__dia { margin-top: 10px; }
+.registro__dia:first-child { margin-top: 0; }
+.registro__fila { display: grid; grid-template-columns: 48px 26px 1fr; gap: 8px; align-items: baseline; background: var(--tarjeta); border-radius: 10px; padding: 10px 14px; }
+.registro__hora { font: 800 13px var(--rotulo); color: var(--suave); }
+.registro__icono { font-size: 16px; }
+.registro__texto { font-size: 15px; line-height: 1.35; }
+.agente__cab { display: flex; gap: 10px; align-items: center; font: 600 17px var(--texto); }
+.agente__icono { font-size: 20px; }
+.agente__texto { margin: 0; font-size: 14px; line-height: 1.4; color: #3d3b37; }
+.agente__estado { font: 800 12px var(--rotulo); letter-spacing: .04em; color: #2e7d4f; }
+.agente--apagado .agente__estado { color: var(--suave); }

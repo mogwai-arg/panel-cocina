@@ -25,12 +25,13 @@
  *   ?action=classroom y POST classroom → ver Colegium.gs y apps-script-classroom/
  *   ?action=mails                      → ver Mails.gs
  *   ?action=ubicacion (GET y POST)     → ver Ubicacion.gs (OwnTracks)
+ *   ?action=agentes                    → ver Agentes.gs (calendario automático y registro)
  */
 
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-12.12';
+var VERSION = '2026-10-14.1';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -49,6 +50,7 @@ function doGet(e) {
     if (p.action === 'classroom') return json_(leerClassroom_());
     if (p.action === 'mails') return json_(mails_()); // Mails.gs
     if (p.action === 'ubicacion') return json_(ubicaciones_()); // Ubicacion.gs
+    if (p.action === 'agentes') return json_(agentes_()); // Agentes.gs
     if (p.action === 'reglasMails') return json_(reglasMailsPara_(p.cuenta));
     if (p.action === 'version') return json_({ version: VERSION });
     return json_({ error: 'Acción desconocida: ' + p.action + ' (versión publicada: ' + VERSION + ')' });
@@ -508,6 +510,9 @@ function agenda_(dias) {
     ? ids.split(',').map(function (s) { return CalendarApp.getCalendarById(s.trim()); })
         .filter(function (c) { return c; })
     : CalendarApp.getAllCalendars().filter(function (c) { return c.isSelected() && !c.isHidden(); });
+  // El calendario de los agentes es para los teléfonos: el panel ya muestra todo eso.
+  var auto = PropertiesService.getScriptProperties().getProperty('AGENDA_AUTO_ID');
+  calendarios = calendarios.filter(function (c) { return c.getId() !== auto; });
 
   var desde = new Date();
   desde.setHours(0, 0, 0, 0);
@@ -783,13 +788,18 @@ function sincronizarCalendarioBasquet() {
       e = cal.createEvent(ev.titulo, ev.inicio, ev.fin, { location: ev.lugar, description: ev.descripcion });
       e.setTag('basquet', clave);
       creados++;
+      if (typeof registrar_ === 'function') registrar_('Básquet', 'Agendé ' + ev.titulo + ' (' +
+        Utilities.formatDate(ev.inicio, 'America/Argentina/Buenos_Aires', "EEE d/M HH:mm") + ').');
       return;
     }
     var cambio = false;
     if (e.getTitle() !== ev.titulo) { e.setTitle(ev.titulo); cambio = true; }
     if (e.getStartTime().getTime() !== ev.inicio.getTime()) { e.setTime(ev.inicio, ev.fin); cambio = true; }
     if (e.getLocation() !== ev.lugar) { e.setLocation(ev.lugar); cambio = true; }
-    if (cambio) actualizados++;
+    if (cambio) {
+      actualizados++;
+      if (typeof registrar_ === 'function') registrar_('Básquet', 'Cambió ' + ev.titulo + ': lo actualicé en el calendario.');
+    }
   });
   Logger.log('Calendario "' + cal.getName() + '": ' + creados + ' partidos nuevos, ' + actualizados + ' actualizados.');
 }
