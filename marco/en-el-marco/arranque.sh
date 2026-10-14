@@ -17,6 +17,7 @@ if [ -f $DIR/pid ] && kill -0 "$(cat $DIR/pid)" 2>/dev/null; then exit 0; fi
 echo $$ > $DIR/pid
 
 anotar() { echo "$(date '+%d/%m %H:%M:%S') $1" >> $LOG; }
+anotar "inicio (pid $$)"
 # El registro no crece para siempre
 [ -f $LOG ] && [ "$(wc -l < $LOG)" -gt 2000 ] && tail -n 500 $LOG > $LOG.tmp && mv $LOG.tmp $LOG
 

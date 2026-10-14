@@ -9,7 +9,7 @@ A="adb -s $IP:5555"
 SU() { $A shell "su -c '$1'"; }
 SU "rm -f /data/local/panel/activo; kill \$(cat /data/local/panel/pid 2>/dev/null) 2>/dev/null; rm -f /data/local/panel/pid"
 SU "mount -o remount,rw /system"
-SU "rm -f /system/su.d/90panel"
+SU "rm -rf /system/su.d"
 SU "[ -f /data/local/panel/original/install-recovery.sh ] && cp /data/local/panel/original/install-recovery.sh /system/bin/install-recovery.sh"
 SU "mount -o remount,ro /system"
 SU "settings delete global policy_control"

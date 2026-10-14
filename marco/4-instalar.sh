@@ -24,21 +24,34 @@ $A push marco/en-el-marco/arranque.sh /sdcard/panel-arranque.sh >/dev/null
 SU "mkdir -p /data/local/panel && cp /sdcard/panel-arranque.sh /data/local/panel/arranque.sh && chmod 755 /data/local/panel/arranque.sh && touch /data/local/panel/activo && rm /sdcard/panel-arranque.sh"
 
 echo "3/4 Enganchando el arranque al encender ..."
-# SuperSU corre los scripts de /system/su.d al arrancar. Por las dudas también se agrega una
-# línea al final de install-recovery.sh (con copia del original); el script no corre dos veces.
-LINEA='/system/bin/sh /data/local/panel/arranque.sh &'
+# install-recovery.sh corre como root en cada arranque (servicio flash_recovery). Se le agrega
+# una línea al final, con copia del original. (Ojo: en Android 6 'adb shell' siempre devuelve
+# "salió bien", por eso se mira la salida del comando y no su resultado.)
+LINEA='setsid /system/bin/sh /data/local/panel/arranque.sh </dev/null >/dev/null 2>&1 &'
 SU "mount -o remount,rw /system"
-SU "mkdir -p /system/su.d && echo \"#!/system/bin/sh\" > /system/su.d/90panel && echo \"$LINEA\" >> /system/su.d/90panel && chmod 755 /system/su.d /system/su.d/90panel"
-if ! $A shell "su -c 'grep -q /data/local/panel /system/bin/install-recovery.sh'"; then
-  SU "mkdir -p /data/local/panel/original && cp /system/bin/install-recovery.sh /data/local/panel/original/ && echo \"$LINEA\" >> /system/bin/install-recovery.sh"
+if [ -z "$($A shell "su -c 'grep -c panel/arranque /system/bin/install-recovery.sh'" | tr -d '\r' | grep -v '^0$')" ]; then
+  SU "mkdir -p /data/local/panel/original; [ -f /data/local/panel/original/install-recovery.sh ] || cp /system/bin/install-recovery.sh /data/local/panel/original/"
+  $A shell "su -c 'echo \"$LINEA\" >> /system/bin/install-recovery.sh'"
 fi
+SU "rm -rf /system/su.d"   # de la versión anterior: este SuperSU no la usa
 SU "mount -o remount,ro /system"
+if $A shell "su -c 'tail -1 /system/bin/install-recovery.sh'" | grep -q panel/arranque; then
+  echo "    listo (al encender corre el panel)"
+else
+  echo "    ⚠️ no se pudo agregar al arranque: pasale a Claude lo que dice:"
+  $A shell "su -c 'tail -3 /system/bin/install-recovery.sh'"
+fi
 
 echo "4/4 Arrancando el panel ..."
 SU "setprop persist.adb.tcp.port 5555"
 SU "kill \$(cat /data/local/panel/pid 2>/dev/null) 2>/dev/null; rm -f /data/local/panel/pid"
-$A shell "su -c 'setsid nohup /system/bin/sh /data/local/panel/arranque.sh > /dev/null 2>&1 &'" &
+$A shell "su -c 'setsid /system/bin/sh /data/local/panel/arranque.sh </dev/null >/dev/null 2>&1 &'"
 sleep 3
+if $A shell "su -c 'cat /data/local/panel/registro.log 2>/dev/null'" | grep -q inicio; then
+  echo "    el vigía del marco está corriendo"
+else
+  echo "    ⚠️ el vigía no arrancó ahora (igual debería arrancar al reiniciar el marco)"
+fi
 # Cerrar las pestañas de antes (cada apertura vieja dejó una) y abrir el panel en una sola.
 $A shell am force-stop com.android.chrome
 SU "rm -rf /data/data/com.android.chrome/app_tabs"
