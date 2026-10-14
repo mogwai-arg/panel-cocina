@@ -2,8 +2,9 @@
 # Paso 1 en el marco: conectarse por Wi-Fi, ver qué tiene adentro y hacer el backup de Frameo.
 # NO cambia nada en el marco: solo lee y copia a la Mac.
 #
-# Uso (desde la carpeta panel-cocina):   bash marco/1-diagnostico.sh 192.168.0.23
-#   (el número es la IP del marco: Frameo → Configuración → Acerca de / Wi-Fi)
+# Uso (desde la carpeta panel-cocina):
+#   por Wi-Fi:  bash marco/1-diagnostico.sh 192.168.0.23   (la IP del marco)
+#   por cable:  bash marco/1-diagnostico.sh usb            (además deja prendido el ADB por Wi-Fi)
 
 IP="$1"
 if [ -z "$IP" ]; then
@@ -20,18 +21,37 @@ DESTINO="marco/backup-$(date +%Y%m%d-%H%M)"
 mkdir -p "$DESTINO"
 INFO="$DESTINO/info.txt"
 
-echo "Conectando con $IP ..."
-adb connect "$IP:5555"
-sleep 2
-if ! adb -s "$IP:5555" shell true 2>/dev/null; then
-  echo
-  echo "No se pudo entrar al marco. Revisá:"
-  echo " - En el marco: Configuración → Acceso mediante ADB → activado (y la IP correcta)."
-  echo " - Si en la pantalla del marco aparece '¿Permitir depuración?', tocá Permitir (y 'Siempre')."
-  echo " Después volvé a correr este script."
-  exit 1
+if [ "$IP" = "usb" ]; then
+  echo "Buscando el marco por cable USB ..."
+  adb wait-for-usb-device &
+  ESPERA=$!
+  sleep 8; kill $ESPERA 2>/dev/null
+  if ! adb -d shell true 2>/dev/null; then
+    echo
+    echo "No aparece el marco por USB. Revisá:"
+    echo " - Que el cable sea de datos (algunos solo cargan) y esté en el puerto del marco."
+    echo " - En el marco: Configuración → Acceso mediante ADB → activado."
+    echo " - Si en la pantalla del marco aparece '¿Permitir depuración?', tocá Permitir (y 'Siempre')."
+    echo " Lo que ve la Mac:"; adb devices -l
+    exit 1
+  fi
+  A="adb -d"
+  # Dejar ADB por Wi-Fi prendido, así los pasos siguientes no necesitan el cable.
+  IPW=$($A shell ip -f inet addr show wlan0 2>/dev/null | tr -d '\r' | grep -o 'inet [0-9.]*' | cut -d' ' -f2)
+  $A tcpip 5555 >/dev/null 2>&1 && echo "ADB por Wi-Fi prendido. IP del marco: ${IPW:-no la encontré}"
+else
+  echo "Conectando con $IP ..."
+  adb connect "$IP:5555"
+  sleep 2
+  if ! adb -s "$IP:5555" shell true 2>/dev/null; then
+    echo
+    echo "No se pudo entrar al marco por Wi-Fi. Probá por cable USB una vez:"
+    echo "   bash marco/1-diagnostico.sh usb"
+    echo "(conectá el marco a la Mac con un cable USB de datos; si pregunta '¿Permitir depuración?', tocá Permitir)"
+    exit 1
+  fi
+  A="adb -s $IP:5555"
 fi
-A="adb -s $IP:5555"
 
 {
   echo "=== Marco ==="
