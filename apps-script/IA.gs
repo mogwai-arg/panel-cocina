@@ -73,14 +73,11 @@ function ordenarModelos_(nombres) {
   return candidatos;
 }
 
-/* Un modelo de repuesto (el siguiente de la lista, de otra versión) para cuando el elegido está saturado. */
-function modeloRepuesto_(clave, actual) {
+/* Los otros modelos "flash" para probar si el elegido está saturado, en orden. */
+function repuestosGemini_(clave, actual) {
   try {
-    var lista = ordenarModelos_(modelosDisponibles_(clave));
-    var version = function (n) { var m = n.match(/gemini-(\d+(?:\.\d+)?)/); return m ? m[1] : n; };
-    return lista.filter(function (n) { return n !== actual && version(n) !== version(actual); })[0] ||
-      lista.filter(function (n) { return n !== actual; })[0] || null;
-  } catch (e) { return null; }
+    return ordenarModelos_(modelosDisponibles_(clave)).filter(function (n) { return n !== actual; });
+  } catch (e) { return []; }
 }
 
 /** Para ver qué modelos ofrece Google con tu clave y cuál elige el asistente. */
@@ -119,13 +116,22 @@ function gemini_(prompt, esquema, reintento) {
     codigo = resp.getResponseCode();
   });
   if (codigo === 503 || codigo === 500) {
-    var repuesto = modeloRepuesto_(clave, modelo);
-    if (repuesto) {
-      Logger.log('El modelo ' + modelo + ' está saturado: uso ' + repuesto + ' esta vez.');
-      resp = pedirGemini_(clave, repuesto, prompt, esquema);
-      codigo = resp.getResponseCode();
-      modelo = repuesto;
-    }
+    // Probar los otros "flash" de la lista y quedarse con el primero que conteste.
+    var probados = [modelo];
+    repuestosGemini_(clave, modelo).slice(0, 5).some(function (otro) {
+      probados.push(otro);
+      var r = pedirGemini_(clave, otro, prompt, esquema);
+      if (r.getResponseCode() === 503 || r.getResponseCode() === 500) return false;
+      resp = r;
+      codigo = r.getResponseCode();
+      if (codigo === 200 && !props.getProperty('GEMINI_MODELO')) {
+        props.setProperty('GEMINI_MODELO_ELEGIDO', otro);
+        Logger.log(modelo + ' estaba saturado: desde ahora uso ' + otro + '.');
+      }
+      modelo = otro;
+      return true;
+    });
+    if (codigo === 503 || codigo === 500) Logger.log('Saturados: ' + probados.join(', '));
   }
   var cuerpo = resp.getContentText();
   if (codigo === 503) throw new Error('Gemini está saturado en este momento (pasa a veces): se vuelve a intentar mañana a las 6, o ejecutá probarIA más tarde');
