@@ -57,16 +57,30 @@ function modelosDisponibles_(clave) {
  * Prefiere los estables a los "preview"/"exp", y el flash común al "lite". Puro, para tests.
  */
 function elegirModelo_(nombres) {
+  return ordenarModelos_(nombres)[0] || null;
+}
+
+/* Los "flash" de la lista, del mejor al peor (el segundo sirve de repuesto si el primero está saturado). */
+function ordenarModelos_(nombres) {
   var raros = /(image|imagen|tts|audio|live|embedding|vision|thinking|learnlm|aqa|robotics|computer|native)/i;
   var candidatos = nombres.filter(function (n) { return /flash/i.test(n) && !raros.test(n); });
-  if (!candidatos.length) return null;
   function version(n) { var m = n.match(/gemini-(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; }
   function puntaje(n) {
     return version(n) * 100 - (/(preview|exp)/i.test(n) ? 30 : 0) - (/lite/i.test(n) ? 10 : 0) -
       (/-\d{3,}$|-\d{2}-\d{2}/.test(n) ? 1 : 0) - (/latest/i.test(n) ? 2 : 0);
   }
   candidatos.sort(function (a, b) { return puntaje(b) - puntaje(a); });
-  return candidatos[0];
+  return candidatos;
+}
+
+/* Un modelo de repuesto (el siguiente de la lista, de otra versión) para cuando el elegido está saturado. */
+function modeloRepuesto_(clave, actual) {
+  try {
+    var lista = ordenarModelos_(modelosDisponibles_(clave));
+    var version = function (n) { var m = n.match(/gemini-(\d+(?:\.\d+)?)/); return m ? m[1] : n; };
+    return lista.filter(function (n) { return n !== actual && version(n) !== version(actual); })[0] ||
+      lista.filter(function (n) { return n !== actual; })[0] || null;
+  } catch (e) { return null; }
 }
 
 /** Para ver qué modelos ofrece Google con tu clave y cuál elige el asistente. */
@@ -77,12 +91,8 @@ function modelosGemini() {
   Logger.log('Elegido: ' + elegirModelo_(nombres));
 }
 
-function gemini_(prompt, esquema, reintento) {
-  var props = PropertiesService.getScriptProperties();
-  var clave = props.getProperty('GEMINI_API_KEY');
-  if (!clave) throw new Error('Falta la propiedad GEMINI_API_KEY (sacala gratis en https://aistudio.google.com/apikey)');
-  var modelo = modeloGemini_(clave, reintento);
-  var resp = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelo + ':generateContent', {
+function pedirGemini_(clave, modelo, prompt, esquema) {
+  return UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelo + ':generateContent', {
     method: 'post',
     contentType: 'application/json',
     headers: { 'x-goog-api-key': clave },
@@ -92,8 +102,33 @@ function gemini_(prompt, esquema, reintento) {
       generationConfig: { responseMimeType: 'application/json', responseSchema: esquema, temperature: 0.3 }
     })
   });
+}
+
+function gemini_(prompt, esquema, reintento) {
+  var props = PropertiesService.getScriptProperties();
+  var clave = props.getProperty('GEMINI_API_KEY');
+  if (!clave) throw new Error('Falta la propiedad GEMINI_API_KEY (sacala gratis en https://aistudio.google.com/apikey)');
+  var modelo = modeloGemini_(clave, reintento);
+  var resp = pedirGemini_(clave, modelo, prompt, esquema);
   var codigo = resp.getResponseCode();
+  // Saturado (503) o error pasajero (500): reintentar con espera; si sigue, usar el modelo de repuesto.
+  [5, 15].forEach(function (seg) {
+    if (codigo !== 503 && codigo !== 500) return;
+    Utilities.sleep(seg * 1000);
+    resp = pedirGemini_(clave, modelo, prompt, esquema);
+    codigo = resp.getResponseCode();
+  });
+  if (codigo === 503 || codigo === 500) {
+    var repuesto = modeloRepuesto_(clave, modelo);
+    if (repuesto) {
+      Logger.log('El modelo ' + modelo + ' está saturado: uso ' + repuesto + ' esta vez.');
+      resp = pedirGemini_(clave, repuesto, prompt, esquema);
+      codigo = resp.getResponseCode();
+      modelo = repuesto;
+    }
+  }
   var cuerpo = resp.getContentText();
+  if (codigo === 503) throw new Error('Gemini está saturado en este momento (pasa a veces): se vuelve a intentar mañana a las 6, o ejecutá probarIA más tarde');
   if (codigo === 404) {
     // El modelo ya no existe (Google los renombra): se elige otro de la lista, una vez.
     if (!reintento && !props.getProperty('GEMINI_MODELO')) return gemini_(prompt, esquema, true);

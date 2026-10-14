@@ -56,3 +56,8 @@ test('IA: elige el mejor modelo flash de la lista', () => {
   assert.equal(ctx.elegirModelo_(['gemini-2.0-flash-001', 'gemini-2.0-flash']), 'gemini-2.0-flash');
   assert.equal(ctx.elegirModelo_(['gemini-3.0-pro']), null);
 });
+
+test('IA: orden de modelos para el repuesto', () => {
+  assert.deepEqual([...ctx.ordenarModelos_(['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.8-flash-lite', 'gemini-3.5-pro'])],
+    ['gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-3.5-flash']);
+});
