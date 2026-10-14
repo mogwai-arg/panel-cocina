@@ -50,6 +50,7 @@
   var fotos = Fotos.crearSlideshow(document.getElementById('fotos'), fuente, {
     segundos: Number(params.get('segundos')) || ajustes.valor('segundosFoto'),
     videos: ajustes.valor('videos'),
+    lugar: ajustes.valor('lugarFoto'),
     debug: params.get('debug') === '1'
   });
 
@@ -229,7 +230,7 @@
 
   // Cuando se cambia un ajuste, se aplica en el momento.
   ajustes.alCambiar(function () {
-    fotos.configurar({ segundos: ajustes.valor('segundosFoto'), videos: ajustes.valor('videos') });
+    fotos.configurar({ segundos: ajustes.valor('segundosFoto'), videos: ajustes.valor('videos'), lugar: ajustes.valor('lugarFoto') });
     estadoDescanso = null; // recalcular ya
     revisarDescanso();
     revisarTema();

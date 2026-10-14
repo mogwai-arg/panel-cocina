@@ -32,7 +32,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-14.4';
+var VERSION = '2026-10-15.1';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -122,7 +122,7 @@ function listarFotos_() {
            "(mimeType contains 'image/' or mimeType contains 'video/' or " +
            "mimeType = 'application/vnd.google-apps.folder')",
         fields: 'nextPageToken, files(id, mimeType, createdTime, size, ' +
-                'imageMediaMetadata(width, height, rotation, time), ' +
+                'imageMediaMetadata(width, height, rotation, time, location), ' +
                 'videoMediaMetadata(width, height, durationMillis))',
         pageSize: 1000,
         pageToken: token,
@@ -142,6 +142,7 @@ function listarFotos_() {
         }
         var m = f.imageMediaMetadata || {};
         var foto = { id: f.id, fecha: fechaExif_(m.time) || f.createdTime };
+        if (m.location && m.location.latitude) foto._coord = [m.location.latitude, m.location.longitude]; // LugaresFotos.gs
         if (m.width && m.height) {
           var girada = m.rotation === 1 || m.rotation === 3;
           foto.ancho = girada ? m.height : m.width;
@@ -175,6 +176,7 @@ function listarFotos_() {
 
   aplicarGiros_(props, sinGiro, SEGUNDOS_GIROS_POR_LISTA);
   aplicarGirosManuales_(props, fotos);
+  ponerLugares_(fotos, SEGUNDOS_LUGARES_POR_LISTA);
   guardarDatosFotos_();
 
   guardarCacheGrande_(cache, 'lista', fotos, MINUTOS_CACHE_LISTA * 60);
@@ -940,6 +942,8 @@ function probar() {
   Logger.log('Sin tamaño informado por Drive: ' + r.sinTamano +
              ' (recuperadas midiendo la miniatura: ' + r.recuperadas + ')');
   if (r.descartadas.length) Logger.log('No se pudieron mostrar: ' + r.descartadas.join(', '));
+  Logger.log('Fotos con lugar: ' + fotos.filter(function (f) { return f.lugar; }).length +
+    (r.lugaresPendientes ? ' · faltan buscar ' + r.lugaresPendientes + ' lugares (se completan en las próximas vueltas)' : ''));
   var giradas = fotos.filter(function (f) { return f.girar; }).length;
   Logger.log('Fotos con giro que Drive no informa (las gira el panel): ' + giradas +
     (r.girosPendientes ? ' · faltan revisar ' + r.girosPendientes + ' (ejecutá revisarGiros)' : ''));

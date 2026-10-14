@@ -158,3 +158,27 @@ test('giro manual: suma al giro y da vuelta ancho y alto', () => {
   assert.equal(fotos[1].girar, undefined); // 180 + 180 = derecha
   assert.equal(fotos[2].girar, undefined);
 });
+
+test('lugar de la foto: nombre corto a partir del geocodificador', () => {
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../apps-script/LugaresFotos.gs'), 'utf8'), contexto);
+  const comp = (nombre, tipo) => ({ long_name: nombre, types: [tipo, 'political'] });
+  const miramar = { results: [{ address_components: [comp('123', 'street_number'), comp('Miramar', 'locality'),
+    comp('General Alvarado', 'administrative_area_level_2'), comp('Provincia de Buenos Aires', 'administrative_area_level_1'), comp('Argentina', 'country')] }] };
+  assert.equal(contexto.nombreDeGeocoder_(miramar), 'Miramar');
+  const orlando = { results: [{ address_components: [comp('Orlando', 'locality'), comp('Estados Unidos', 'country')] }] };
+  assert.equal(contexto.nombreDeGeocoder_(orlando), 'Orlando, Estados Unidos');
+  const campo = { results: [{ address_components: [comp('Tandil', 'administrative_area_level_2'), comp('Argentina', 'country')] }] };
+  assert.equal(contexto.nombreDeGeocoder_(campo), 'Tandil');
+  assert.equal(contexto.nombreDeGeocoder_({ results: [] }), '');
+});
+
+test('lugar de la foto: se busca una vez por zona (~1 km) y queda guardado', () => {
+  let busquedas = 0;
+  contexto.DATOS_FOTOS_ = {};
+  contexto.Maps = { newGeocoder: () => ({ setLanguage: () => ({ reverseGeocode: () => { busquedas++; return { results: [{ address_components: [{ long_name: 'Miramar', types: ['locality'] }, { long_name: 'Argentina', types: ['country'] }] }] }; } }) }) };
+  const fotos = [{ id: 'a', _coord: [-38.2701, -57.8402] }, { id: 'b', _coord: [-38.2712, -57.8399] }, { id: 'c' }];
+  contexto.ponerLugares_(fotos, 5);
+  assert.deepEqual(fotos.map((f) => f.lugar || ''), ['Miramar', 'Miramar', '']);
+  assert.equal(busquedas, 1);
+  assert.equal(fotos[0]._coord, undefined);
+});

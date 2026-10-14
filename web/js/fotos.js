@@ -42,6 +42,7 @@
     var maxSegundosVideo = opciones.maxSegundosVideo || 90;
     var hayVideos = typeof fuente.video === 'function' && opciones.videos !== false;
     var cantidadFotos = 0;
+    var mostrarLugar = opciones.lugar !== false;
     var fallidosSeguidos = 0;
 
     var secuencia = [];
@@ -116,6 +117,9 @@
       var pie = document.createElement('div');
       pie.className = 'diapo__pie';
       var fecha = fechaLarga(diapo.fotos[0].fecha);
+      // Dónde se sacó (si la foto lo dice y está activado en Ajustes)
+      var lugar = mostrarLugar && diapo.fotos[0].lugar;
+      if (lugar) fecha = fecha ? fecha + ' · ' + lugar : lugar;
       if (diapo.haceAnios) {
         pie.innerHTML = '<span class="diapo__recuerdo"></span><b class="diapo__fecha"></b>';
         pie.firstChild.textContent = 'Un día como hoy · hace ' + diapo.haceAnios +
@@ -356,6 +360,7 @@
       // Desde Ajustes: tiempo por foto y videos sí/no (se aplican en la próxima diapositiva).
       configurar: function (c) {
         if (c.segundos) segundos = c.segundos;
+        if (c.lugar !== undefined) mostrarLugar = c.lugar;
         var conVideos = typeof fuente.video === 'function' && c.videos !== false;
         if (conVideos !== hayVideos) { hayVideos = conVideos; ultimaLista = 0; }
       },

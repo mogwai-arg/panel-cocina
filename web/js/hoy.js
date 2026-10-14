@@ -394,7 +394,8 @@
           var anios = Layout.haceAnios(foto, hoy);
           caja.querySelector('span').textContent = anios
             ? 'Hace ' + anios + (anios === 1 ? ' año' : ' años') : 'Recuerdo';
-          caja.querySelector('i').textContent = Fotos.fechaLarga(foto.fecha);
+          caja.querySelector('i').textContent = Fotos.fechaLarga(foto.fecha) +
+            (foto.lugar && opciones.mostrarLugar !== false ? ' · ' + foto.lugar : '');
         });
       }).catch(function (err) { console.error(err); });
     }

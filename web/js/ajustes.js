@@ -20,6 +20,7 @@
     return {
       segundosFoto: { tipo: 'numero', min: 5, max: 120, paso: 5, def: config.SEGUNDOS_POR_FOTO || 15 },
       videos: { tipo: 'si', def: true },
+      lugarFoto: { tipo: 'si', def: true },
       minutosInactividad: { tipo: 'numero', min: 1, max: 30, paso: 1, def: config.MINUTOS_INACTIVIDAD || 3 },
       alternar: { tipo: 'si', def: alt.activo !== false },
       alternarCada: { tipo: 'numero', min: 2, max: 60, paso: 1, def: alt.cadaMinutos || 10 },

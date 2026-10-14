@@ -33,7 +33,7 @@
   function demo() {
     // "Un día como hoy" se arma con fechas relativas a hoy, para que siempre se vea.
     var fotos = [
-      { id: 'playa', ancho: 1600, alto: 1200, fecha: hace(3) },
+      { id: 'playa', ancho: 1600, alto: 1200, fecha: hace(3), lugar: 'Miramar' },
       { id: 'montana', ancho: 1920, alto: 1080, fecha: hace(1, 6, 14) },
       { id: 'cumple-1', ancho: 1080, alto: 1920, fecha: hace(1, 2, 3) },
       { id: 'cumple-2', ancho: 1080, alto: 1920, fecha: hace(1, 2, 3) },
@@ -42,7 +42,7 @@
       { id: 'plaza-2', ancho: 1200, alto: 1600, fecha: hace(0, 0, 20) },
       { id: 'perro', ancho: 1200, alto: 1600, fecha: hace(2, 4, 9) },
       { id: 'asado', ancho: 1200, alto: 1200, fecha: hace(0, 1, 11) },
-      { id: 'glaciar', ancho: 3600, alto: 1200, fecha: hace(2, 0, 28) },
+      { id: 'glaciar', ancho: 3600, alto: 1200, fecha: hace(2, 0, 28), lugar: 'El Calafate' },
       { id: 'lago', ancho: 1600, alto: 1200, fecha: hace(6) },
       { id: 'primer-dia', ancho: 1200, alto: 1600, fecha: hace(4, 2, 1) },
       { id: 'video', video: true, mime: 'video/mp4', ancho: 640, alto: 360, segundos: 6, fecha: hace(1, 8, 2) }

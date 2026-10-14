@@ -22,6 +22,7 @@
     { titulo: 'Fotos', filas: [
       { clave: 'segundosFoto', texto: 'Cada foto se ve', formato: function (v) { return v + ' s'; } },
       { clave: 'videos', texto: 'Mostrar videos', detalle: 'Los de Drive, sin sonido' },
+      { clave: 'lugarFoto', texto: 'Mostrar dónde se sacó', detalle: 'Al lado de la fecha, si la foto tiene ubicación' },
       { accion: 'fotosNuevas', texto: 'Buscar fotos nuevas ahora', detalle: 'Solas aparecen en menos de una hora (también las de subcarpetas)' }
     ] },
     { titulo: 'Panel y fotos', filas: [

@@ -342,6 +342,9 @@ se cambia en `config.js` → `TEMA_OSCURO: { desde, hasta }` (o `TEMA_OSCURO: fa
 - **Girar a mano**: algunas fotos perdieron el dato de giro (pasadas por WhatsApp,
   editadas…) y nadie puede saber que están acostadas. Mantené apretada la foto
   (en la compu: mantener el clic, o la tecla G) → ↺ / ↻. Queda guardado para siempre.
+- **Dónde se sacó**: si la foto tiene ubicación (casi todas las del celular), al lado de la
+  fecha aparece el lugar ("12 de octubre de 2023 · Miramar"). El nombre sale del servicio de
+  mapas de Apps Script; cada lugar se busca una vez y queda guardado. Se apaga en Ajustes.
 - Toca a la derecha para avanzar y a la izquierda para volver.
 
 La lógica de diseño está en [`web/js/layout.js`](web/js/layout.js) y tiene tests.
