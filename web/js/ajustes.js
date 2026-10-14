@@ -17,6 +17,7 @@
     var osc = config.TEMA_OSCURO || {};
     var des = config.DESCANSO || {};
     var noche = des.noche || {};
+    var man = config.MANANA_COLE || {};
     return {
       segundosFoto: { tipo: 'numero', min: 5, max: 120, paso: 5, def: config.SEGUNDOS_POR_FOTO || 15 },
       videos: { tipo: 'si', def: true },
@@ -35,7 +36,11 @@
       despiertoMinutos: { tipo: 'numero', min: 1, max: 30, paso: 1, def: des.despiertoMinutos || 5 },
       sensor: { tipo: 'si', def: true },
       sinMovimientoMinutos: { tipo: 'numero', min: 1, max: 120, paso: 1, def: des.sinMovimientoMinutos || 20 },
-      sinMovimientoModo: { tipo: 'opcion', opciones: ['tenue', 'apagado'], def: des.sinMovimientoModo || 'tenue' }
+      sinMovimientoModo: { tipo: 'opcion', opciones: ['tenue', 'apagado'], def: des.sinMovimientoModo || 'tenue' },
+      mananaCole: { tipo: 'si', def: config.MANANA_COLE !== false },
+      mananaDesde: { tipo: 'hora', paso: 15, def: man.desde || '06:30' },
+      viajeMinutos: { tipo: 'numero', min: 0, max: 90, paso: 5, def: man.viajeMinutos !== undefined ? man.viajeMinutos : 20 },
+      salidaPorDefecto: { tipo: 'hora', paso: 5, def: man.salida || '07:20' }
     };
   }
 
@@ -53,10 +58,10 @@
     return d.def;
   }
 
-  /* Un paso para arriba o para abajo (botones − / +). Las horas van de a media hora. */
+  /* Un paso para arriba o para abajo (botones − / +). Las horas van de a media hora (o de a `paso` minutos). */
   function pasar(d, actual, sentido) {
     if (d.tipo === 'numero') return validar(d, actual + sentido * d.paso);
-    if (d.tipo === 'hora') return hhmm(minutosDe(actual) + sentido * 30);
+    if (d.tipo === 'hora') return hhmm(minutosDe(actual) + sentido * (d.paso || 30));
     if (d.tipo === 'opcion') {
       var i = d.opciones.indexOf(actual);
       return d.opciones[(i + sentido + d.opciones.length) % d.opciones.length];
@@ -88,6 +93,11 @@
         guardar();
       },
       alCambiar: function (f) { oyentes.push(f); },
+      // Lo que entiende Manana.plan (ver manana.js), sin el horario
+      manana: function () {
+        return { activo: valores.mananaCole, desde: valores.mananaDesde,
+          viajeMinutos: valores.viajeMinutos, salidaPorDefecto: valores.salidaPorDefecto };
+      },
       // Lo que entiende Descanso.estado (ver descanso.js)
       descanso: function () {
         return {

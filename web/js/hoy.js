@@ -53,6 +53,8 @@
       '<button class="recuerdo" data-r="recuerdo" aria-label="Ver fotos"></button>' +
       '<div class="proximo" data-r="proximo"></div>' +
       '<div class="columnas" data-r="columnas"></div>' +
+      '<div class="pendientes-hoy" data-r="pendientes" hidden></div>' +
+      '<div class="manana" data-r="manana" hidden></div>' +
       '<div class="lateral"><div class="basquet" data-r="basquet" hidden></div>' +
       '<div class="dias" data-r="dias"></div></div>';
 
@@ -93,20 +95,53 @@
       caja.innerHTML =
         '<div class="clima__ahora">' + icono(nombreIcono, 'ic ic--grande') +
         '<b></b><span><em></em><small></small></span></div>' +
-        '<p class="clima__nota"></p><div class="clima__horas"></div>';
+        '<p class="clima__nota"></p>' + curvaClima(c);
       caja.querySelector('b').textContent = c.temp + '°';
       caja.querySelector('em').textContent = desc.texto;
       caja.querySelector('small').textContent = 'Máx ' + c.max + '° · Mín ' + c.min + '°';
       caja.querySelector('.clima__nota').textContent = Clima.frase(c);
-      var horas = caja.querySelector('.clima__horas');
-      c.horas.filter(function (_, i) { return i % 2 === 0; }).slice(0, 6).forEach(function (h, i) {
-        var d = Clima.describir(h.codigo);
-        var celda = el('span');
-        celda.innerHTML = '<i></i>' + icono(d.icono) + '<b></b>';
-        celda.querySelector('i').textContent = i === 0 ? 'AHORA' : h.hora + ' h';
-        celda.querySelector('b').textContent = h.temp + '°';
-        horas.appendChild(celda);
+    }
+
+    /*
+     * Curva de temperatura de las próximas 12 horas (SVG): la temperatura cada 2 horas,
+     * barritas celestes si puede llover y una marca al amanecer y al atardecer.
+     * Todo son números que arma Clima.curva, así que se puede escribir como texto.
+     */
+    function curvaClima(c) {
+      var ANCHO = 358, ALTO = 92, X0 = 14, Y0 = 20, ALTO_CURVA = 40;
+      var r = Clima.curva(c, ANCHO - 2 * X0, ALTO_CURVA, 0);
+      var ps = r.puntos.map(function (p) { return { x: p.x + X0, y: p.y + Y0, temp: p.temp, hora: p.hora, lluvia: p.lluvia }; });
+      if (ps.length < 2) return '';
+      // Curva suave (Catmull-Rom → Bézier)
+      var d = 'M' + ps[0].x + ' ' + ps[0].y;
+      for (var i = 0; i < ps.length - 1; i++) {
+        var p0 = ps[i - 1] || ps[i], p1 = ps[i], p2 = ps[i + 1], p3 = ps[i + 2] || p2;
+        d += ' C' + (p1.x + (p2.x - p0.x) / 6).toFixed(1) + ' ' + (p1.y + (p2.y - p0.y) / 6).toFixed(1) +
+          ' ' + (p2.x - (p3.x - p1.x) / 6).toFixed(1) + ' ' + (p2.y - (p3.y - p1.y) / 6).toFixed(1) +
+          ' ' + p2.x + ' ' + p2.y;
+      }
+      var base = Y0 + ALTO_CURVA + 8;
+      var svg = '<svg class="curva" viewBox="0 0 ' + ANCHO + ' ' + ALTO + '" aria-hidden="true">';
+      ps.forEach(function (p) {
+        if (p.lluvia < 20) return;
+        var h = Math.round(p.lluvia / 100 * 22);
+        svg += '<rect class="curva__lluvia" x="' + (p.x - 5) + '" y="' + (base - h) + '" width="10" height="' + h + '" rx="2"/>';
       });
+      svg += '<path class="curva__area" d="' + d + ' L' + ps[ps.length - 1].x + ' ' + base + ' L' + ps[0].x + ' ' + base + 'Z"/>';
+      svg += '<path class="curva__linea" d="' + d + '"/>';
+      r.sol.forEach(function (m) {
+        var x = m.x + X0;
+        svg += '<line class="curva__sol" x1="' + x + '" y1="10" x2="' + x + '" y2="' + base + '"/>' +
+          '<circle class="curva__sol-ic curva__sol-ic--' + m.tipo + '" cx="' + x + '" cy="7" r="4"/>' +
+          '<text class="curva__sol-txt" x="' + (x + 7) + '" y="10">' + m.hora + '</text>';
+      });
+      ps.forEach(function (p, j) {
+        if (j % 2) return;
+        svg += '<circle class="curva__punto' + (j === 0 ? ' curva__punto--ahora' : '') + '" cx="' + p.x + '" cy="' + p.y + '" r="' + (j === 0 ? 4 : 2.5) + '"/>' +
+          '<text class="curva__temp" x="' + p.x + '" y="' + (p.y - 8) + '">' + p.temp + '°</text>' +
+          '<text class="curva__hora" x="' + p.x + '" y="' + (ALTO - 4) + '">' + (j === 0 ? 'AHORA' : p.hora + ' h') + '</text>';
+      });
+      return svg + '</svg>';
     }
 
     function pintarProximo() {
@@ -166,13 +201,80 @@
       });
     }
 
+    /*
+     * La semana: siete días con el clima (ícono y máxima) y un puntito por cada calendario
+     * que tiene algo ese día. Tocando un día se ve lo de ese día; si no, los próximos días.
+     */
+    var diaElegido = null;     // 'YYYY-MM-DD'
+    var diaElegidoTimer = null;
+    var climaDatos = null;
+    var CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    function iso(f) { return f.getFullYear() + '-' + (f.getMonth() < 9 ? '0' : '') + (f.getMonth() + 1) + '-' + (f.getDate() < 10 ? '0' : '') + f.getDate(); }
+    function eventosDelDia(fecha) {
+      var desde = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+      var hasta = new Date(desde.getTime() + 86400000);
+      return eventos.filter(function (e) {
+        var i = new Date(e.inicio), f = new Date(e.fin || e.inicio);
+        return i < hasta && (f > desde || i >= desde);
+      }).sort(function (a, b) { return new Date(a.inicio) - new Date(b.inicio); });
+    }
+
     function pintarDias() {
       var caja = parte('dias');
       caja.innerHTML = '';
-      caja.appendChild(el('span', 'lbl', 'Próximos días'));
-      var lista = Agenda.proximosDias(eventos, new Date(), basquet ? 4 : 9);
+      var ahora = new Date();
+      var climaPorDia = {};
+      ((climaDatos && climaDatos.dias) || []).forEach(function (d) { climaPorDia[d.fecha] = d; });
+
+      var tira = el('div', 'semana');
+      for (var i = 0; i < 7; i++) {
+        var fecha = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + i);
+        var clave = iso(fecha);
+        var pill = el('button', 'pill' + (clave === diaElegido ? ' pill--elegido' : '') + (i === 0 ? ' pill--hoy' : ''));
+        pill.appendChild(el('small', null, i === 0 ? 'Hoy' : CORTOS[fecha.getDay()]));
+        pill.appendChild(el('b', null, String(fecha.getDate())));
+        var cd = climaPorDia[clave];
+        var cl = el('span', 'pill__clima');
+        if (cd) {
+          cl.innerHTML = icono(Clima.describir(cd.codigo).icono, 'ic ic--mini');
+          cl.appendChild(el('i', null, cd.max + '°'));
+        }
+        pill.appendChild(cl);
+        var puntos = el('span', 'pill__puntos');
+        var colores = [];
+        eventosDelDia(fecha).forEach(function (e) {
+          var c = color(e.color);
+          if (colores.indexOf(c) < 0 && colores.length < 3) colores.push(c);
+        });
+        colores.forEach(function (c) { var p = el('i'); p.style.background = c; puntos.appendChild(p); });
+        pill.appendChild(puntos);
+        pill.addEventListener('click', elegirDia.bind(null, clave));
+        tira.appendChild(pill);
+      }
+      caja.appendChild(tira);
+
+      var lista, vacio, conHora;
+      if (diaElegido) {
+        var p = diaElegido.split('-');
+        var f = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+        var cd2 = climaPorDia[diaElegido];
+        var cab = el('div', 'dias__cab');
+        cab.appendChild(el('span', 'lbl', Agenda.etiquetaDia(f, ahora)));
+        if (cd2) {
+          cab.appendChild(el('span', 'dias__clima', (cd2.lluvia >= 30 ? 'Lluvia ' + cd2.lluvia + '%' : Clima.describir(cd2.codigo).texto) +
+            ' · ' + cd2.max + '°/' + cd2.min + '°'));
+        }
+        caja.appendChild(cab);
+        lista = eventosDelDia(f);
+        vacio = 'Nada agendado ese día.';
+        conHora = true;
+      } else {
+        caja.appendChild(el('span', 'lbl', 'Próximos días'));
+        lista = Agenda.proximosDias(eventos, ahora, basquet ? 2 : 7);
+        vacio = 'Nada agendado.';
+      }
       if (!lista.length) {
-        caja.appendChild(el('p', 'dias__vacio', 'Nada agendado.'));
+        caja.appendChild(el('p', 'dias__vacio', vacio));
         return;
       }
       lista.forEach(function (e) {
@@ -180,10 +282,18 @@
         var punto = el('i');
         punto.style.background = color(e.color);
         fila.appendChild(punto);
-        fila.appendChild(el('b', null, Agenda.etiquetaDia(e.inicio, new Date())));
+        fila.appendChild(el('b', null, conHora ? (e.todoElDia ? 'Todo el día' : Agenda.hora(e.inicio)) : Agenda.etiquetaDia(e.inicio, ahora)));
         fila.appendChild(el('span', null, e.titulo));
         caja.appendChild(fila);
       });
+    }
+
+    function elegirDia(clave) {
+      diaElegido = diaElegido === clave ? null : clave;
+      clearTimeout(diaElegidoTimer);
+      // Al rato vuelve solo a "Próximos días".
+      if (diaElegido) diaElegidoTimer = setTimeout(function () { diaElegido = null; pintarDias(); }, 60000);
+      pintarDias();
     }
 
     function eventosDeBasquet() {
@@ -280,7 +390,7 @@
         aula = r && r.datos;
       }).catch(function (err) {
         console.error(err);
-      }).then(cargarAgenda);
+      }).then(function () { if (planManana) pintarManana(); return cargarAgenda(); });
     }
 
     function cargarAgenda() {
@@ -303,10 +413,13 @@
     }
 
     function cargarClima() {
-      return fuente.clima().then(pintarClima).catch(function (err) {
+      return fuente.clima().then(function (c) {
+        climaDatos = c;
+        pintarClima(c);
+      }).catch(function (err) {
         console.error(err);
         pintarClima(null);
-      });
+      }).then(function () { pintarDias(); pintarManana(); });
     }
 
     function escudo(lado) {
@@ -320,6 +433,13 @@
         caja.appendChild(img);
       }
       return caja;
+    }
+
+    // "hoy" / "mañana" / "en 5 días"
+    function faltanDias(fecha) {
+      var a = new Date(), f = new Date(fecha);
+      var n = Math.round((new Date(f.getFullYear(), f.getMonth(), f.getDate()) - new Date(a.getFullYear(), a.getMonth(), a.getDate())) / 86400000);
+      return n <= 0 ? 'hoy' : n === 1 ? 'mañana' : 'en ' + n + ' días';
     }
 
     function pintarBasquet() {
@@ -343,7 +463,10 @@
         var izq = p.esLocal ? p.propio : p.rival;
         var der = p.esLocal ? p.rival : p.propio;
         duelo.appendChild(escudo(izq));
-        duelo.appendChild(el('span', 'duelo__vs', 'vs'));
+        var medio = el('div', 'duelo__medio');
+        medio.appendChild(el('span', 'duelo__vs', 'vs'));
+        medio.appendChild(el('b', 'chip', faltanDias(p.fecha)));
+        duelo.appendChild(medio);
         duelo.appendChild(escudo(der));
         caja.appendChild(duelo);
         caja.appendChild(el('p', 'basquet__rival', Basquet.nombreLindo(p.rival.nombre)));
@@ -400,6 +523,165 @@
       }).catch(function (err) { console.error(err); });
     }
 
+    /* ===== Tareas pendientes de este momento del día (fila de chips abajo) ===== */
+    var listas = opciones.listas || null;
+    function datosListas() { return listas && listas.datos ? listas.datos() : null; }
+
+    function marcar(t) {
+      if (!listas) return;
+      listas.marcarTarea(t.id, !t.hecha);
+      if (!t.hecha && opciones.avisar) {
+        opciones.avisar('✓ ' + t.tarea, function () { listas.marcarTarea(t.id, false); }, 5000);
+      }
+    }
+
+    function pintarPendientes() {
+      var caja = parte('pendientes');
+      var d = datosListas();
+      var ahora = new Date();
+      var momento = Listas.momentoActual(ahora);
+      var faltan = ((d && d.tareas) || []).filter(function (t) {
+        return !t.hecha && Listas.tocaHoy(t, ahora) &&
+          (!t.momento || String(t.momento).toLowerCase().trim() === momento.toLowerCase());
+      });
+      caja.innerHTML = '';
+      caja.hidden = !faltan.length;
+      if (!faltan.length) return;
+      caja.appendChild(el('span', 'lbl', 'Falta ' + (momento === 'Mañana' ? 'esta mañana' : momento === 'Tarde' ? 'esta tarde' : 'esta noche')));
+      var colores = opciones.personas || {};
+      var MAX = 4;
+      faltan.slice(0, MAX).forEach(function (t) {
+        var b = el('button', 'tchip');
+        var av = el('span', 'tchip__av', inicial(t.persona));
+        av.style.background = color(colores[t.persona] || '#6d6b66');
+        b.appendChild(av);
+        b.appendChild(el('span', 'tchip__txt', t.tarea));
+        b.addEventListener('click', function () { marcar(t); });
+        caja.appendChild(b);
+      });
+      if (faltan.length > MAX) {
+        var mas = el('button', 'tchip tchip--mas', '+' + (faltan.length - MAX) + ' más');
+        mas.addEventListener('click', function () { if (opciones.irA) opciones.irA('tareas'); });
+        caja.appendChild(mas);
+      }
+    }
+
+    /* ===== Mañana de cole ===== */
+    var cole = null;   // datos de Colegium (horario)
+    var ia = null;     // asistente: pendientes y repasos
+    var planManana = null;
+    var CLAVE_LISTO = 'panel-manana-listo';
+    var personaCole = opciones.personaCole || 'Thi';
+    function listoEl() { try { return window.localStorage.getItem(CLAVE_LISTO); } catch (e) { return null; } }
+
+    function calcularManana() {
+      var op = Object.assign({}, opciones.manana ? opciones.manana() : { activo: false });
+      op.horario = cole && cole.horario;
+      op.listoEl = listoEl();
+      planManana = root.Manana ? root.Manana.plan(new Date(), op) : null;
+      return planManana;
+    }
+
+    var mananaPintada = false;
+    function pintarManana() {
+      var antes = mananaPintada;
+      var plan = calcularManana();
+      mananaPintada = !!plan;
+      var caja = parte('manana');
+      contenedor.classList.toggle('hoy--manana', !!plan);
+      caja.hidden = !plan;
+      if (antes !== !!plan && opciones.alCambiarManana) opciones.alCambiarManana(!!plan);
+      if (!plan) { caja.innerHTML = ''; return; }
+      var ahora = new Date();
+      caja.innerHTML = '';
+
+      // Arriba: hora de salir y cuenta regresiva
+      var cuenta = Manana.cuentaRegresiva(plan.faltan);
+      var cab = el('div', 'manana__cab' + (cuenta.tarde ? ' manana__cab--ya' : ''));
+      var info = el('div', 'proximo__info');
+      info.appendChild(el('span', 'lbl', 'Mañana de cole · ' + personaCole));
+      info.appendChild(el('h2', 'proximo__titulo', 'Salir a las ' + plan.salida));
+      info.appendChild(el('p', 'proximo__detalle', plan.primera
+        ? 'Entra ' + plan.primera.inicio + ' · ' + plan.primera.materia
+        : 'Hoy hay cole'));
+      var num = el('div', 'proximo__cuenta');
+      num.appendChild(el('b', cuenta.grande.length > 3 ? 'largo' : '', cuenta.grande));
+      num.appendChild(el('span', null, cuenta.chico));
+      cab.appendChild(info);
+      cab.appendChild(num);
+      caja.appendChild(cab);
+
+      var cuerpo = el('div', 'manana__cuerpo');
+
+      // Izquierda: lo que hay que hacer antes de salir
+      var izq = el('section', 'manana__lista');
+      var tareas = Manana.tareasDeLaManana((datosListas() || {}).tareas, personaCole, ahora, Listas.tocaHoy);
+      var hechas = tareas.filter(function (t) { return t.hecha; }).length;
+      var t1 = el('div', 'manana__tit');
+      t1.appendChild(el('span', 'lbl', 'Antes de salir'));
+      if (tareas.length) t1.appendChild(el('b', 'manana__progreso', hechas + '/' + tareas.length));
+      izq.appendChild(t1);
+      if (!tareas.length) {
+        izq.appendChild(el('p', 'dias__vacio', 'No hay tareas de la mañana para ' + personaCole + ' en la planilla.'));
+      }
+      tareas.slice(0, 6).forEach(function (t) {
+        var b = el('button', 'check' + (t.hecha ? ' check--hecha' : ''));
+        b.appendChild(el('span', 'check__caja', t.hecha ? '✓' : ''));
+        b.appendChild(el('span', 'check__txt', t.tarea));
+        b.addEventListener('click', function () { marcar(t); });
+        izq.appendChild(b);
+      });
+      var listo = el('button', 'manana__listo', tareas.length && hechas === tareas.length ? '¡Todo listo! Nos vamos ✓' : 'Listo ✓');
+      listo.addEventListener('click', function () {
+        try { window.localStorage.setItem(CLAVE_LISTO, Manana.diaIso(new Date())); } catch (e) { /* nada */ }
+        if (opciones.avisar) opciones.avisar('¡Que tengas un lindo día, ' + personaCole + '! 🎒', null, 6000);
+        pintarManana();
+      });
+      izq.appendChild(listo);
+      cuerpo.appendChild(izq);
+
+      // Derecha: materias, qué no olvidar y qué llevar
+      var der = el('section', 'manana__info');
+      if (plan.clases.length) {
+        der.appendChild(el('span', 'lbl', 'Hoy en el cole'));
+        var clases = el('div', 'manana__clases');
+        plan.clases.slice(0, 7).forEach(function (c) {
+          var f = el('div', 'clase');
+          f.appendChild(el('b', null, c.inicio));
+          f.appendChild(el('span', null, c.materia));
+          clases.appendChild(f);
+        });
+        der.appendChild(clases);
+      }
+      var ojo = Manana.paraHoy(aula, ia, ahora);
+      if (ojo.length) {
+        der.appendChild(el('span', 'lbl', 'No olvidar'));
+        ojo.slice(0, 4).forEach(function (x) {
+          der.appendChild(el('p', 'manana__ojo manana__ojo--' + x.tipo, x.texto));
+        });
+      }
+      var llevar = Manana.consejosClima(climaDatos, plan.salida);
+      if (llevar.length) {
+        der.appendChild(el('span', 'lbl', 'Qué llevar'));
+        llevar.forEach(function (x) { der.appendChild(el('p', 'manana__llevar', x.icono + ' ' + x.texto)); });
+      }
+      cuerpo.appendChild(der);
+      caja.appendChild(cuerpo);
+    }
+
+    function cargarCole() {
+      var pedidos = [];
+      if (fuente.colegium) {
+        pedidos.push(fuente.colegium().then(function (r) { cole = r && r.datos; }).catch(function (err) { console.error(err); }));
+      }
+      if (fuente.ia) {
+        pedidos.push(fuente.ia().then(function (r) { ia = r && r.datos; }).catch(function (err) { console.error(err); }));
+      }
+      return Promise.all(pedidos).then(pintarManana);
+    }
+
+    if (listas) listas.alCambiar(function () { pintarPendientes(); if (planManana) pintarManana(); });
+
     parte('recuerdo').addEventListener('click', alTocarRecuerdo);
 
     var timers = [];
@@ -421,9 +703,14 @@
         cargarBasquet();
         cargarClassroom();
         cargarMails();
+        cargarCole();
         cargarUbicacion();
         cada(10000, pintarReloj);
-        cada(30000, function () { pintarProximo(); pintarColumnas(); pintarDias(); pintarBasquet(); pintarQuienes(); });
+        cada(30000, function () {
+          pintarProximo(); pintarColumnas(); pintarDias(); pintarBasquet(); pintarQuienes();
+          pintarPendientes(); pintarManana();
+        });
+        cada(30 * 60000, cargarCole);
         cada(60 * 60000, cargarBasquet);
         cada(30 * 60000, cargarClassroom);
         cada(15 * 60000, cargarMails);
@@ -432,7 +719,10 @@
         cada(30 * 60000, cargarClima);
         cada(10 * 60000, cargarRecuerdo);
       },
-      reloj: function () { return Agenda.hora(new Date()); }
+      reloj: function () { return Agenda.hora(new Date()); },
+      // ¿Se está mostrando la mañana de cole? (app.js no pasa a fotos ni apaga la pantalla)
+      enManana: function () { return !!calcularManana(); },
+      repintarManana: function () { pintarManana(); }
     };
   }
 

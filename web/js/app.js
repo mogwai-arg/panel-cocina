@@ -54,10 +54,18 @@
     debug: params.get('debug') === '1'
   });
 
+  var listas = VistasListas.crearListas(fuente, { avisar: function (t, d, ms) { avisar(t, d, ms); } });
+
   var hoy = Hoy.crearHoy(document.getElementById('vista-hoy'), fuente, {
     alTocarRecuerdo: function () { irA('fotos'); },
     personas: config.PERSONAS || { Thi: '#d39b1e', Javi: '#2f5fd0', Dan: '#7b4fc4' },
     avisar: function (texto, deshacer, ms) { avisar(texto, deshacer, ms); },
+    listas: listas,
+    irA: function (v) { irA(v); },
+    // Mañana de cole (ver js/manana.js): los ajustes salen de ⚙️
+    manana: function () { return ajustes.manana(); },
+    personaCole: config.APODO_ALUMNO || 'Thi',
+    alCambiarManana: function (activo) { if (activo) mananaEmpezo(); },
     basquet: config.BASQUET || { calendario: 'Thi', color: '#d39b1e' },
     // Las entregas de Classroom de la semana también van a la agenda
     classroom: config.CLASSROOM || { calendario: 'Thi', color: '#d39b1e' },
@@ -86,7 +94,6 @@
     aviso.hidden = true;
   });
 
-  var listas = VistasListas.crearListas(fuente, { avisar: avisar });
   var vistas = {
     tareas: VistasListas.crearTareas(document.getElementById('vista-tareas'), listas, {
       // Mismos colores que en la agenda
@@ -209,7 +216,12 @@
     clearTimeout(temporizador);
     var minutos = Number(params.get('inactividad')) || ajustes.valor('minutosInactividad');
     // En Ajustes no se pasa solo a las fotos (se está tocando de a poco).
-    temporizador = setTimeout(function () { if (vistaActual !== 'ajustes') irA('fotos'); }, minutos * 60000);
+    temporizador = setTimeout(function () {
+      if (vistaActual === 'ajustes') return;
+      // En la mañana de cole el panel se queda en Hoy (no pasa a las fotos).
+      if (hoy.enManana()) { irA('hoy'); return; }
+      irA('fotos');
+    }, minutos * 60000);
     ultimaActividad = Date.now();
     // Si alguien toca mientras se muestra el panel automático, se queda en el panel.
     if (panelAutomatico) { panelAutomatico = false; clearTimeout(vueltaAFotos); }
@@ -232,6 +244,7 @@
   ajustes.alCambiar(function () {
     fotos.configurar({ segundos: ajustes.valor('segundosFoto'), videos: ajustes.valor('videos'), lugar: ajustes.valor('lugarFoto') });
     estadoDescanso = null; // recalcular ya
+    hoy.repintarManana();
     revisarDescanso();
     revisarTema();
     actividad();
@@ -243,6 +256,7 @@
   var vueltaAFotos = null;
   var panelAutomatico = false;
   setInterval(function () {
+    if (vistaActual === 'fotos' && hoy.enManana() && Date.now() - ultimaActividad > 120000) { irA('hoy'); return; }
     if (!ajustes.valor('alternar') || vistaActual !== 'fotos' || estadoDescanso !== 'activo') return;
     if (!Descanso.tocaPanel(Date.now(), enFotosDesde, ultimaActividad, { cadaMinutos: ajustes.valor('alternarCada') })) return;
     panelAutomatico = true;
@@ -260,6 +274,8 @@
   function revisarDescanso() {
     if (!capaDescanso) return;
     var nuevo = Descanso.estado(new Date(), ultimaActividad, configDescanso(), haySensor && ajustes.valor('sensor'));
+    // En la mañana de cole la pantalla queda prendida.
+    if (hoy.enManana()) nuevo = 'activo';
     if (nuevo === estadoDescanso) return;
     estadoDescanso = nuevo;
     capaDescanso.hidden = nuevo === 'activo';
@@ -272,6 +288,12 @@
       window.fully.setScreenBrightness(nuevo === 'apagado' ? 0 : nuevo === 'tenue' ? 40 : 255);
     }
   }
+  // Empieza la mañana de cole: la pantalla se prende y muestra Hoy (salvo que estén usando otra pantalla).
+  function mananaEmpezo() {
+    if (!vistaActual || vistaActual === 'fotos' || vistaActual === 'hoy' || Date.now() - ultimaActividad > 60000) irA('hoy');
+    revisarDescanso();
+  }
+
   // El primer toque con la pantalla en descanso solo la despierta (no aprieta nada).
   if (capaDescanso) {
     ['pointerdown', 'pointerup', 'click'].forEach(function (t) {

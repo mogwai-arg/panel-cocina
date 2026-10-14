@@ -91,7 +91,11 @@ function respuesta(probLluvia) {
   return {
     current: { time: '2026-10-12T15:30', temperature_2m: 19.6, weather_code: 2, is_day: 1 },
     hourly: { time, temperature_2m, weather_code, precipitation_probability },
-    daily: { temperature_2m_max: [22.4], temperature_2m_min: [10.6] },
+    daily: {
+      time: ['2026-10-12', '2026-10-13'], temperature_2m_max: [22.4, 18.2], temperature_2m_min: [10.6, 9.1],
+      weather_code: [2, 61], precipitation_probability_max: [10, 80],
+      sunrise: ['2026-10-12T06:52', '2026-10-13T06:51'], sunset: ['2026-10-12T19:31', '2026-10-13T19:32'],
+    },
   };
 }
 
@@ -117,4 +121,32 @@ test('clima: describe los códigos', () => {
   assert.equal(Clima.describir(0).texto, 'Despejado');
   assert.equal(Clima.describir(63).icono, 'lluvia');
   assert.equal(Clima.describir(95).icono, 'tormenta');
+});
+
+test('clima: los días de la semana con amanecer y atardecer', () => {
+  const c = Clima.normalizar(respuesta(() => 0), AHORA);
+  assert.equal(c.dias.length, 2);
+  assert.deepEqual(c.dias[1], { fecha: '2026-10-13', max: 18, min: 9, codigo: 61, lluvia: 80, sale: '06:51', pone: '19:32' });
+  assert.equal(c.horas[0].fecha, '2026-10-12');
+});
+
+test('clima: sin datos diarios, los días quedan vacíos', () => {
+  const r = respuesta(() => 0);
+  r.daily = { temperature_2m_max: [22], temperature_2m_min: [10] };
+  assert.deepEqual(Clima.normalizar(r, AHORA).dias, []);
+});
+
+test('clima: puntos de la curva y marca del atardecer', () => {
+  const c = Clima.normalizar(respuesta(() => 0), AHORA);
+  const r = Clima.curva(c, 220, 40, 0);
+  assert.equal(r.puntos.length, 12);
+  assert.equal(r.puntos[0].x, 0);
+  assert.equal(r.puntos[11].x, 220);
+  // la más caliente arriba (y = 0) y la más fría abajo (y = 40)
+  assert.equal(Math.min(...r.puntos.map((p) => p.y)), 0);
+  assert.equal(Math.max(...r.puntos.map((p) => p.y)), 40);
+  assert.deepEqual(r.sol.map((m) => m.tipo + ' ' + m.hora), ['pone 19:31']);
+  // 15 h es el punto 0 y 19:31 cae entre el 4 y el 5
+  assert.ok(r.sol[0].x > r.puntos[4].x && r.sol[0].x < r.puntos[5].x);
+  assert.deepEqual(Clima.curva({ horas: [] }, 100, 40).puntos, []);
 });

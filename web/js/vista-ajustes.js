@@ -31,6 +31,12 @@
       { clave: 'alternarCada', si: 'alternar', texto: 'Aparece cada', formato: function (v) { return v + ' min'; } },
       { clave: 'alternarSegundos', si: 'alternar', texto: 'El panel queda', formato: function (v) { return v + ' s'; } }
     ] },
+    { titulo: 'Mañana de cole', filas: [
+      { clave: 'mananaCole', texto: 'Mostrar la mañana de cole', detalle: 'Días de clase: tareas de la mañana, hora de salir, materias y qué llevar' },
+      { clave: 'mananaDesde', si: 'mananaCole', texto: 'Desde las' },
+      { clave: 'viajeMinutos', si: 'mananaCole', texto: 'El viaje al cole tarda', formato: function (v) { return v + ' min'; } },
+      { clave: 'salidaPorDefecto', si: 'mananaCole', texto: 'Salir a las (si no hay horario)' }
+    ] },
     { titulo: 'Sensor de movimiento', filas: [
       { clave: 'sensor', texto: 'Usar el sensor', detalle: 'Si no pasa nadie, la pantalla descansa; vuelve sola al pasar' },
       { clave: 'sinMovimientoMinutos', si: 'sensor', texto: 'Sin nadie, descansa a los', formato: function (v) { return v + ' min'; } },

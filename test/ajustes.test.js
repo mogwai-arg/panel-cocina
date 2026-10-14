@@ -38,3 +38,13 @@ test('ajustes: el descanso usa lo elegido (sensor: apagar en vez de atenuar)', (
   assert.equal(D.estado(de(15, 10), de(15, 0), a.descanso(), true), 'apagado');
   assert.equal(D.estado(de(2, 0), de(1, 0), a.descanso(), false), 'activo'); // sin descanso nocturno
 });
+
+test('ajustes: mañana de cole, con la salida de a 5 minutos', () => {
+  const a = A.crear({ MANANA_COLE: { salida: '07:15', viajeMinutos: 25 } }, null);
+  assert.deepEqual(a.manana(), { activo: true, desde: '06:30', viajeMinutos: 25, salidaPorDefecto: '07:15' });
+  a.pasar('salidaPorDefecto', 1);
+  assert.equal(a.valor('salidaPorDefecto'), '07:20');
+  a.pasar('mananaDesde', -1);
+  assert.equal(a.valor('mananaDesde'), '06:15');
+  assert.equal(A.crear({ MANANA_COLE: false }, null).valor('mananaCole'), false);
+});

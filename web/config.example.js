@@ -33,5 +33,8 @@ window.CONFIG = {
   // Descanso de la pantalla: de noche queda negra ('apagado') o tenue ('tenue'); al tocarla
   // se despierta 5 minutos. Con el sensor de movimiento conectado, de día se atenúa si no
   // pasa nadie en 20 minutos. Para no usar el horario nocturno: noche: false
+  // Mañana de cole: los días de clase muestra la hora de salir y lo de la mañana de Thi.
+  // La salida es la primera clase (horario de Colegium) menos el viaje. false = apagada.
+  MANANA_COLE: { desde: '06:30', viajeMinutos: 20, salida: '07:20' },
   DESCANSO: { noche: { desde: '23:00', hasta: '07:00', modo: 'apagado' }, despiertoMinutos: 5, sinMovimientoMinutos: 20 }
 };

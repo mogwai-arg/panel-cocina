@@ -31,17 +31,40 @@ servidores de Google con tu cuenta) y el propio marco como pantalla.
 
 - Reloj y fecha.
 - Clima de [Open-Meteo](https://open-meteo.com) (gratis, sin clave) con una frase
-  para las próximas horas: lluvia, si refresca o si hace calor.
+  para las próximas horas (lluvia, si refresca o si hace calor) y la **curva de temperatura**
+  de las próximas 12 horas, con barritas si puede llover y la hora del amanecer/atardecer.
 - **Próximo**: el siguiente evento con horario, con cuenta regresiva si falta menos
   de hora y media.
 - Una columna por calendario de Google Calendar con lo de hoy y mañana
   (las de más eventos primero, hasta 4).
-- **Próximos días**: lo que viene a partir de pasado mañana.
+- **La semana**: siete pastillas con el clima de cada día (ícono y máxima) y un puntito por
+  cada calendario que tiene algo ese día. Tocando un día se ve lo de ese día; si no, los
+  **próximos días** (lo que viene a partir de pasado mañana).
+- **Lo que falta**: abajo, las tareas de este momento del día que todavía no se hicieron;
+  tocando una se marca (con "Deshacer").
 - Un recuerdo: una foto de "un día como hoy" si hay, si no una al azar.
 - **Básquet**: el próximo partido de Thiago con los dos escudos, día, hora y cancha;
-  el último resultado y la racha de los últimos 5. Los partidos por jugar también
+  cuántos días faltan, el último resultado y la racha de los últimos 5. Los partidos por jugar también
   entran en la agenda, así que el día del partido aparece en "Próximo" con cuenta regresiva.
   Ver [Básquet](#básquet).
+
+## Mañana de cole
+
+Los días de clase, desde las 6:30 hasta un rato después de la hora de salir, el panel Hoy
+cambia el "Próximo" y la agenda por la mañana de Thi:
+
+- **Salir a las 7:20** con cuenta regresiva (se pone roja cuando ya es hora). La hora sale del
+  horario de Colegium: primera clase menos lo que tarda el viaje (20 min por defecto).
+- **Antes de salir**: sus tareas de la planilla con momento "Mañana", para tildar tocándolas.
+- **Hoy en el cole**: las materias del día; **No olvidar**: entregas de Classroom de hoy/mañana,
+  atrasadas, pruebas y pendientes que encontró el asistente; **Qué llevar**: paraguas, abrigo o
+  agua según el clima de la mañana.
+- **Listo ✓** la cierra hasta el día siguiente.
+
+Mientras está, la pantalla no pasa a las fotos ni descansa (aunque sea "de noche"). Se prende,
+se apaga y se ajusta (desde qué hora, minutos de viaje, hora de salida si no hay horario) en
+**Ajustes**, o en `config.js` con `MANANA_COLE: { desde: '06:30', viajeMinutos: 20, salida: '07:20' }`
+(`MANANA_COLE: false` la apaga de fábrica).
 
 ## Básquet
 
@@ -282,6 +305,8 @@ La pantalla **Ajustes** de la barra lateral (o tocando la hora) cambia, con boto
   subcarpetas).
 - **Panel y fotos**: a los cuántos minutos sin tocar pasa a fotos; mostrar el panel cada tanto
   (cada cuántos minutos y cuántos segundos).
+- **Mañana de cole**: mostrarla o no, desde qué hora, cuánto tarda el viaje y a qué hora
+  salir si no hay horario de Colegium.
 - **Sensor de movimiento**: usarlo o no, a los cuántos minutos sin nadie descansa la pantalla
   y si queda tenue o negra.
 - **Noche**: colores oscuros (desde/hasta), descanso nocturno (desde/hasta, tenue o negra) y
@@ -410,7 +435,8 @@ web/           lo que muestra el marco (HTML/CSS/JS sin dependencias, compatible
   js/fuentes.js  de dónde salen las fotos: demo o Drive
   js/fotos.js    slideshow
   js/agenda.js   lógica de la agenda (función pura)
-  js/clima.js    clima de Open-Meteo
+  js/clima.js    clima de Open-Meteo (horas, semana y curva)
+  js/manana.js   modo mañana de cole (hora de salir, qué llevar)
   js/basquet.js  lógica de la tarjeta de básquet (función pura)
   js/listas.js   lógica de tareas y compras (función pura)
   js/vistas-listas.js  vistas Tareas y Compras

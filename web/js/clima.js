@@ -22,8 +22,10 @@
 
   /*
    * Convierte la respuesta de Open-Meteo al formato del panel:
-   * { temp, codigo, esDeDia, max, min, horas: [{ hora, temp, codigo, lluvia }] }
-   * `horas` son las próximas 12 a partir de la hora actual.
+   * { temp, codigo, esDeDia, max, min, horas: [{ hora, fecha, temp, codigo, lluvia }],
+   *   dias: [{ fecha, max, min, codigo, lluvia, sale, pone }] }
+   * `horas` son las próximas 12 a partir de la hora actual; `dias`, los de la semana
+   * (sale/pone: amanecer y atardecer, "HH:MM").
    */
   function normalizar(r, ahora) {
     var h = r.hourly;
@@ -34,6 +36,7 @@
     for (var i = desde; i < Math.min(desde + 12, h.time.length); i++) {
       horas.push({
         hora: Number(h.time[i].slice(11, 13)),
+        fecha: h.time[i].slice(0, 10),
         temp: Math.round(h.temperature_2m[i]),
         codigo: h.weather_code[i],
         lluvia: h.precipitation_probability ? h.precipitation_probability[i] : 0
@@ -45,8 +48,62 @@
       esDeDia: r.current.is_day !== 0,
       max: Math.round(r.daily.temperature_2m_max[0]),
       min: Math.round(r.daily.temperature_2m_min[0]),
-      horas: horas
+      horas: horas,
+      dias: dias(r.daily)
     };
+  }
+
+  function dias(d) {
+    if (!d || !d.time) return [];
+    function de(lista, i) { return lista && lista[i] !== undefined && lista[i] !== null ? lista[i] : null; }
+    return d.time.map(function (fecha, i) {
+      var sale = de(d.sunrise, i), pone = de(d.sunset, i);
+      return {
+        fecha: fecha,
+        max: Math.round(d.temperature_2m_max[i]),
+        min: Math.round(d.temperature_2m_min[i]),
+        codigo: de(d.weather_code, i),
+        lluvia: de(d.precipitation_probability_max, i) || 0,
+        sale: sale ? String(sale).slice(11, 16) : null,
+        pone: pone ? String(pone).slice(11, 16) : null
+      };
+    });
+  }
+
+  /*
+   * Puntos para dibujar la curva de temperatura de las próximas horas en un recuadro
+   * de ancho × alto: [{ x, y, temp, hora, lluvia }] y las marcas de amanecer/atardecer
+   * que caen dentro ({ x, tipo: 'sale'|'pone', hora: 'HH:MM' }).
+   */
+  function curva(c, ancho, alto, margen) {
+    margen = margen || 0;
+    var hs = (c && c.horas) || [];
+    if (hs.length < 2) return { puntos: [], sol: [] };
+    var temps = hs.map(function (h) { return h.temp; });
+    var tmax = Math.max.apply(null, temps), tmin = Math.min.apply(null, temps);
+    var rango = Math.max(tmax - tmin, 4);
+    var paso = (ancho - 2 * margen) / (hs.length - 1);
+    var puntos = hs.map(function (h, i) {
+      return {
+        x: Math.round((margen + i * paso) * 10) / 10,
+        y: Math.round((margen + (tmax - h.temp) / rango * (alto - 2 * margen)) * 10) / 10,
+        temp: h.temp, hora: h.hora, lluvia: h.lluvia || 0
+      };
+    });
+    var porFecha = {};
+    ((c && c.dias) || []).forEach(function (d) { porFecha[d.fecha] = d; });
+    var sol = [];
+    hs.forEach(function (h, i) {
+      var d = porFecha[h.fecha];
+      if (!d || i === hs.length - 1) return;
+      ['sale', 'pone'].forEach(function (tipo) {
+        if (!d[tipo]) return;
+        var p = d[tipo].split(':');
+        if (Number(p[0]) !== h.hora) return;
+        sol.push({ x: Math.round((margen + (i + Number(p[1]) / 60) * paso) * 10) / 10, tipo: tipo, hora: d[tipo] });
+      });
+    });
+    return { puntos: puntos, sol: sol };
   }
 
   /* Una frase útil para las próximas horas. */
@@ -64,7 +121,8 @@
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + latitud + '&longitude=' + longitud +
       '&current=temperature_2m,weather_code,is_day' +
       '&hourly=temperature_2m,weather_code,precipitation_probability' +
-      '&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=2';
+      '&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,sunrise,sunset' +
+      '&timezone=auto&forecast_days=7';
     return fetch(url).then(function (r) {
       if (!r.ok) throw new Error('Open-Meteo respondió ' + r.status);
       return r.json();
@@ -75,15 +133,23 @@
   function ejemplo(ahora) {
     var h0 = ahora.getHours();
     var temps = [18, 19, 18, 17, 16, 15, 14, 13, 13, 12, 12, 11];
+    function iso(n) {
+      var d = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + n);
+      return d.getFullYear() + '-' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + '-' + (d.getDate() < 10 ? '0' : '') + d.getDate();
+    }
+    var semana = [[22, 11, 2, 60], [24, 13, 1, 0], [19, 12, 61, 80], [17, 9, 3, 20], [20, 10, 0, 0], [23, 12, 1, 10], [21, 14, 95, 70]];
     return {
       temp: 18, codigo: 2, esDeDia: h0 >= 7 && h0 < 20, max: 22, min: 11,
       horas: temps.map(function (t, i) {
-        return { hora: (h0 + i) % 24, temp: t, codigo: i < 3 ? 2 : 3, lluvia: i === 4 ? 60 : 10 };
+        return { hora: (h0 + i) % 24, fecha: iso(h0 + i >= 24 ? 1 : 0), temp: t, codigo: i < 3 ? 2 : 3, lluvia: i === 4 ? 60 : 10 };
+      }),
+      dias: semana.map(function (x, i) {
+        return { fecha: iso(i), max: x[0], min: x[1], codigo: x[2], lluvia: x[3], sale: '06:5' + i, pone: '19:3' + i };
       })
     };
   }
 
-  var api = { describir: describir, normalizar: normalizar, frase: frase, obtener: obtener, ejemplo: ejemplo };
+  var api = { describir: describir, normalizar: normalizar, curva: curva, frase: frase, obtener: obtener, ejemplo: ejemplo };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Clima = api;
 })(typeof window !== 'undefined' ? window : this);
