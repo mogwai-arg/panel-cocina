@@ -1,3 +1,6 @@
 web/config.js
 node_modules/
 .DS_Store
+
+# Backups del marco (pueden tener la app y datos personales)
+marco/backup-*/
