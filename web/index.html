@@ -68,7 +68,7 @@
     // Si config.js tiene un error de escritura, se anota para mostrarlo en pantalla.
     window.addEventListener('error', function (e) {
       if (e.filename && /config\.js/.test(e.filename)) window.ERROR_CONFIG = e.message + ' (línea ' + e.lineno + ')';
-      anotarError(e.message + ' — ' + String(e.filename || '').split('/').pop() + ':' + e.lineno);
+      anotarError(e.message + ' - ' + String(e.filename || '').split('/').pop() + ':' + e.lineno);
     });
     window.addEventListener('unhandledrejection', function (e) {
       anotarError('Promesa: ' + ((e.reason && e.reason.message) || e.reason));

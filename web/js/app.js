@@ -11,9 +11,13 @@
   var config = window.CONFIG || {};
 
   var usarDrive = config.APPS_SCRIPT_URL && params.get('demo') !== '1';
+  // En el marco (index.html?marco=1): 1 GB de memoria y pantalla de 1280 de ancho. Fotos del
+  // tamaño de la pantalla y pocas guardadas, para que Chrome no se quede sin memoria.
+  var enMarco = params.get('marco') === '1';
   var fuente = usarDrive
     ? Fuentes.drive(config.APPS_SCRIPT_URL, config.TOKEN, {
-        ancho: config.ANCHO_FOTO,
+        ancho: enMarco ? Math.min(config.ANCHO_FOTO || 1280, 1280) : config.ANCHO_FOTO,
+        maxCache: enMarco ? 12 : 40,
         nombresCalendarios: config.NOMBRES_CALENDARIOS,
         latitud: config.LATITUD || -34.6037,
         longitud: config.LONGITUD || -58.3816
@@ -51,6 +55,7 @@
     segundos: Number(params.get('segundos')) || ajustes.valor('segundosFoto'),
     videos: ajustes.valor('videos'),
     lugar: ajustes.valor('lugarFoto'),
+    maxVideoMB: enMarco ? (config.VIDEO_MAX_MB_MARCO || 15) : 0,
     debug: params.get('debug') === '1'
   });
 

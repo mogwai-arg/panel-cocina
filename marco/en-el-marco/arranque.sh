@@ -74,6 +74,20 @@ while true; do
         abrir_panel
         continue
       fi
+      # Si se cayó solo la página (Chrome muestra "error al mostrar la página"), su proceso
+      # (sandboxed_process) desaparece: dos minutos seguidos sin él → abrir el panel de nuevo.
+      # Solo se vigila después de haberlo visto alguna vez (por si el nombre cambia).
+      if ps | grep -q 'com\.android\.chrome:sandboxed_process'; then
+        VISTA_PAGINA=1; SIN_PAGINA=0
+      elif [ -n "$VISTA_PAGINA" ]; then
+        SIN_PAGINA=$((SIN_PAGINA + 1))
+        if [ $SIN_PAGINA -ge 2 ]; then
+          anotar "la página del panel se cayó: abrir de nuevo ($(grep MemFree /proc/meminfo))"
+          SIN_PAGINA=0
+          abrir_panel
+          continue
+        fi
+      fi
       case "$(adelante)" in
         *com.android.chrome*|*com.android.settings*|*packageinstaller*) ;;
         *) anotar "panel de nuevo adelante ($(adelante | sed 's/.* u0 //; s/ .*//'))"; abrir_panel ;;

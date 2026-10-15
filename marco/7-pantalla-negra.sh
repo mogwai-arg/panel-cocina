@@ -26,6 +26,8 @@ $A shell screencap -p /sdcard/captura.png && $A pull /sdcard/captura.png "marco/
   echo; echo "=== adelante ==="; $A shell "dumpsys activity activities | grep -m2 -E 'mResumedActivity|mFocusedActivity'"; $A shell "dumpsys window | grep -m2 -E 'mCurrentFocus|mFocusedApp'"
   echo; echo "=== procesos de Chrome y Frameo ==="; $A shell "ps | grep -E 'chrome|frameo'"
   echo; echo "=== memoria ==="; $A shell "cat /proc/meminfo | head -4"
+  echo; echo "=== errores anotados por el panel ==="
+  SU "cat /data/data/com.android.chrome/app_chrome/Default/Local\\ Storage/leveldb/*.log 2>/dev/null" | LC_ALL=C tr -d '\000' | LC_ALL=C tr -c '[:print:]' '\n' | grep -oE '[0-9]{1,2}/[0-9]{1,2} [0-9]{2}:[0-9]{2} [^"]{3,200}' | tail -12
   echo; echo "=== vigía del marco ==="; SU "tail -25 /data/local/panel/registro.log"
   echo; echo "=== Android: errores recientes ==="
   $A shell "logcat -d -v time 2>/dev/null | grep -iE 'lowmemory|killing|died|crash|ANR|chromium.*(error|fatal)|frameo.*(sleep|screen|bright)|backlight' | tail -40"

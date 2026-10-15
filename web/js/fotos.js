@@ -41,6 +41,9 @@
     var debug = !!opciones.debug;
     var maxSegundosVideo = opciones.maxSegundosVideo || 90;
     var hayVideos = typeof fuente.video === 'function' && opciones.videos !== false;
+    // En el marco (poca memoria) los videos muy pesados no se bajan: se arman en memoria y lo
+    // pueden dejar sin memoria a Chrome (pantalla de error).
+    var maxVideoBytes = (opciones.maxVideoMB || 0) * 1024 * 1024;
     var cantidadFotos = 0;
     var mostrarLugar = opciones.lugar !== false;
     var fallidosSeguidos = 0;
@@ -68,7 +71,9 @@
         refrescarLista = false;
         cantidadFotos = fotos.filter(function (f) { return !(f.video && !hayVideos); }).length;
         var malos = leerNoSoportados();
-        fotos = fotos.filter(function (f) { return !(f.video && malos[f.id]); });
+        fotos = fotos.filter(function (f) {
+          return !(f.video && (malos[f.id] || (maxVideoBytes && f.bytes > maxVideoBytes)));
+        });
         var ds = Layout.armarDiapositivas(fotos, { proporcionPantalla: proporcionPantalla(), sinVideos: !hayVideos });
         secuencia = Layout.ordenar(ds, new Date());
         posicion = -1;
