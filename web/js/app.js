@@ -346,6 +346,12 @@
   };
   setInterval(revisarDescanso, 30000);
 
+  // Latido: el marco (marco/en-el-marco/arranque.sh) mira que esto cambie; si la página se
+  // cae y deja de latir, la vuelve a abrir.
+  function latir() { try { localStorage.setItem('panel-latido', String(Date.now())); } catch (e) { /* nada */ } }
+  latir();
+  setInterval(latir, 60000);
+
   // Una vez por día, de madrugada y sin nadie usándolo, el panel se recarga: el marco tiene
   // poca memoria y así arranca limpio cada día.
   var cargadoEl = new Date().toDateString();

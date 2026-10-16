@@ -40,14 +40,28 @@ pm list packages -d 2>/dev/null | grep -q net.frameo.frame || { pm disable net.f
 
 abrir_panel() {
   input keyevent KEYCODE_WAKEUP
+  # Chrome de cero y sin pestañas viejas: si no, cuando una página se cae abre otra pestaña
+  # al lado (y esa no queda a pantalla completa).
+  am force-stop com.android.chrome
+  rm -rf /data/data/com.android.chrome/app_tabs
+  sleep 2
   # application_id: Chrome reutiliza siempre la misma pestaña (no abre una nueva cada vez).
   am start -n $CHROME -a android.intent.action.VIEW -d "$URL" \
     --es com.android.browser.application_id panel-cocina --ez create_new_tab false > /dev/null 2>&1
   # Chrome solo deja la pantalla completa después de un toque: el marco se toca solo,
-  # arriba al medio (sobre el clima, donde no hay botones).
-  sleep 10
+  # arriba al medio (sobre el clima, donde no hay botones). Dos veces, por si la primera
+  # llega antes de que termine de cargar.
+  sleep 12
   input tap 760 40
+  sleep 8
+  input tap 760 40
+  LATIDO_ANTES=""; SIN_LATIDO=0
 }
+
+# Latido del panel: la página guarda la hora cada minuto (localStorage) y Chrome lo escribe en
+# este archivo. Si deja de cambiar, la página se cayó ("error al mostrar la página").
+LS="/data/data/com.android.chrome/app_chrome/Default/Local Storage/leveldb"
+latido() { stat -c %Y "$LS"/*.log 2>/dev/null | sort -n | tail -1; }
 
 adelante() { dumpsys activity activities 2>/dev/null | grep -m1 mResumedActivity; }
 
@@ -74,18 +88,19 @@ while true; do
         abrir_panel
         continue
       fi
-      # Si se cayó solo la página (Chrome muestra "error al mostrar la página"), su proceso
-      # (sandboxed_process) desaparece: dos minutos seguidos sin él → abrir el panel de nuevo.
-      # Solo se vigila después de haberlo visto alguna vez (por si el nombre cambia).
-      if ps | grep -q 'com\.android\.chrome:sandboxed_process'; then
-        VISTA_PAGINA=1; SIN_PAGINA=0
-      elif [ -n "$VISTA_PAGINA" ]; then
-        SIN_PAGINA=$((SIN_PAGINA + 1))
-        if [ $SIN_PAGINA -ge 2 ]; then
-          anotar "la página del panel se cayó: abrir de nuevo ($(grep MemFree /proc/meminfo))"
-          SIN_PAGINA=0
-          abrir_panel
-          continue
+      # Si la página dejó de latir 6 minutos seguidos (y el latido anduvo alguna vez), se cayó.
+      L=$(latido)
+      if [ -n "$L" ]; then
+        if [ "$L" != "$LATIDO_ANTES" ]; then
+          [ -n "$LATIDO_ANTES" ] && LATIDO_VISTO=1
+          LATIDO_ANTES="$L"; SIN_LATIDO=0
+        elif [ -n "$LATIDO_VISTO" ]; then
+          SIN_LATIDO=$((SIN_LATIDO + 1))
+          if [ $SIN_LATIDO -ge 6 ]; then
+            anotar "la página del panel no responde hace 6 min: abrir de nuevo ($(grep MemFree /proc/meminfo))"
+            abrir_panel
+            continue
+          fi
         fi
       fi
       case "$(adelante)" in
