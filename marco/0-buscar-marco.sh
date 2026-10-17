@@ -12,7 +12,18 @@ for i in $(seq 1 254); do
 done | sort -t. -k4 -n > /tmp/marco-encontrado.txt
 wait
 if [ -s /tmp/marco-encontrado.txt ]; then
-  for ip in $(cat /tmp/marco-encontrado.txt); do echo "  ✓ marco en $ip   →  bash marco/4-instalar.sh $ip"; done
+  # Varios aparatos pueden tener ese puerto abierto: se pregunta a cada uno qué es.
+  # El marco es el que tiene la carpeta del panel (/sdcard/panel).
+  for ip in $(cat /tmp/marco-encontrado.txt); do
+    adb connect "$ip:5555" >/dev/null 2>&1
+    MODELO=$(adb -s "$ip:5555" shell getprop ro.product.model 2>/dev/null | tr -d '\r')
+    if adb -s "$ip:5555" shell ls /sdcard/panel/index.html 2>/dev/null | grep -q index.html; then
+      echo "  ✓ EL MARCO está en $ip ($MODELO). Copiá y pegá:"
+      echo "      bash marco/4-instalar.sh $ip"
+    else
+      echo "  · $ip: otro aparato${MODELO:+ ($MODELO)} (no es el marco)"
+    fi
+  done
 else
   echo "No apareció. El marco tiene que estar prendido y en el mismo Wi-Fi."
   echo "Si lo reiniciaste hace menos de 2 minutos, esperá y probá de nuevo; si no, cable USB y:"
