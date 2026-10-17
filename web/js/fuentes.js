@@ -346,7 +346,13 @@
         p(sabado(-1), equipo(EQUIPO, castelar, 82), equipo('MIDLAND', escudoEjemplo('M', '#1f3f8f', '#fff'), 65), 'Argentino de Castelar'),
         p(sabado(1), equipo(EQUIPO, castelar, null), equipo('PEDRO ECHAGÜE AZUL', escudoEjemplo('PE', '#f2c230', '#1f3f8f'), null), 'Argentino de Castelar'),
         p(sabado(2), equipo('OBRAS', escudoEjemplo('O', '#e6e6e6', '#141414'), null), equipo(EQUIPO, castelar, null), 'Obras Sanitarias')
-      ]
+      ].concat(
+        // Para ver cómo queda un partido en juego: index.html?demo=1&partido=1 (sin marcador) o 2 (con marcador)
+        /[?&]partido=[12]/.test((root.location && root.location.search) || '') ? [p(
+          new Date(ahora.getTime() - 35 * 60000).toISOString(),
+          equipo(EQUIPO, castelar, /partido=2/.test(root.location.search) ? 41 : null),
+          equipo('VELEZ SARSFIELD', escudoEjemplo('V', '#fff', '#1f3f8f'), /partido=2/.test(root.location.search) ? 36 : null),
+          'Argentino de Castelar')] : [])
     };
   }
 

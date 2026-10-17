@@ -63,6 +63,10 @@ coma. Tocando un día en la semana de Hoy también se ve qué se come ese día.
   cuántos días faltan, el último resultado y la racha de los últimos 5. Los partidos por jugar también
   entran en la agenda, así que el día del partido aparece en "Próximo" con cuenta regresiva.
   Ver [Básquet](#básquet).
+- **Partido en juego**: desde la hora del partido y hasta 3 horas después, el partido ocupa el
+  lugar del "Próximo" (verde): "En juego" con el tiempo que pasó, el marcador si la federación
+  lo va cargando y "¡Ganaron!" / "Perdieron" al final. Mientras tanto el panel mira FEBAMBA cada
+  5 minutos y avisa en pantalla cuando cambia el resultado. (Demo: `index.html?demo=1&partido=2`.)
 
 ## Mañana de cole
 

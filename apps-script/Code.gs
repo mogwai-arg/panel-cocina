@@ -32,7 +32,7 @@
 var MINUTOS_CACHE_LISTA = 30;
 
 // Subir este número con cada cambio: ?action=version muestra qué versión está publicada.
-var VERSION = '2026-10-16.1';
+var VERSION = '2026-10-18.1';
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -705,7 +705,11 @@ function resolverEquipo_(cfg) {
 function basquet_() {
   var cache = CacheService.getScriptCache();
   var guardada = cache.get('basquet');
-  if (guardada) return JSON.parse(guardada);
+  if (guardada) {
+    var g = JSON.parse(guardada);
+    // Durante un partido se vuelve a mirar el sitio cada 4 minutos (para el resultado en vivo).
+    if (!(partidoEnCurso_(g) && Date.now() - new Date(g.actualizado).getTime() > 4 * 60000)) return g;
+  }
 
   var cfg = configBasquet_();
   var r = resolverEquipo_(cfg);
@@ -725,6 +729,15 @@ function basquet_() {
   datos.actualizado = new Date().toISOString();
   cache.put('basquet', JSON.stringify(datos), 3600);
   return datos;
+}
+
+/** ¿Hay un partido empezado hace menos de 3 horas (o que empieza en 10 minutos)? */
+function partidoEnCurso_(datos) {
+  var ahora = Date.now();
+  return (datos.partidos || []).some(function (p) {
+    var t = new Date(p.fecha).getTime();
+    return t - 10 * 60000 <= ahora && ahora < t + 3 * 3600000;
+  });
 }
 
 /** "PEDRO ECHAGÜE AZUL" → "Pedro Echagüe Azul" */

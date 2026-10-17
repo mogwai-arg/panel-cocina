@@ -99,7 +99,37 @@
     return r;
   }
 
-  var api = { nombreLindo: nombreLindo, resumen: resumen, comoEventos: comoEventos, desdeEquipo: desdeEquipo };
+  /*
+   * El partido que se está jugando (o que terminó hace poco), para destacarlo en Hoy:
+   * desde la hora de inicio hasta 3 horas después. null si no hay.
+   *   estado: 'jugando'  (sin marcador todavía)
+   *           'vivo'     (hay marcador y no pasó la duración de un partido: puede cambiar)
+   *           'final'    (hay marcador y ya terminó)
+   *           'esperando' (ya debería haber terminado y todavía no cargaron el resultado)
+   */
+  var DURACION_MIN = 100;   // un partido de formativas, con descansos
+  function destacado(datos, ahora) {
+    ahora = ahora instanceof Date ? ahora : new Date(ahora);
+    var p = ((datos && datos.partidos) || []).filter(function (x) {
+      var t = new Date(x.fecha).getTime();
+      return t <= ahora.getTime() && ahora.getTime() < t + 3 * 3600000;
+    }).sort(function (a, b) { return new Date(b.fecha) - new Date(a.fecha); })[0];
+    if (!p) return null;
+    var v = desdeEquipo(p, datos.equipo);
+    var minutos = Math.floor((ahora - new Date(p.fecha)) / 60000);
+    var estado = v.jugado ? (minutos < DURACION_MIN ? 'vivo' : 'final') : (minutos < 120 ? 'jugando' : 'esperando');
+    return { partido: v, minutos: minutos, estado: estado };
+  }
+
+  /* ¿Conviene mirar el resultado seguido? (desde 10 minutos antes hasta que hay resultado final) */
+  function hayQueMirar(datos, ahora) {
+    ahora = ahora instanceof Date ? ahora : new Date(ahora);
+    var d = destacado(datos, new Date(ahora.getTime() + 10 * 60000));
+    return !!d && d.estado !== 'final';
+  }
+
+  var api = { nombreLindo: nombreLindo, resumen: resumen, comoEventos: comoEventos, desdeEquipo: desdeEquipo,
+    destacado: destacado, hayQueMirar: hayQueMirar };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Basquet = api;
 })(typeof window !== 'undefined' ? window : this);

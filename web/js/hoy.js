@@ -180,6 +180,10 @@
     function pintarProximo() {
       var caja = parte('proximo');
       caja.innerHTML = '';
+      // Partido de básquet en juego (o recién terminado): ocupa el lugar destacado.
+      var enJuego = basquet && Basquet.destacado(basquet, new Date());
+      caja.classList.toggle('proximo--partido', !!enJuego);
+      if (enJuego) { pintarPartido(caja, enJuego); return; }
       if (errorAgenda) {
         caja.classList.add('proximo--vacio');
         caja.appendChild(el('p', 'proximo__vacio', 'No se pudo leer el calendario: ' + errorAgenda));
@@ -202,6 +206,56 @@
       cuenta.appendChild(el('span', null, p.chico));
       caja.appendChild(info);
       caja.appendChild(cuenta);
+    }
+
+    var TEXTOS_PARTIDO = {
+      jugando: '● En juego',
+      vivo: '● En vivo',
+      final: 'Final',
+      esperando: 'Terminó · esperando el resultado'
+    };
+    function pintarPartido(caja, d) {
+      caja.classList.remove('proximo--vacio');
+      var p = d.partido;
+      var info = el('div', 'proximo__info');
+      var r = Basquet.resumen(basquet, new Date());
+      info.appendChild(el('span', 'lbl partido__estado partido__estado--' + d.estado,
+        TEXTOS_PARTIDO[d.estado] + ' · Básquet' + (r.categoria ? ' ' + r.categoria : '')));
+      var titulo = d.estado === 'final'
+        ? (p.gano ? '¡Ganaron!' : 'Perdieron')
+        : 'vs ' + Basquet.nombreLindo(p.rival.nombre);
+      info.appendChild(el('h2', 'proximo__titulo', titulo));
+      var detalle = d.estado === 'final' ? 'vs ' + Basquet.nombreLindo(p.rival.nombre)
+        : d.estado === 'esperando' ? 'El resultado aparece apenas lo cargue la federación'
+          : 'Empezó hace ' + (d.minutos < 60 ? d.minutos + ' min' : Math.floor(d.minutos / 60) + ' h ' + (d.minutos % 60) + ' min');
+      info.appendChild(el('p', 'proximo__detalle', detalle + ' · ' + (p.esLocal ? 'De local' : 'De visitante') + (p.cancha ? ' · ' + p.cancha : '')));
+      caja.appendChild(info);
+      var der = el('div', 'partido');
+      der.appendChild(escudo(p.propio));
+      if (p.jugado) {
+        var m = el('div', 'partido__marcador');
+        m.appendChild(el('b', p.gano ? 'partido__gana' : '', String(p.propio.puntos)));
+        m.appendChild(el('span', null, '–'));
+        m.appendChild(el('b', p.gano ? '' : 'partido__gana', String(p.rival.puntos)));
+        der.appendChild(m);
+      } else {
+        der.appendChild(el('span', 'duelo__vs partido__vs', 'vs'));
+      }
+      der.appendChild(escudo(p.rival));
+      caja.appendChild(der);
+    }
+
+    // Avisar en pantalla cuando aparece el resultado del partido.
+    var marcadorVisto = null;
+    function avisarResultado() {
+      var d = basquet && Basquet.destacado(basquet, new Date());
+      if (!d || !d.partido.jugado) return;
+      var m = d.partido.propio.puntos + '–' + d.partido.rival.puntos;
+      if (marcadorVisto !== null && marcadorVisto !== m && opciones.avisar) {
+        opciones.avisar('🏀 ' + (d.estado === 'final' ? (d.partido.gano ? 'Ganaron ' : 'Perdieron ') : 'Van ') + m +
+          ' vs ' + Basquet.nombreLindo(d.partido.rival.nombre), null, 20000);
+      }
+      marcadorVisto = m;
     }
 
     function pintarColumnas() {
@@ -582,6 +636,8 @@
         console.error(err);
       }).then(function () {
         pintarBasquet();
+        avisarResultado();
+        pintarProximo();
         return cargarAgenda();
       });
     }
@@ -874,6 +930,8 @@
         });
         cada(30 * 60000, cargarCole);
         cada(60 * 60000, cargarBasquet);
+        // Durante un partido, el resultado se mira cada 5 minutos.
+        cada(5 * 60000, function () { if (basquet && Basquet.hayQueMirar(basquet, new Date())) cargarBasquet(); });
         cada(30 * 60000, cargarClassroom);
         cada(15 * 60000, cargarMails);
         cada(2 * 60000, cargarUbicacion);

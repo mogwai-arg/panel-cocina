@@ -704,3 +704,21 @@ small.quien__alerta { color: #c4453a; }
 .ajuste__accion { flex: none; border: 0; border-radius: 99px; padding: 12px 20px; background: var(--tinta); color: var(--sobre-tinta); font: 800 13px var(--rotulo); letter-spacing: .06em; cursor: pointer; }
 .ajuste__accion:disabled { opacity: .6; }
 .ajustes-vista .listas__cab { margin-bottom: 14px; }
+
+/* Partido de básquet en juego (en el lugar del "Próximo") */
+.proximo--partido { background: #17301f; color: #fff; }
+.proximo--partido .lbl { color: #b9e3c4; }
+.partido__estado--jugando, .partido__estado--vivo { color: #ff8a7a !important; animation: latido-vivo 1.6s ease-in-out infinite; }
+@keyframes latido-vivo { 50% { opacity: .45; } }
+.partido { display: flex; align-items: center; gap: 16px; flex: none; }
+.partido .escudo { width: 84px; height: 84px; border-color: rgba(255, 255, 255, .15); background: #fff; }
+.partido .escudo img { inset: 12px; width: calc(100% - 24px); height: calc(100% - 24px); }
+.partido__marcador { display: flex; align-items: baseline; gap: 8px; font: 800 84px/.9 var(--rotulo); font-stretch: 70%; font-variant-numeric: tabular-nums; }
+.partido__marcador b { color: rgba(255, 255, 255, .6); }
+.partido__marcador b.partido__gana { color: #fff; }
+.partido__marcador span { font-size: 50px; color: rgba(255, 255, 255, .5); }
+.partido__vs { color: rgba(255, 255, 255, .6); font-size: 30px; }
+.pantalla[data-tema="noche"] .proximo--partido { background: #12261a; color: #e9f5ec; }
+.proximo--partido .proximo__titulo { font-size: 44px; -webkit-line-clamp: 1; }
+.proximo--partido .proximo__info { min-width: 0; flex: 1; }
+.proximo--partido .proximo__detalle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

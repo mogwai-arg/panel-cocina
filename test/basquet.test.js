@@ -80,3 +80,25 @@ test('categoría corta para la tarjeta', () => {
   const r = Basquet.resumen({ ...DATOS, categoria: 'JUVENILES MASCULINO' }, AHORA);
   assert.equal(r.categoria, 'Juveniles');
 });
+
+test('básquet: partido destacado mientras se juega', () => {
+  const EQ = 'ARGENTINO DE CASTELAR NORTE A';
+  const inicio = new Date(2026, 9, 24, 11, 0);
+  const partido = (pl, pv) => ({ fecha: inicio.toISOString(), cancha: 'Castelar',
+    local: { nombre: EQ, puntos: pl }, visitante: { nombre: 'VELEZ', puntos: pv } });
+  const datos = (pl, pv) => ({ equipo: EQ, partidos: [partido(pl, pv)] });
+  const a = (h, m) => new Date(2026, 9, 24, h, m);
+  assert.equal(Basquet.destacado(datos(null, null), a(10, 55)), null);
+  assert.equal(Basquet.destacado(datos(null, null), a(11, 35)).estado, 'jugando');
+  assert.equal(Basquet.destacado(datos(null, null), a(11, 35)).minutos, 35);
+  assert.equal(Basquet.destacado(datos(40, 30), a(11, 50)).estado, 'vivo');
+  const fin = Basquet.destacado(datos(73, 65), a(12, 50));
+  assert.equal(fin.estado, 'final');
+  assert.equal(fin.partido.gano, true);
+  assert.equal(Basquet.destacado(datos(null, null), a(13, 30)).estado, 'esperando');
+  assert.equal(Basquet.destacado(datos(73, 65), a(14, 1)), null);
+  // mirar seguido desde 10 minutos antes hasta que hay resultado final
+  assert.equal(Basquet.hayQueMirar(datos(null, null), a(10, 52)), true);
+  assert.equal(Basquet.hayQueMirar(datos(null, null), a(10, 40)), false);
+  assert.equal(Basquet.hayQueMirar(datos(73, 65), a(12, 50)), false);
+});
