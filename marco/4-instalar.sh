@@ -53,7 +53,7 @@ fi
 
 echo "4/4 Arrancando el panel ..."
 SU "setprop persist.adb.tcp.port 5555"
-SU "kill \$(cat /data/local/panel/pid 2>/dev/null) 2>/dev/null; rm -f /data/local/panel/pid"
+SU "P=\$(cat /data/local/panel/pid 2>/dev/null); [ -n \"\$P\" ] && grep -q arranque /proc/\$P/cmdline 2>/dev/null && kill \$P; rm -f /data/local/panel/pid"
 $A shell "su -c 'setsid /system/bin/sh /data/local/panel/arranque.sh </dev/null >/dev/null 2>&1 &'"
 sleep 3
 if $A shell "su -c 'cat /data/local/panel/registro.log 2>/dev/null'" | grep -q inicio; then

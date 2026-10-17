@@ -13,7 +13,10 @@ SENSOR=/sys/devices/gpio_sensor_ctl.25/sensor_value
 CHROME=com.android.chrome/com.google.android.apps.chrome.Main
 
 # Una sola copia corriendo
-if [ -f $DIR/pid ] && kill -0 "$(cat $DIR/pid)" 2>/dev/null; then exit 0; fi
+# (el número guardado puede ser de antes de apagar: al prender, otro proceso, o este mismo,
+# puede tener ese número; por eso se mira que de verdad sea otro arranque.sh corriendo)
+OTRO=$(cat $DIR/pid 2>/dev/null)
+if [ -n "$OTRO" ] && [ "$OTRO" != "$$" ] && grep -q arranque "/proc/$OTRO/cmdline" 2>/dev/null; then exit 0; fi
 echo $$ > $DIR/pid
 
 anotar() { echo "$(date '+%d/%m %H:%M:%S') $1" >> $LOG; }

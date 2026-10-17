@@ -12,7 +12,7 @@ if ! $A shell true >/dev/null 2>&1 && adb -d shell true >/dev/null 2>&1; then
   A="adb -d"
 fi
 SU() { $A shell "su -c '$1'"; }
-SU "rm -f /data/local/panel/activo; kill \$(cat /data/local/panel/pid 2>/dev/null) 2>/dev/null; rm -f /data/local/panel/pid"
+SU "rm -f /data/local/panel/activo; P=\$(cat /data/local/panel/pid 2>/dev/null); [ -n \"\$P\" ] && grep -q arranque /proc/\$P/cmdline 2>/dev/null && kill \$P; rm -f /data/local/panel/pid"
 SU "mount -o remount,rw /system"
 SU "rm -rf /system/su.d"
 SU "[ -f /data/local/panel/original/install-recovery.sh ] && cp /data/local/panel/original/install-recovery.sh /system/bin/install-recovery.sh"

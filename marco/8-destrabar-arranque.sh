@@ -24,7 +24,7 @@ echo "1/3 Habilitando Frameo ..."
 $A shell "su -c 'pm enable net.frameo.frame'"
 echo "2/3 Instalando el arranque corregido ..."
 $A push marco/en-el-marco/arranque.sh /sdcard/panel-arranque.sh >/dev/null
-$A shell "su -c 'cp /sdcard/panel-arranque.sh /data/local/panel/arranque.sh && chmod 755 /data/local/panel/arranque.sh && rm /sdcard/panel-arranque.sh'"
+$A shell "su -c 'cp /sdcard/panel-arranque.sh /data/local/panel/arranque.sh && chmod 755 /data/local/panel/arranque.sh && rm -f /sdcard/panel-arranque.sh /data/local/panel/pid'"
 $A shell "su -c 'grep -c \"Frameo tiene que estar habilitado\" /data/local/panel/arranque.sh'" | grep -q 1 && echo "    listo" || echo "    ⚠️ no se pudo copiar el arranque"
 echo "3/3 Reiniciando el marco (en 1-2 minutos tiene que aparecer el panel) ..."
 $A shell "su -c reboot"
