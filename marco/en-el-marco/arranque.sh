@@ -21,6 +21,14 @@ anotar "inicio (pid $$)"
 # El registro no crece para siempre
 [ -f $LOG ] && [ "$(wc -l < $LOG)" -gt 2000 ] && tail -n 500 $LOG > $LOG.tmp && mv $LOG.tmp $LOG
 
+# Frameo tiene que estar habilitado: es la pantalla de inicio de Android en este marco y sin
+# él el arranque queda trabado en el logo (una versión anterior lo deshabilitaba).
+N=0
+while [ $N -lt 60 ]; do
+  pm enable net.frameo.frame 2>/dev/null | grep -q enabled && break
+  N=$((N + 1)); sleep 3
+done
+
 # Esperar a que Android termine de arrancar
 while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 3; done
 sleep 20
@@ -36,7 +44,8 @@ anotar "ip $(ip -f inet addr show wlan0 2>/dev/null | grep -o 'inet [0-9.]*' | c
 settings put global policy_control immersive.full=com.android.chrome
 settings put system screen_off_timeout 2147483647
 # Frameo deshabilitado (ver 4-instalar.sh); si una actualización lo volvió a habilitar, de nuevo.
-pm list packages -d 2>/dev/null | grep -q net.frameo.frame || { pm disable net.frameo.frame >/dev/null 2>&1; anotar "Frameo en pausa"; }
+# Frameo de fondo a veces se reinicia sin parar (decenas de procesos) y se come la memoria:
+# más abajo, si pasa eso, se lo frena (sin deshabilitarlo).
 
 abrir_panel() {
   input keyevent KEYCODE_WAKEUP
@@ -82,6 +91,12 @@ while true; do
     CUENTA=$((CUENTA + 1))
     if [ $CUENTA -ge 30 ]; then
       CUENTA=0
+      # Frameo reiniciándose sin parar → frenarlo (vuelve a estar disponible igual).
+      NF=$(ps | grep -c 'net\.frameo\.frame')
+      if [ "$NF" -gt 4 ]; then
+        anotar "Frameo con $NF procesos: frenarlo"
+        am force-stop net.frameo.frame
+      fi
       # Si Android cerró Chrome por falta de memoria, la ventana queda negra: abrirlo de nuevo.
       if ! ps | grep -q 'com\.android\.chrome$'; then
         anotar "Chrome estaba cerrado (falta de memoria?): abrir de nuevo"

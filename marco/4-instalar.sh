@@ -61,10 +61,9 @@ if $A shell "su -c 'cat /data/local/panel/registro.log 2>/dev/null'" | grep -q i
 else
   echo "    ⚠️ el vigía no arrancó ahora (igual debería arrancar al reiniciar el marco)"
 fi
-# Frameo, de fondo, se reiniciaba sin parar (decenas de procesos) y se comía la memoria: Android
-# terminaba cerrando Chrome y la pantalla quedaba negra. Se lo deshabilita (NO se desinstala:
-# marco/5-volver-a-frameo.sh lo vuelve a habilitar tal cual).
-SU "pm disable net.frameo.frame" | grep -q disabled && echo "    Frameo en pausa (deshabilitado, sigue instalado)"
+# Frameo queda habilitado: es la pantalla de inicio de Android en este marco (sin él, el marco
+# no termina de arrancar). Si se reinicia sin parar de fondo, el vigía del marco lo frena.
+SU "pm enable net.frameo.frame" >/dev/null
 # Cerrar las pestañas de antes (cada apertura vieja dejó una) y abrir el panel en una sola.
 $A shell am force-stop com.android.chrome
 SU "rm -rf /data/data/com.android.chrome/app_tabs"
