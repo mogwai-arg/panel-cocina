@@ -27,6 +27,23 @@
     try { localStorage.setItem(CLAVE_NO_SOPORTADOS, JSON.stringify(m)); } catch (e) { /* sin almacenamiento */ }
   }
 
+  // Cuándo se mostró cada foto (para no repetir las mismas): { id: ms }. Se guarda en el aparato.
+  var CLAVE_VISTAS = 'panel-fotos-vistas';
+  function leerVistas() {
+    try { return JSON.parse(localStorage.getItem(CLAVE_VISTAS) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function marcarVistas(diapo) {
+    var v = leerVistas();
+    var ahora = Date.now();
+    diapo.fotos.forEach(function (f) { v[f.id] = ahora; });
+    // No más de 3000 anotadas (las más viejas se olvidan).
+    var ids = Object.keys(v);
+    if (ids.length > 3000) {
+      ids.sort(function (a, b) { return v[a] - v[b]; }).slice(0, ids.length - 3000).forEach(function (k) { delete v[k]; });
+    }
+    try { localStorage.setItem(CLAVE_VISTAS, JSON.stringify(v)); } catch (e) { /* sin almacenamiento */ }
+  }
+
   function fechaLarga(iso) {
     if (!iso) return '';
     var a = Number(iso.slice(0, 4)), m = Number(iso.slice(5, 7)), d = Number(iso.slice(8, 10));
@@ -75,7 +92,7 @@
           return !(f.video && (malos[f.id] || (maxVideoBytes && f.bytes > maxVideoBytes)));
         });
         var ds = Layout.armarDiapositivas(fotos, { proporcionPantalla: proporcionPantalla(), sinVideos: !hayVideos });
-        secuencia = Layout.ordenar(ds, new Date());
+        secuencia = Layout.priorizarNoVistas(Layout.ordenar(ds, new Date()), leerVistas(), new Date());
         posicion = -1;
         ultimaLista = Date.now();
       });
@@ -150,6 +167,7 @@
       // Un video ya agregado no se vuelve a mover: sacarlo del documento lo pausa.
       if (nueva.parentNode !== contenedor) contenedor.appendChild(nueva);
       contenedor.removeAttribute('data-estado');
+      if (nueva.__diapo) marcarVistas(nueva.__diapo);
       // forzar reflow para que el fundido arranque desde opacidad 0
       void nueva.offsetWidth;
       nueva.classList.add('diapo--visible');

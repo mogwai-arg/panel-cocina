@@ -100,3 +100,18 @@ test('un video va solo y no corta el collage de verticales del mismo día', () =
   assert.deepEqual(tipos(ds).sort(), ['par:2', 'video:1']);
   assert.deepEqual(tipos(Layout.armarDiapositivas([video], { sinVideos: true })), []);
 });
+
+test('fotos: primero las que no se vieron; los recuerdos, una vez por día', () => {
+  const hoy = new Date(2026, 9, 17, 12, 0);
+  const d = (id, haceAnios) => ({ fotos: [{ id }], haceAnios: haceAnios || null });
+  const sec = [d('r', 3), d('a'), d('b'), d('c'), d('e')];
+  const ayer = new Date(2026, 9, 16, 20, 0).getTime();
+  const hace1h = hoy.getTime() - 3600000;
+  const vistas = { r: ayer, a: hace1h, b: ayer };
+  const orden = Layout.priorizarNoVistas(sec, vistas, hoy).map((x) => x.fotos[0].id);
+  // r: recuerdo visto ayer → de nuevo primero; c y e sin ver; después b (ayer) y a (hace 1 h)
+  assert.deepEqual(orden, ['r', 'c', 'e', 'b', 'a']);
+  // el recuerdo ya visto hoy va con las demás
+  const orden2 = Layout.priorizarNoVistas(sec, Object.assign({}, vistas, { r: hace1h - 1 }), hoy).map((x) => x.fotos[0].id);
+  assert.deepEqual(orden2, ['c', 'e', 'b', 'r', 'a']);
+});

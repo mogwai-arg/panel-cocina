@@ -170,7 +170,25 @@
     return recuerdos.concat(resto);
   }
 
+  /*
+   * Primero lo que no se vio (o se vio hace más tiempo), así no se repiten las mismas cada vez
+   * que se recarga la lista o la página. vistas: { idFoto: cuándo se mostró (ms) }.
+   * Los recuerdos ("un día como hoy") van primero una vez por día. Respeta el orden que ya
+   * traía la secuencia entre las que empatan (el azar de ordenar).
+   */
+  function priorizarNoVistas(secuencia, vistas, hoy) {
+    vistas = vistas || {};
+    var inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
+    return secuencia.map(function (d, i) {
+      var clave = 0;
+      d.fotos.forEach(function (f) { clave = Math.max(clave, Number(vistas[f.id]) || 0); });
+      if (d.haceAnios && clave < inicioHoy) clave = 0;
+      return { d: d, clave: clave, i: i };
+    }).sort(function (a, b) { return a.clave - b.clave || a.i - b.i; }).map(function (x) { return x.d; });
+  }
+
   var api = {
+    priorizarNoVistas: priorizarNoVistas,
     orientacion: orientacion,
     armarDiapositivas: armarDiapositivas,
     haceAnios: haceAnios,
