@@ -216,6 +216,21 @@
         raiz.requestFullscreen({ navigationUI: 'hide' }).catch(function () { /* nada */ });
       }
     };
+    // El marco toca solo, cada minuto, el rincón de abajo a la derecha (arranque.sh): ese toque
+    // solo pide pantalla completa (si se perdió) y no cuenta como "tocar" (no saca de las
+    // fotos ni despierta la pantalla de noche).
+    var toqueDelMarco = function (e) {
+      return e.clientX >= window.innerWidth - 4 && e.clientY >= window.innerHeight - 4;
+    };
+    ['pointerdown', 'pointerup', 'click', 'mousedown', 'mouseup', 'touchstart', 'touchend'].forEach(function (t) {
+      window.addEventListener(t, function (e) {
+        var p = e.changedTouches ? e.changedTouches[0] : e;
+        if (!p || !toqueDelMarco(p)) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (t === 'pointerup' || t === 'click' || t === 'touchend') pedirPantallaCompleta();
+      }, { capture: true, passive: false });
+    });
     window.addEventListener('pointerup', pedirPantallaCompleta, true);
     window.addEventListener('click', pedirPantallaCompleta, true);
     // Chrome sale de pantalla completa al recargar la página (y a veces solo). El marco manda

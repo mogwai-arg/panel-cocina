@@ -122,9 +122,9 @@ while true; do
         fi
       fi
       case "$(adelante)" in
-        # Con el panel adelante: tecla F11 para que vuelva a pantalla completa si la perdió
-        # (la página la pide sola; si ya está, no pasa nada).
-        *com.android.chrome*) input keyevent KEYCODE_F11 ;;
+        # Con el panel adelante: un toque en el rincón de abajo a la derecha para que vuelva a
+        # pantalla completa si la perdió (la página lo reconoce y no lo cuenta como "tocar").
+        *com.android.chrome*) input tap 1279 799 ;;
         *com.android.settings*|*packageinstaller*) ;;
         *) anotar "panel de nuevo adelante ($(adelante | sed 's/.* u0 //; s/ .*//'))"; abrir_panel ;;
       esac
