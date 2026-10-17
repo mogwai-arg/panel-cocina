@@ -218,11 +218,22 @@
     };
     window.addEventListener('pointerup', pedirPantallaCompleta, true);
     window.addEventListener('click', pedirPantallaCompleta, true);
+    // Chrome sale de pantalla completa al recargar la página (y a veces solo). El marco manda
+    // la tecla F11 cada minuto (arranque.sh): una tecla cuenta como "acción del usuario", así
+    // que la página puede volver a pantalla completa sin que nadie la toque. No cuenta como
+    // actividad: no saca de las fotos ni despierta la pantalla.
+    window.addEventListener('keydown', function (e) {
+      if (e.key !== 'F11' && e.keyCode !== 122) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      pedirPantallaCompleta();
+    }, true);
   }
   window.addEventListener('keydown', function (e) {
     if (e.key !== 'F12' && e.keyCode !== 123) return;
     e.preventDefault();
     e.stopImmediatePropagation();
+    if (pedirPantallaCompleta) pedirPantallaCompleta();
     window.panelMovimiento();
   }, true);
 
